@@ -16,7 +16,9 @@ object GameException {
   final case class TooManySharesException(newShares: Double)
     extends GameException(s"Too many shares selected to buy (new shares number = $newShares). Total must be below 1.0.")
 
-  final case class PlayerMarketValueNotFoundException(playerId: Int)
-    extends GameException(s"Market value for player with id [$playerId] not found")
+  final case class PlayerMarketValueNotFoundException(playerId: Int, err: String)
+    extends GameException(s"Market value for player with id [$playerId] not found. The reason is: $err")
 
+  final case class PlayerSearchByNameException(playerName: String, err: String)
+    extends GameException(s"Could not find player by name [$playerName]. The reason is: $err")
 }

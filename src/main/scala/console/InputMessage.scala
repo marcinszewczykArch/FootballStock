@@ -1,7 +1,7 @@
 package console
 
 import cats.Applicative
-import errors.{GameException}
+import errors.GameException
 import errors.GameException.IncorrectConsoleInputException
 import multiplayer.UserGameState
 
@@ -11,7 +11,7 @@ import scala.util.Try
 
 sealed trait InputMessage
 
-case class SearchPlayer(input: String) extends InputMessage
+case class SearchPlayerByName(input: String) extends InputMessage
 case class Error(message: String) extends InputMessage
 
 object InputMessage {
@@ -20,8 +20,8 @@ object InputMessage {
     Applicative[F].pure {
       splitWords(inputText) match {
         //todo case (nickGracza, komenda, parametr) np. ("marcin_132", "search", "andrzej niedzielan")
-        case ("/search", input, input2) => Right(SearchPlayer(input + " " + input2))
-        case _                     => Left(IncorrectConsoleInputException(inputText))
+        case ("/search", input, input2) => Right(SearchPlayerByName(input + " " + input2))
+        case _                          => Left(IncorrectConsoleInputException(inputText))
       }
     }
 

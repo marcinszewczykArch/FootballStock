@@ -4,14 +4,15 @@ import cats.Applicative
 import cats.effect._
 import cats.syntax.all._
 import config.AppConfig.TransfermarktClientConfig
-import httpClient.domain.{FetchedMarketValue, PlayerDetails, PlayerSearch, PlayerSearchResponse}
+import httpClient.domain.{FetchedMarketValue, PlayerSearch, PlayerSearchResponse}
+import io.circe
 import sttp.client3._
 import sttp.client3.circe.asJson
 import sttp.model.Uri
 
 trait TransfermarktClient[F[_]] {
-  def searchByName(playerName: String): F[Option[List[PlayerSearch]]] //todo toEither
-  def getMarketValueByPlayerId(id: Int): F[Option[FetchedMarketValue]] //todo toEither
+  def searchByName(playerName: String): F[Either[ResponseException[String, circe.Error], List[PlayerSearch]]]
+  def getMarketValueByPlayerId(id: Int): F[Either[ResponseException[String, circe.Error], FetchedMarketValue]]
 }
 
 object TransfermarktClient {
@@ -20,7 +21,7 @@ object TransfermarktClient {
     val serviceUri: Uri = config.uri
     val backend: SttpBackend[Identity, Any] = HttpClientSyncBackend()
 
-    override def searchByName(playerName: String): F[Option[List[PlayerSearch]]] =
+    override def searchByName(playerName: String): F[Either[ResponseException[String, circe.Error], List[PlayerSearch]]] =
       for {
         res <- backend
                  .send {
@@ -30,28 +31,24 @@ object TransfermarktClient {
                  }
                  .map(_.body)
                  .map(_.result) match {
-                 case Left(error)           =>
-                   Applicative[F].pure(println(s"Error while fetching result for search '$playerName': $error")).as(None) //todo: throw error
-                 case Right(fetchedPlayers) => Applicative[F].pure(println(s"Fetched player(s) for search: $playerName")).as(Some(fetchedPlayers))
+                 case Left(error)           => Applicative[F].pure(Left(error))
+                 case Right(fetchedPlayers) => Applicative[F].pure(Right(fetchedPlayers))
                }
       } yield res
 
-    override def getMarketValueByPlayerId(id: Int): F[Option[FetchedMarketValue]] = for {
-        res <- backend
-                 .send {
-                   basicRequest
-                     .get(serviceUri.addPath("players", id.toString, "market_value"))
-                     .response(asJson[FetchedMarketValue])
-                 }
-                 .map(_.body) match {
-                 case Left(error)           =>
-                   Applicative[F]
-                     .pure(println(s"Error while fetching market value for player with id '$id': $error"))
-                     .as(None)
-                 case Right(marketValue) =>
-                   Applicative[F].pure(println(s"Fetched market value for player with id: $id")).as(Some(marketValue))
+    override def getMarketValueByPlayerId(id: Int): F[Either[ResponseException[String, circe.Error], FetchedMarketValue]] = for {
+      res <- backend
+               .send {
+                 basicRequest
+                   .get(serviceUri.addPath("players", id.toString, "market_value"))
+                   .response(asJson[FetchedMarketValue])
                }
-      } yield res
-    }
+               .map(_.body) match {
+               case Left(error)        => Applicative[F].pure(Left(error))
+               case Right(marketValue) => Applicative[F].pure(Right(marketValue))
+             }
+    } yield res
+
+  }
 
 }

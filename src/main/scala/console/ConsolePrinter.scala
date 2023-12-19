@@ -1,7 +1,8 @@
 package console
 
 import cats.effect.IO
-import cats.{Applicative, Monad}
+import cats.Applicative
+import cats.Monad
 import cats.effect.std.Console
 import cats.syntax.all._
 import errors.GameException
@@ -11,6 +12,7 @@ import services.PlayerService
 import services.domain.PlayerSimple
 
 import scala.io.AnsiColor._
+import scala.util.Either
 
 trait ConsolePrinter[F[_]] {
   def readMessage[F[_]: Console: Monad]: F[InputMessage]
@@ -19,6 +21,8 @@ trait ConsolePrinter[F[_]] {
 }
 
 object ConsolePrinter {
+
+  val dformatter = java.text.NumberFormat.getIntegerInstance
 
   def impl[F[_]: Console: Monad] = new ConsolePrinter[F] {
 
@@ -32,7 +36,7 @@ object ConsolePrinter {
 
     def gameLoop[F[_]: Console: Monad](playerService: PlayerService[F])(message: InputMessage): F[Unit] =
       message match {
-        case SearchPlayer(input) =>
+        case SearchPlayerByName(input) =>
           for {
             players <- playerService.searchByName(input)
             _       <- printPlayerSearchResult[F](players)
@@ -45,22 +49,25 @@ object ConsolePrinter {
 
   }
 
-  val dformatter = java.text.NumberFormat.getIntegerInstance
-
-  private def printPlayerSearchResult[F[_]: Applicative](players: List[PlayerSimple]): F[Unit] = Applicative[F].pure {
-    println("id | name | position | club | age | nationality | marketValue")
-    players.foreach { case PlayerSimple(id, name, position, club, age, nationality, marketValue) =>
-      println(
-        id + " | " +
-          name + " | " +
-          position + " | " +
-          club + " | " +
-          age + " | " +
-          nationality + " | " +
-          dformatter.format(marketValue.toInt) + " €"
-      )
+  private def printPlayerSearchResult[F[_]: Applicative](maybePlayers: Either[GameException, List[PlayerSimple]]): F[Unit] =
+    maybePlayers match {
+      case Left(err)      => Applicative[F].pure(println(s"Search failed. Reason: $err"))
+      case Right(players) =>
+        Applicative[F].pure {
+          println("id | name | position | club | age | nationality | marketValue")
+          players.foreach { case PlayerSimple(id, name, position, club, age, nationality, marketValue) =>
+            println(
+              id + " | " +
+                name + " | " +
+                position + " | " +
+                club + " | " +
+                age + " | " +
+                nationality + " | " +
+                dformatter.format(marketValue.toInt) + " €"
+            )
+          }
+        }
     }
-  }
 
   private def readUserInputFromConsole[F[_]: Console: Monad]: F[String] = Console[F].readLine
 
