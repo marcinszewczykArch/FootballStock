@@ -1,8 +1,9 @@
 package console
 
 import cats.Applicative
-import errors.{GameException, IncorrectConsoleInputException}
-import multiplayer.Player
+import errors.{GameException}
+import errors.GameException.IncorrectConsoleInputException
+import multiplayer.UserGameState
 
 import scala.util.Failure
 import scala.util.Success

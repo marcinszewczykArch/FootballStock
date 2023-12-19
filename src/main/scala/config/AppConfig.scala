@@ -1,13 +1,10 @@
-package com.softwaremill.hiring_task
+package config
 
-import cats.effect.IO
-import cats.effect.Sync
-import com.comcast.ip4s.Host
-import com.comcast.ip4s.Port
-import com.softwaremill.hiring_task.AppConfig.HttpConfig
-import com.softwaremill.hiring_task.AppConfig.TransfermarktClientConfig
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
+
+import cats.effect.{IO, Sync}
+import com.comcast.ip4s.{Host, Port}
+import com.typesafe.config.{Config, ConfigFactory}
+import config.AppConfig.{HttpConfig, TransfermarktClientConfig}
 import sttp.client3.UriContext
 import sttp.model.Uri
 
@@ -19,11 +16,11 @@ final case class AppConfig(
 object AppConfig {
 
   val default: AppConfig = AppConfig(
-    HttpConfig(Host.fromString("localhost").get, Port.fromInt(8081).get),
+    HttpConfig(Host.fromString("localhost").get, Port.fromInt(8080).get),
     TransfermarktClientConfig(uri"https://transfermarkt-api.vercel.app")
   )
 
-  def getTypesafeConfig: IO[Config] = Sync[IO].blocking(ConfigFactory.load())
+  def getTypesafeConfig: IO[Config] = Sync[IO].blocking(ConfigFactory.load("application.conf"))
 
   def parse(rawConfig: Config): IO[AppConfig] = Sync[IO].blocking {
     (for {

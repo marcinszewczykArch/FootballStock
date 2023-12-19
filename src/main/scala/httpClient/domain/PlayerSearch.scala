@@ -1,8 +1,8 @@
-package httpClient
+package httpClient.domain
 
 import io.circe.{Decoder, Encoder}
 
-final case class PlayerDetails(
+final case class PlayerSearch(
   id: Option[Int],
   name: Option[String],
   position: Option[String],
@@ -12,9 +12,9 @@ final case class PlayerDetails(
   marketValue: Option[String]
 )
 
-object PlayerDetails {
+object PlayerSearch {
 
-  implicit val decoder: Decoder[PlayerDetails] = Decoder.forProduct7[PlayerDetails, Option[Int], Option[String], Option[String], Option[
+  implicit val decoder: Decoder[PlayerSearch] = Decoder.forProduct7[PlayerSearch, Option[Int], Option[String], Option[String], Option[
     ClubSearch
   ], Option[String], Option[String], Option[String]](
     "id",
@@ -24,9 +24,9 @@ object PlayerDetails {
     "age",
     "nationality",
     "marketValue"
-  )(PlayerDetails.apply)
+  )(PlayerSearch.apply)
 
-  implicit val encoder: Encoder[PlayerDetails] = Encoder.forProduct7[PlayerDetails, Option[Int], Option[String], Option[String], Option[
+  implicit val encoder: Encoder[PlayerSearch] = Encoder.forProduct7[PlayerSearch, Option[Int], Option[String], Option[String], Option[
     ClubSearch
   ], Option[String], Option[String], Option[String]](
     "id",
@@ -36,6 +36,6 @@ object PlayerDetails {
     "age",
     "nationality",
     "marketValue"
-  )(Function.unlift(PlayerDetails.unapply))
+  )(Function.unlift(PlayerSearch.unapply))
 
 }

@@ -1,4 +1,4 @@
-package httpClient
+package httpClient.domain
 
 import io.circe.{Decoder, Encoder}
 

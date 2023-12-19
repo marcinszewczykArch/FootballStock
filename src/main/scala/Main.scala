@@ -1,7 +1,14 @@
-import cats.effect.{ExitCode, IO, IOApp, Resource}
-import com.softwaremill.hiring_task.AppConfig
+import cats.effect.ExitCode
+import cats.effect.IO
+import cats.effect.IOApp
+import cats.effect.Ref
+import cats.effect.Resource
+import config.AppConfig
 import console.ConsolePrinter
 import httpClient.TransfermarktClient
+import multiplayer.UserGameState
+import multiplayer.memory.StateMemory
+import services.PlayerService
 
 object Main extends IOApp {
 
@@ -12,17 +19,28 @@ object Main extends IOApp {
       consolePrinter      <- IO.pure(ConsolePrinter.impl[IO])
       _                   <- consolePrinter.printStartMessage[IO]
       transfermarktClient <- IO.pure(TransfermarktClient.impl[IO](appConfig.transfermarktClientConfig))
-      exitCode            <- runGame(consolePrinter, transfermarktClient)
+      playerService       <- IO.pure(PlayerService.impl[IO](transfermarktClient))
+      ref                 <- Ref.of[IO, Map[String, UserGameState]](Map.empty[String, UserGameState])
+
+      //todo: for test only
+      stateMemory         <- IO.pure(StateMemory.impl[IO](ref, playerService))
+      _                   <- ref.update(_ => Map("marcin" -> UserGameState()))
+      userStats           <- stateMemory.getAllUsersStates()
+      _                   <- IO.println(userStats)
+      conf                <- stateMemory.buyPlayer("marcin")(38253, 0.01)
+      _                   <- IO.println(conf)
+
+      exitCode            <- runGame(consolePrinter, playerService)
     } yield exitCode
 
   private def runGame(
     consolePrinter: ConsolePrinter[IO],
-    transfermarktClient: TransfermarktClient[IO]
+    playerService: PlayerService[IO]
   ): IO[ExitCode] =
     fs2
       .Stream
       .repeatEval(consolePrinter.readMessage[IO])
-      .evalMap(consolePrinter.gameLoop(transfermarktClient))
+      .evalMap(consolePrinter.gameLoop(playerService))
       .compile
       .drain
       .as(ExitCode.Success)
