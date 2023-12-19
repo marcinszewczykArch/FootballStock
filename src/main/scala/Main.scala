@@ -6,7 +6,7 @@ import cats.effect.Resource
 import config.AppConfig
 import console.ConsolePrinter
 import httpClient.TransfermarktClient
-import multiplayer.UserGameState
+import multiplayer.domain.UserGameState
 import multiplayer.memory.StateMemory
 import services.PlayerService
 

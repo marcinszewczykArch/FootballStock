@@ -6,11 +6,7 @@ import cats.effect._
 import cats.implicits.toFunctorOps
 import errors.GameException._
 import errors._
-import multiplayer.Buy
-import multiplayer.Sell
-import multiplayer.TransactionConfirmation
-import multiplayer.TransactionType
-import multiplayer.UserGameState
+import multiplayer.domain.{TransactionConfirmation, TransactionType, UserGameState}
 import services.PlayerService
 
 trait StateMemory[F[_]] {
@@ -40,7 +36,7 @@ object StateMemory {
       ): F[Either[GameException, TransactionConfirmation]] = (for {
         userState         <- EitherT(getUserState(user))
         playerMarketValue <- EitherT(playerService.getMarketValueByPlayerId(playerId))
-        newShares         <- EitherT(calculateNewShares(userState.portfolio.get(playerId), sharesToBuy, Buy))
+        newShares         <- EitherT(calculateNewShares(userState.portfolio.get(playerId), sharesToBuy, TransactionType.Buy))
         transactionValue = playerMarketValue.marketValue * sharesToBuy
         _                 <- EitherT(validateEnoughMoney(userState.money, transactionValue))
         newUserState = UserGameState(
@@ -49,11 +45,11 @@ object StateMemory {
                          money = userState.money - transactionValue
                        )
         _                 <- EitherT.right[GameException](ref.update(state => state + (user -> newUserState)))
-      } yield TransactionConfirmation(Buy, playerId, sharesToBuy, transactionValue, newUserState)).value
+      } yield TransactionConfirmation(TransactionType.Buy, playerId, sharesToBuy, transactionValue, newUserState)).value
 
       override def sellPlayer(user: String)(playerId: Int, sharesToSell: Double): F[Either[GameException, TransactionConfirmation]] = (for {
         userState         <- EitherT(getUserState(user))
-        newShares         <- EitherT(calculateNewShares(userState.portfolio.get(playerId), sharesToSell, Sell))
+        newShares         <- EitherT(calculateNewShares(userState.portfolio.get(playerId), sharesToSell, TransactionType.Sell))
         playerMarketValue <- EitherT(playerService.getMarketValueByPlayerId(playerId))
         transactionValue = playerMarketValue.marketValue * sharesToSell
         newUserState = UserGameState(
@@ -62,7 +58,7 @@ object StateMemory {
                          money = userState.money + transactionValue
                        )
         _                 <- EitherT.right[GameException](ref.update(state => state + (user -> newUserState)))
-      } yield TransactionConfirmation(Sell, playerId, sharesToSell, transactionValue, newUserState)).value
+      } yield TransactionConfirmation(TransactionType.Sell, playerId, sharesToSell, transactionValue, newUserState)).value
 
       override def getUserState(user: String): F[Either[GameException, UserGameState]] = ref
         .get
@@ -89,8 +85,8 @@ object StateMemory {
         transactionType: TransactionType
       ): F[Either[GameException, Double]] = {
         val newShares = transactionType match {
-          case Sell => sharesInPortfolio.getOrElse(0.0) - transactionShares
-          case Buy  => sharesInPortfolio.getOrElse(0.0) + transactionShares
+          case TransactionType.Sell => sharesInPortfolio.getOrElse(0.0) - transactionShares
+          case TransactionType.Buy  => sharesInPortfolio.getOrElse(0.0) + transactionShares
         }
 
         Applicative[F].pure(newShares > 1.0 || newShares < 0.0 match {

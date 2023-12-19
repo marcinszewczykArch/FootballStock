@@ -3,8 +3,9 @@ package console
 import cats.Applicative
 import errors.GameException
 import errors.GameException.IncorrectConsoleInputException
-import multiplayer.UserGameState
+import multiplayer.domain.UserGameState
 
+import scala.util.Failure
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try

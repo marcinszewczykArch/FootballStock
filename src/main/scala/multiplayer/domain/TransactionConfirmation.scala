@@ -1,6 +1,4 @@
-package multiplayer
-
-import services.domain.PlayerSimple
+package multiplayer.domain
 
 case class TransactionConfirmation(
   transactionType: TransactionType,

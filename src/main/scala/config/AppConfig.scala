@@ -1,10 +1,13 @@
 package config
 
-
-import cats.effect.{IO, Sync}
-import com.comcast.ip4s.{Host, Port}
-import com.typesafe.config.{Config, ConfigFactory}
-import config.AppConfig.{HttpConfig, TransfermarktClientConfig}
+import cats.effect.IO
+import cats.effect.Sync
+import com.comcast.ip4s.Host
+import com.comcast.ip4s.Port
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import config.AppConfig.HttpConfig
+import config.AppConfig.TransfermarktClientConfig
 import sttp.client3.UriContext
 import sttp.model.Uri
 
@@ -27,10 +30,7 @@ object AppConfig {
       host                   <- Host.fromString(rawConfig.getString("http.host"))
       port                   <- Port.fromInt(rawConfig.getInt("http.port"))
       transfermarktClientUri <- Uri.parse(rawConfig.getString("transfermarkt-client.uri")).toOption
-    } yield AppConfig(
-      HttpConfig(host, port),
-      TransfermarktClientConfig(transfermarktClientUri))
-      ).getOrElse(AppConfig.default)
+    } yield AppConfig(HttpConfig(host, port), TransfermarktClientConfig(transfermarktClientUri))).getOrElse(AppConfig.default)
   }
 
   final case class HttpConfig(host: Host, port: Port)
