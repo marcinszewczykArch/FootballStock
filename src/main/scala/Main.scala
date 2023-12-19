@@ -23,14 +23,16 @@ object Main extends IOApp {
       ref                 <- Ref.of[IO, Map[String, UserGameState]](Map.empty[String, UserGameState])
 
       //todo: for test only
-      stateMemory         <- IO.pure(StateMemory.impl[IO](ref, playerService))
-      _                   <- ref.update(_ => Map("marcin" -> UserGameState()))
-      userStats           <- stateMemory.getAllUsersStates()
-      _                   <- IO.println(userStats)
-      conf                <- stateMemory.buyPlayer("marcin")(38253, 0.01)
-      _                   <- IO.println(conf)
+      stateMemory <- IO.pure(StateMemory.impl[IO](ref, playerService))
+      _           <- ref.update(_ => Map("marcin" -> UserGameState(portfolio = Map(38253 -> 0.01))))
+      userStats   <- stateMemory.getAllUsersStates()
+      _           <- IO.println(userStats)
+      confBuy     <- stateMemory.buyPlayer("marcin")(38253, 0.01)
+      _           <- IO.println(confBuy)
+      confSell    <- stateMemory.sellPlayer("marcin")(38253, 0.01)
+      _           <- IO.println(confSell)
 
-      exitCode            <- runGame(consolePrinter, playerService)
+      exitCode <- runGame(consolePrinter, playerService)
     } yield exitCode
 
   private def runGame(

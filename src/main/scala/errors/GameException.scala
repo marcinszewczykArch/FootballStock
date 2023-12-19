@@ -13,8 +13,8 @@ object GameException {
   final case class ValueParseException(value: Option[String], err: Throwable)
     extends GameException(s"Not able to parse player value: $value, because of exception: $err.")
 
-  final case class TooManySharesException(newShares: Double)
-    extends GameException(s"Too many shares selected to buy (new shares number = $newShares). Total must be below 1.0.")
+  final case class SharesNumberException(newShares: Double)
+    extends GameException(s"Incorrect number of shares after transaction (new shares number = $newShares). Total must be between 0.0 and 1.0.")
 
   final case class PlayerMarketValueNotFoundException(playerId: Int, err: String)
     extends GameException(s"Market value for player with id [$playerId] not found. The reason is: $err")
