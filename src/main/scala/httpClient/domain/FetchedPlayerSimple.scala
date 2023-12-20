@@ -2,20 +2,20 @@ package httpClient.domain
 
 import io.circe.{Decoder, Encoder}
 
-final case class PlayerSearch(
+final case class FetchedPlayerSimple(
   id: Option[Int],
   name: Option[String],
   position: Option[String],
-  club: Option[ClubSearch],
+  club: Option[FetchedPlayerClub],
   age: Option[String],
   nationality: Option[String],
   marketValue: Option[String]
 )
 
-object PlayerSearch {
+object FetchedPlayerSimple {
 
-  implicit val decoder: Decoder[PlayerSearch] = Decoder.forProduct7[PlayerSearch, Option[Int], Option[String], Option[String], Option[
-    ClubSearch
+  implicit val decoder: Decoder[FetchedPlayerSimple] = Decoder.forProduct7[FetchedPlayerSimple, Option[Int], Option[String], Option[String], Option[
+    FetchedPlayerClub
   ], Option[String], Option[String], Option[String]](
     "id",
     "name",
@@ -24,10 +24,10 @@ object PlayerSearch {
     "age",
     "nationality",
     "marketValue"
-  )(PlayerSearch.apply)
+  )(FetchedPlayerSimple.apply)
 
-  implicit val encoder: Encoder[PlayerSearch] = Encoder.forProduct7[PlayerSearch, Option[Int], Option[String], Option[String], Option[
-    ClubSearch
+  implicit val encoder: Encoder[FetchedPlayerSimple] = Encoder.forProduct7[FetchedPlayerSimple, Option[Int], Option[String], Option[String], Option[
+    FetchedPlayerClub
   ], Option[String], Option[String], Option[String]](
     "id",
     "name",
@@ -36,6 +36,6 @@ object PlayerSearch {
     "age",
     "nationality",
     "marketValue"
-  )(Function.unlift(PlayerSearch.unapply))
+  )(Function.unlift(FetchedPlayerSimple.unapply))
 
 }

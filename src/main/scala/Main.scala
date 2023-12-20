@@ -31,6 +31,8 @@ object Main extends IOApp {
       _           <- IO.println(confBuy)
       confSell    <- stateMemory.sellPlayer("marcin")(38253, 0.01)
       _           <- IO.println(confSell)
+      profile     <- transfermarktClient.fetchPlayerPrifileById(38253)
+      _           <- IO.println(profile)
 
       exitCode <- runGame(consolePrinter, playerService)
     } yield exitCode

@@ -4,15 +4,17 @@ import cats.Applicative
 import cats.effect._
 import cats.syntax.all._
 import config.AppConfig.TransfermarktClientConfig
-import httpClient.domain.{FetchedMarketValue, PlayerSearch, PlayerSearchResponse}
+import httpClient.domain.{FetchedMarketValue, FetchedPlayerProfile, FetchedPlayerSimple, PlayerSearchResponse}
 import io.circe
 import sttp.client3._
 import sttp.client3.circe.asJson
 import sttp.model.Uri
 
+//https://github.com/felipeall/transfermarkt-api
 trait TransfermarktClient[F[_]] {
-  def searchByName(playerName: String): F[Either[ResponseException[String, circe.Error], List[PlayerSearch]]]
-  def getMarketValueByPlayerId(id: Int): F[Either[ResponseException[String, circe.Error], FetchedMarketValue]]
+  def searchByName(playerName: String): F[Either[ResponseException[String, circe.Error], List[FetchedPlayerSimple]]]
+  def fetchMarketValueByPlayerId(id: Int): F[Either[ResponseException[String, circe.Error], FetchedMarketValue]]
+  def fetchPlayerProfileById(id: Int): F[Either[ResponseException[String, circe.Error], FetchedPlayerProfile]]
 }
 
 object TransfermarktClient {
@@ -21,7 +23,7 @@ object TransfermarktClient {
     val serviceUri: Uri = config.uri
     val backend: SttpBackend[Identity, Any] = HttpClientSyncBackend()
 
-    override def searchByName(playerName: String): F[Either[ResponseException[String, circe.Error], List[PlayerSearch]]] =
+    override def searchByName(playerName: String): F[Either[ResponseException[String, circe.Error], List[FetchedPlayerSimple]]] =
       for {
         res <- backend
                  .send {
@@ -31,12 +33,12 @@ object TransfermarktClient {
                  }
                  .map(_.body)
                  .map(_.result) match {
-                 case Left(error)           => Applicative[F].pure(Left(error))
-                 case Right(fetchedPlayers) => Applicative[F].pure(Right(fetchedPlayers))
+                 case Left(error)                 => Applicative[F].pure(Left(error))
+                 case Right(fetchedPlayersSimple) => Applicative[F].pure(Right(fetchedPlayersSimple))
                }
       } yield res
 
-    override def getMarketValueByPlayerId(id: Int): F[Either[ResponseException[String, circe.Error], FetchedMarketValue]] = for {
+    override def fetchMarketValueByPlayerId(id: Int): F[Either[ResponseException[String, circe.Error], FetchedMarketValue]] = for {
       res <- backend
                .send {
                  basicRequest
@@ -46,6 +48,22 @@ object TransfermarktClient {
                .map(_.body) match {
                case Left(error)        => Applicative[F].pure(Left(error))
                case Right(marketValue) => Applicative[F].pure(Right(marketValue))
+             }
+    } yield res
+
+    override def fetchPlayerProfileById(id: Int): F[Either[
+      ResponseException[String, circe.Error],
+      FetchedPlayerProfile
+    ]] = for {
+      res <- backend
+               .send {
+                 basicRequest
+                   .get(serviceUri.addPath("players", id.toString, "profile"))
+                   .response(asJson[FetchedPlayerProfile])
+               }
+               .map(_.body) match {
+               case Left(error)                 => Applicative[F].pure(Left(error))
+               case Right(fetchedPlayerProfile) => Applicative[F].pure(Right(fetchedPlayerProfile))
              }
     } yield res
 

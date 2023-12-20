@@ -7,8 +7,7 @@ import errors.GameException.PlayerSearchByNameException
 import errors.GameException.ValueParseException
 import errors._
 import httpClient.TransfermarktClient
-import httpClient.domain.FetchedMarketValue
-import httpClient.domain.PlayerSearch
+import httpClient.domain.{FetchedMarketValue, FetchedPlayerSimple}
 import services.domain.MarketValue
 import services.domain.PlayerSimple
 
@@ -24,7 +23,7 @@ object PlayerService {
 
   def impl[F[_]: Sync](client: TransfermarktClient[F]) = new PlayerService[F] {
 
-    val toPlayerSimple: PlayerSearch => PlayerSimple = { case PlayerSearch(id, name, position, club, age, nationality, marketValue) =>
+    val toPlayerSimple: FetchedPlayerSimple => PlayerSimple = { case FetchedPlayerSimple(id, name, position, club, age, nationality, marketValue) =>
       PlayerSimple(
         id = id.getOrElse(0),
         name = name.getOrElse("-"),
@@ -74,7 +73,7 @@ object PlayerService {
         })
 
     override def getMarketValueByPlayerId(id: Int): F[Either[GameException, MarketValue]] =
-      client.getMarketValueByPlayerId(id).map(_.map(toMarketValue)).map {
+      client.fetchMarketValueByPlayerId(id).map(_.map(toMarketValue)).map {
         case Right(marketValue) => Right(marketValue)
         case Left(err)          => Left(PlayerMarketValueNotFoundException(id, err.getMessage))
       }

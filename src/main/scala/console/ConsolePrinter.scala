@@ -7,7 +7,7 @@ import cats.effect.std.Console
 import cats.syntax.all._
 import errors.GameException
 import httpClient.TransfermarktClient
-import httpClient.domain.PlayerSearch
+import httpClient.domain.FetchedPlayerSimple
 import services.PlayerService
 import services.domain.PlayerSimple
 
