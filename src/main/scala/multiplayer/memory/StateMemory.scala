@@ -7,7 +7,7 @@ import cats.implicits.toFunctorOps
 import errors.GameException._
 import errors._
 import multiplayer.domain.{TransactionConfirmation, TransactionType, UserGameState}
-import services.PlayerService
+import services.{PlayerService}
 
 trait StateMemory[F[_]] {
 

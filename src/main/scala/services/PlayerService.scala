@@ -2,67 +2,94 @@ package services
 
 import cats.effect._
 import cats.implicits.toFunctorOps
-import errors.GameException.PlayerMarketValueNotFoundException
-import errors.GameException.PlayerSearchByNameException
-import errors.GameException.ValueParseException
+import errors.GameException.{PlayerMarketValueNotFoundException, PlayerProfileNotFoundException, PlayerSearchByNameException, ValueParseException}
 import errors._
 import httpClient.TransfermarktClient
-import httpClient.domain.{FetchedMarketValue, FetchedPlayerSimple}
+import httpClient.domain.FetchedMarketValue
+import httpClient.domain.FetchedPlayerPosition
+import httpClient.domain.FetchedPlayerProfile
+import httpClient.domain.FetchedPlayerSimple
 import services.domain.MarketValue
+import services.domain.PlayerPosition
+import services.domain.PlayerProfile
 import services.domain.PlayerSimple
-
-import java.time.Instant
-import scala.util.Try
+import utils.Parser.parseInstant
+import utils.Parser.parseMarketValueToBigDecimal
 
 trait PlayerService[F[_]] {
   def searchByName(playerName: String): F[Either[GameException, List[PlayerSimple]]]
   def getMarketValueByPlayerId(id: Int): F[Either[GameException, MarketValue]]
+  def getPlayerProfileById(id: Int): F[Either[GameException, PlayerProfile]]
 }
 
 object PlayerService {
 
   def impl[F[_]: Sync](client: TransfermarktClient[F]) = new PlayerService[F] {
 
-    val toPlayerSimple: FetchedPlayerSimple => PlayerSimple = { case FetchedPlayerSimple(id, name, position, club, age, nationality, marketValue) =>
-      PlayerSimple(
-        id = id.getOrElse(0),
-        name = name.getOrElse("-"),
-        position = position.getOrElse("-"),
-        club = club.flatMap(_.name).getOrElse("-"),
-        age = age.getOrElse("-"),
-        nationality = nationality.getOrElse("-"),
-        marketValue = parseMarketValue(marketValue) match {
-          case Left(err)    => println(err); BigDecimal(0)
-          case Right(value) => value
-        }
-      )
+    val toPlayerSimple: FetchedPlayerSimple => PlayerSimple = {
+      case FetchedPlayerSimple(id, name, position, club, age, nationality, marketValue) =>
+        PlayerSimple(
+          id = id.getOrElse(0),
+          name = name.getOrElse("-"),
+          position = position.getOrElse("-"),
+          club = club.flatMap(_.name).getOrElse("-"),
+          age = age.getOrElse("-"),
+          nationality = nationality.getOrElse("-"),
+          marketValue = parseMarketValueToBigDecimal(marketValue) match {
+            case Left(err)    => println(err); BigDecimal(0)
+            case Right(value) => value
+          }
+        )
     }
 
     val toMarketValue: FetchedMarketValue => MarketValue = { case FetchedMarketValue(marketValue, updatedAt) =>
       MarketValue(
-        marketValue = parseMarketValue(marketValue) match {
+        marketValue = parseMarketValueToBigDecimal(marketValue) match {
           case Left(err)    => println(err); BigDecimal(0)
           case Right(value) => value
         },
-        updatedAt = updatedAt
-          .map(_.take(20).concat("00Z"))
-          .map(Instant.parse)
-          .getOrElse(Instant.MIN)
+        updatedAt = parseInstant(updatedAt)
       )
     }
 
-    // 2023-12-19T11:30:36.754874
-    // 2007-12-03T10:15:30.00Z.
+    val toPlayerProfile: FetchedPlayerProfile => PlayerProfile = {
+      case FetchedPlayerProfile(
+            id,
+            url,
+            name,
+            description,
+            imageURL,
+            dateOfBirth,
+            citizenship,
+            isRetired,
+            position,
+            club,
+            marketValue,
+            updatedAt
+          ) =>
+        PlayerProfile(
+          id = id.flatMap(_.toIntOption).getOrElse(0),
+          url = url.getOrElse("-"),
+          name = name.getOrElse("-"),
+          description = description.getOrElse("-"),
+          imageURL = imageURL.getOrElse("-"),
+          dateOfBirth = dateOfBirth.getOrElse("-"),
+          citizenship = citizenship.getOrElse(Nil).toList,
+          isRetired = isRetired.getOrElse(true),
+          position = position
+            .map { case FetchedPlayerPosition(main, others) =>
+              PlayerPosition(main.getOrElse("-"), others.getOrElse(Nil))
+            }
+            .getOrElse(PlayerPosition.empty),
+          club = club.flatMap(_.name).getOrElse("-"),
+          marketValue = parseMarketValueToBigDecimal(marketValue) match {
+            case Left(err)    => println(err); BigDecimal(0)
+            case Right(value) => value
+          },
+          updatedAt = parseInstant(updatedAt)
+        )
 
-    private def parseMarketValue(value: Option[String]): Either[ValueParseException, BigDecimal] = Try {
-      val str = value.get
-      val strWithNoEuro = str.drop(1)
-      strWithNoEuro.toList match {
-        case value :+ 'k' => BigDecimal(value.mkString.toDouble * 1_000)
-        case value :+ 'm' => BigDecimal(value.mkString.toDouble * 1_000_000)
-        case _            => BigDecimal(0)
-      }
-    }.toEither.left.map((err: Throwable) => ValueParseException(value, err))
+    }
 
     override def searchByName(playerName: String): F[Either[GameException, List[PlayerSimple]]] =
       client
@@ -76,6 +103,13 @@ object PlayerService {
       client.fetchMarketValueByPlayerId(id).map(_.map(toMarketValue)).map {
         case Right(marketValue) => Right(marketValue)
         case Left(err)          => Left(PlayerMarketValueNotFoundException(id, err.getMessage))
+      }
+
+    override def getPlayerProfileById(id: Int): F[Either[GameException, PlayerProfile]] =
+      client.fetchPlayerProfileById(id).map(_.map(toPlayerProfile)).map {
+        case Right(playerProfile) => Right(playerProfile)
+        case Left(err)            => Left(PlayerProfileNotFoundException(id, err.getMessage))
+
       }
 
   }

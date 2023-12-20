@@ -5,9 +5,9 @@ final case class PlayerSimple(
   name: String,
   position: String,
   club: String,
-  age: String, //todo: to Int
+  age: String,
   nationality: String,
-  marketValue: BigDecimal //todo: to Big Decimal with currency
+  marketValue: BigDecimal
 )
 
 object PlayerSimple {

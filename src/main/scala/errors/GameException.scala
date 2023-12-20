@@ -5,6 +5,8 @@ sealed abstract class GameException(message: String) extends Throwable(message)
 object GameException {
   final case class IncorrectConsoleInputException(input: String) extends GameException(s"Incorrect input: $input.")
 
+  final case class IncorrectPlayerIdException(input: String) extends GameException(s"Incorrect playerId input (must be a number): $input.")
+
   final case class UserNotFoundException(userName: String) extends GameException(s"UserState for user $userName not found.")
 
   final case class NotEnoughMoneyException(available: BigDecimal, required: BigDecimal)
@@ -21,4 +23,7 @@ object GameException {
 
   final case class PlayerSearchByNameException(playerName: String, err: String)
     extends GameException(s"Could not find player by name [$playerName]. The reason is: $err")
+
+  final case class  PlayerProfileNotFoundException(playerId: Int, err: String)
+    extends GameException(s"Player profile for player with id [$playerId] not found. The reason is: $err")
 }

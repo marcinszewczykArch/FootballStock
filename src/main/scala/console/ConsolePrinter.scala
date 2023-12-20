@@ -1,18 +1,13 @@
 package console
 
-import cats.effect.IO
-import cats.Applicative
-import cats.Monad
+import cats.{Applicative, Monad}
 import cats.effect.std.Console
 import cats.syntax.all._
 import errors.GameException
-import httpClient.TransfermarktClient
-import httpClient.domain.FetchedPlayerSimple
 import services.PlayerService
-import services.domain.PlayerSimple
+import services.domain.{MarketValue, PlayerProfile, PlayerSimple}
 
 import scala.io.AnsiColor._
-import scala.util.Either
 
 trait ConsolePrinter[F[_]] {
   def readMessage[F[_]: Console: Monad]: F[InputMessage]
@@ -36,12 +31,22 @@ object ConsolePrinter {
 
     def gameLoop[F[_]: Console: Monad](playerService: PlayerService[F])(message: InputMessage): F[Unit] =
       message match {
-        case SearchPlayerByName(input) =>
+        case SearchPlayerByName(input)   =>
           for {
             players <- playerService.searchByName(input)
             _       <- printPlayerSearchResult[F](players)
           } yield ()
-        case Error(msg)          => printErrorMessage[F](msg) *> printInstruction[F]
+        case GetPlayerProfileById(input) =>
+          for {
+            playerProfile <- playerService.getPlayerProfileById(input)
+            _             <- printPlayerProfile[F](playerProfile)
+          } yield ()
+        case GetPlayerValueById(input)   =>
+          for {
+            playerValue <- playerService.getMarketValueByPlayerId(input)
+            _           <- printPlayerValue[F](playerValue)
+          } yield ()
+        case Error(msg)                  => printErrorMessage[F](msg) *> printInstruction[F]
       }
 
     def printStartMessage[F[_]: Applicative]: F[Unit] =
@@ -69,6 +74,30 @@ object ConsolePrinter {
         }
     }
 
+  private def printPlayerProfile[F[_]: Applicative](maybePlayerProfile: Either[GameException, PlayerProfile]): F[Unit] =
+    maybePlayerProfile match {
+      case Left(err)            => Applicative[F].pure(println(s"Player profile not found. Reason: $err"))
+      case Right(playerProfile) =>
+        Applicative[F].pure {
+          import utils.Parser.CaseClassToString
+          playerProfile.toStringWithFields.foreach { case (param, value) =>
+            println(param + ": " + value)
+          }
+        }
+    }
+
+  private def printPlayerValue[F[_]: Applicative](maybePlayerValue: Either[GameException, MarketValue]): F[Unit] =
+    maybePlayerValue match {
+      case Left(err)          => Applicative[F].pure(println(s"Player value not found. Reason: $err"))
+      case Right(playerValue) =>
+        Applicative[F].pure {
+          import utils.Parser.CaseClassToString
+          playerValue.toStringWithFields.foreach { case (param, value) =>
+            println(param + ": " + value)
+          }
+        }
+    }
+
   private def readUserInputFromConsole[F[_]: Console: Monad]: F[String] = Console[F].readLine
 
   private def printInstruction[F[_]: Applicative] =
@@ -77,7 +106,9 @@ object ConsolePrinter {
         s"""
         |${GREEN}
         |Type:
-        |"/search {player name}" - to search
+        |"/search {player name}" - to search player
+        |"/player {player id}" - to get player profile
+        |"/value {player id}" - to get player value
         |${RESET}
         |""".stripMargin
       )
