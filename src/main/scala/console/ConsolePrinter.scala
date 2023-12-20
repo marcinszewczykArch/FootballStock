@@ -4,6 +4,7 @@ import cats.{Applicative, Monad}
 import cats.effect.std.Console
 import cats.syntax.all._
 import errors.GameException
+import multiplayer.memory.StateMemory
 import services.PlayerService
 import services.domain.{MarketValue, PlayerProfile, PlayerSimple}
 
@@ -11,7 +12,7 @@ import scala.io.AnsiColor._
 
 trait ConsolePrinter[F[_]] {
   def readMessage[F[_]: Console: Monad]: F[InputMessage]
-  def gameLoop[F[_]: Console: Monad](playerService: PlayerService[F])(message: InputMessage): F[Unit]
+  def gameLoop[F[_]: Console: Monad](playerService: PlayerService[F], stateMemory: StateMemory[F])(message: InputMessage): F[Unit]
   def printStartMessage[F[_]: Applicative]: F[Unit]
 }
 
@@ -29,7 +30,7 @@ object ConsolePrinter {
       case Left(exception: GameException)    => Error(exception.getMessage)
     }
 
-    def gameLoop[F[_]: Console: Monad](playerService: PlayerService[F])(message: InputMessage): F[Unit] =
+    def gameLoop[F[_]: Console: Monad](playerService: PlayerService[F], stateMemory: StateMemory[F])(message: InputMessage): F[Unit] =
       message match {
         case SearchPlayerByName(input)   =>
           for {
@@ -46,7 +47,24 @@ object ConsolePrinter {
             playerValue <- playerService.getMarketValueByPlayerId(input)
             _           <- printPlayerValue[F](playerValue)
           } yield ()
-        case Error(msg)                  => printErrorMessage[F](msg) *> printInstruction[F]
+
+        case GetUserState(user)                 =>
+          for {
+            userState <- stateMemory.getUserState(user)
+            _         <- Applicative[F].pure(println(userState))
+          } yield ()
+        case BuyShares(user, playerId, shares)  =>
+          for {
+            confirmation <- stateMemory.buyPlayer(user)(playerId, shares)
+            _            <- Applicative[F].pure(println(confirmation))
+          } yield ()
+        case SellShares(user, playerId, shares) =>
+          for {
+            confirmation <- stateMemory.sellPlayer(user)(playerId, shares)
+            _            <- Applicative[F].pure(println(confirmation))
+          } yield ()
+
+        case Error(msg) => printErrorMessage[F](msg) *> printInstruction[F]
       }
 
     def printStartMessage[F[_]: Applicative]: F[Unit] =

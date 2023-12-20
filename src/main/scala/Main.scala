@@ -36,17 +36,18 @@ object Main extends IOApp {
       marketValue <- playerService.getMarketValueByPlayerId(38253)
       _           <- IO.println(marketValue)
 
-      exitCode <- runGame(consolePrinter, playerService)
+      exitCode <- runGame(consolePrinter, playerService, stateMemory)
     } yield exitCode
 
   private def runGame(
     consolePrinter: ConsolePrinter[IO],
-    playerService: PlayerService[IO]
+    playerService: PlayerService[IO],
+    stateMemory: StateMemory[IO]
   ): IO[ExitCode] =
     fs2
       .Stream
       .repeatEval(consolePrinter.readMessage[IO])
-      .evalMap(consolePrinter.gameLoop(playerService))
+      .evalMap(consolePrinter.gameLoop(playerService, stateMemory))
       .compile
       .drain
       .as(ExitCode.Success)

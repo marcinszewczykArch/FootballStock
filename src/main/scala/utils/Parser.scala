@@ -27,9 +27,9 @@ object Parser {
 
   implicit class CaseClassToString(c: AnyRef) {
 
-    def toStringWithFields: Map[String, Any] = (Map[String, Any]() /: c.getClass.getDeclaredFields) { (a, f) =>
-      f.setAccessible(true)
-      a + (f.getName -> f.get(c))
+    def toStringWithFields: Map[String, Any] = c.getClass.getDeclaredFields.foldLeft(Map[String, Any]()) { (map, field) =>
+      field.setAccessible(true)
+      map + (field.getName -> field.get(c))
     }
 
   }

@@ -5,7 +5,7 @@ sealed abstract class GameException(message: String) extends Throwable(message)
 object GameException {
   final case class IncorrectConsoleInputException(input: String) extends GameException(s"Incorrect input: $input.")
 
-  final case class IncorrectPlayerIdException(input: String) extends GameException(s"Incorrect playerId input (must be a number): $input.")
+  final case class IncorrectParsingException(input: String) extends GameException(s"Incorrect parsing input (must be a number): $input.")
 
   final case class UserNotFoundException(userName: String) extends GameException(s"UserState for user $userName not found.")
 
