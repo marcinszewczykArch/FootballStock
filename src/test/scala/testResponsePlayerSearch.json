@@ -1,0 +1,128 @@
+{
+  "query": "lewandowski",
+  "pageNumber": 1,
+  "lastPageNumber": 7,
+  "results": [
+    {
+      "id": "38253",
+      "name": "Robert Lewandowski",
+      "position": "CF",
+      "club": {
+        "id": "131",
+        "name": "FC Barcelona"
+      },
+      "age": "35",
+      "nationality": "Robert Lewandowski",
+      "marketValue": "€30.00m"
+    },
+    {
+      "id": "14934",
+      "name": "Mariusz Lewandowski",
+      "position": "DM",
+      "club": {
+        "id": "123",
+        "name": "Retired"
+      },
+      "age": "44",
+      "nationality": "FC Barcelona",
+      "marketValue": "-"
+    },
+    {
+      "id": "69240",
+      "name": "Grzegorz Lewandowski",
+      "position": "DM",
+      "club": {
+        "id": "67147",
+        "name": "Olimpic Mieszko Warszkowo"
+      },
+      "age": "54",
+      "nationality": "Poland",
+      "marketValue": "-"
+    },
+    {
+      "id": "173339",
+      "name": "Mateusz Lewandowski",
+      "position": "DM",
+      "club": {
+        "id": "123",
+        "name": "Retired"
+      },
+      "age": "30",
+      "nationality": "verified",
+      "marketValue": "-"
+    },
+    {
+      "id": "1151127",
+      "name": "Mieczyslaus Lewandowski",
+      "position": "midfield",
+      "club": {
+        "id": "4023",
+        "name": "---"
+      },
+      "age": "-",
+      "nationality": "Mariusz Lewandowski",
+      "marketValue": "-"
+    },
+    {
+      "id": "438351",
+      "name": "Mateusz Lewandowski",
+      "position": "CF",
+      "club": {
+        "id": "2118",
+        "name": "Wisla Plock"
+      },
+      "age": "24",
+      "nationality": "Retired",
+      "marketValue": "€100k"
+    },
+    {
+      "id": "69241",
+      "name": "Tomasz Lewandowski",
+      "position": "CM",
+      "club": {
+        "id": "123",
+        "name": "Retired"
+      },
+      "age": "44",
+      "nationality": "Poland",
+      "marketValue": "-"
+    },
+    {
+      "id": "351042",
+      "name": "Dariusz Lewandowski",
+      "position": "Defender",
+      "club": {
+        "id": "123",
+        "name": "Retired"
+      },
+      "age": "58",
+      "nationality": "Grzegorz Lewandowski",
+      "marketValue": "-"
+    },
+    {
+      "id": "1089132",
+      "name": "Jean Lewandowski",
+      "position": "Attack",
+      "club": {
+        "id": "4023",
+        "name": "---"
+      },
+      "age": "-",
+      "nationality": "Olimpic Mieszko Warszkowo",
+      "marketValue": "-"
+    },
+    {
+      "id": "573348",
+      "name": "Igor Lewandowski",
+      "position": "AM",
+      "club": {
+        "id": "59735",
+        "name": "Warta Gorzow Wielkopolski"
+      },
+      "age": "22",
+      "nationality": "Poland",
+      "marketValue": "-"
+    }
+  ],
+  "updatedAt": "2023-12-20T14:36:02.621072"
+}

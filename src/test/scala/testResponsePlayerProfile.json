@@ -1,0 +1,46 @@
+{
+  "id": "38253",
+  "url": "/robert-lewandowski/profil/spieler/38253",
+  "name": "Lewandowski",
+  "description": "Robert Lewandowski, 35, from Poland ➤ FC Barcelona, since 2022 ➤ Attack ➤ Market value: €30.00m ➤ * Aug 21, 1988 in Warszawa, Poland",
+  "imageURL": "https://img.a.transfermarkt.technology/portrait/header/38253-1701118759.jpg?lm=1",
+  "dateOfBirth": "Aug 21, 1988",
+  "placeOfBirth": {
+    "city": "Warszawa",
+    "country": "Poland"
+  },
+  "age": "35",
+  "height": "1,85m",
+  "citizenship": [
+    "Poland"
+  ],
+  "isRetired": false,
+  "position": {
+    "main": "Centre-Forward",
+    "other": [
+      "Second Striker"
+    ]
+  },
+  "foot": "right",
+  "shirtNumber": "#9",
+  "club": {
+    "id": "131",
+    "name": "Barcelona",
+    "joined": "Jul 19, 2022",
+    "contractExpires": "Jun 30, 2026",
+    "contractOption": "Option for a further year"
+  },
+  "marketValue": "€30.00m",
+  "agent": {
+    "name": "Gol International",
+    "url": "/gol-international/beraterfirma/berater/220"
+  },
+  "outfitter": "Nike",
+  "socialMedia": [
+    "http://twitter.com/lewy_official",
+    "http://www.facebook.com/rl9official",
+    "http://www.instagram.com/_rl9/",
+    "http://www.tiktok.com/@_rl9"
+  ],
+  "updatedAt": "2023-12-20T14:35:14.240939"
+}
