@@ -1,14 +1,13 @@
-import cats.effect.ExitCode
-import cats.effect.IO
-import cats.effect.IOApp
-import cats.effect.Ref
-import cats.effect.Resource
+import cats.effect.{ExitCode, IO, IOApp, Ref}
 import config.AppConfig
 import console.ConsolePrinter
 import httpClient.TransfermarktClient
-import multiplayer.domain.UserGameState
+import multiplayer.domain.{Shares, UserGameState}
 import multiplayer.memory.StateMemory
 import services.PlayerService
+import services.domain.PlayerId
+
+import java.time.Instant
 
 object Main extends IOApp {
 
@@ -24,16 +23,17 @@ object Main extends IOApp {
 
       //todo: for test only
       stateMemory <- IO.pure(StateMemory.impl[IO](ref, playerService))
-      _           <- ref.update(_ => Map("marcin" -> UserGameState(portfolio = Map(38253 -> 0.01))))
+      gameState = UserGameState(portfolio = Map(PlayerId(38253) -> List(Shares(5, BigDecimal(20_000_000), Instant.now))))
+      _           <- ref.update(_ => Map("marcin" -> gameState))
       userStats   <- stateMemory.getAllUsersStates()
       _           <- IO.println(userStats)
-      confBuy     <- stateMemory.buyPlayer("marcin")(38253, 0.01)
+      confBuy     <- stateMemory.buyPlayer("marcin")(PlayerId(38253), 2)
       _           <- IO.println(confBuy)
-      confSell    <- stateMemory.sellPlayer("marcin")(38253, 0.01)
+      confSell    <- stateMemory.sellPlayer("marcin")(PlayerId(38253), 3)
       _           <- IO.println(confSell)
-      profile     <- playerService.getPlayerProfileById(38253)
+      profile     <- playerService.getPlayerProfileById(PlayerId(38253))
       _           <- IO.println(profile)
-      marketValue <- playerService.getMarketValueByPlayerId(38253)
+      marketValue <- playerService.getMarketValueByPlayerId(PlayerId(38253))
       _           <- IO.println(marketValue)
 
       exitCode <- runGame(consolePrinter, playerService, stateMemory)

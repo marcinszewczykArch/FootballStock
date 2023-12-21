@@ -4,7 +4,7 @@ import java.time.Instant
 
 
 final case class PlayerProfile(
-  id: Int,
+  id: PlayerId,
   url: String,
   name: String,
   description: String,

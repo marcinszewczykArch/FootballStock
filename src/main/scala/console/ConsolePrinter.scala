@@ -6,7 +6,7 @@ import cats.syntax.all._
 import errors.GameException
 import multiplayer.memory.StateMemory
 import services.PlayerService
-import services.domain.{MarketValue, PlayerProfile, PlayerSimple}
+import services.domain.{MarketValue, PlayerId, PlayerProfile, PlayerSimple}
 
 import scala.io.AnsiColor._
 
@@ -37,14 +37,14 @@ object ConsolePrinter {
             players <- playerService.searchByName(input)
             _       <- printPlayerSearchResult[F](players)
           } yield ()
-        case GetPlayerProfileById(input) =>
+        case GetPlayerProfileById(id) =>
           for {
-            playerProfile <- playerService.getPlayerProfileById(input)
+            playerProfile <- playerService.getPlayerProfileById(PlayerId(id))
             _             <- printPlayerProfile[F](playerProfile)
           } yield ()
-        case GetPlayerValueById(input)   =>
+        case GetPlayerValueById(id)   =>
           for {
-            playerValue <- playerService.getMarketValueByPlayerId(input)
+            playerValue <- playerService.getMarketValueByPlayerId(PlayerId(id))
             _           <- printPlayerValue[F](playerValue)
           } yield ()
 
@@ -55,12 +55,12 @@ object ConsolePrinter {
           } yield ()
         case BuyShares(user, playerId, shares)  =>
           for {
-            confirmation <- stateMemory.buyPlayer(user)(playerId, shares)
+            confirmation <- stateMemory.buyPlayer(user)(PlayerId(playerId), shares)
             _            <- Applicative[F].pure(println(confirmation))
           } yield ()
         case SellShares(user, playerId, shares) =>
           for {
-            confirmation <- stateMemory.sellPlayer(user)(playerId, shares)
+            confirmation <- stateMemory.sellPlayer(user)(PlayerId(playerId), shares)
             _            <- Applicative[F].pure(println(confirmation))
           } yield ()
 

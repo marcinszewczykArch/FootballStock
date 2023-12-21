@@ -9,17 +9,14 @@ import httpClient.domain.FetchedMarketValue
 import httpClient.domain.FetchedPlayerPosition
 import httpClient.domain.FetchedPlayerProfile
 import httpClient.domain.FetchedPlayerSimple
-import services.domain.MarketValue
-import services.domain.PlayerPosition
-import services.domain.PlayerProfile
-import services.domain.PlayerSimple
+import services.domain.{MarketValue, PlayerId, PlayerPosition, PlayerProfile, PlayerSimple}
 import utils.Parser.parseInstant
 import utils.Parser.parseMarketValueToBigDecimal
 
 trait PlayerService[F[_]] {
   def searchByName(playerName: String): F[Either[GameException, List[PlayerSimple]]]
-  def getMarketValueByPlayerId(id: Int): F[Either[GameException, MarketValue]]
-  def getPlayerProfileById(id: Int): F[Either[GameException, PlayerProfile]]
+  def getMarketValueByPlayerId(id: PlayerId): F[Either[GameException, MarketValue]]
+  def getPlayerProfileById(id: PlayerId): F[Either[GameException, PlayerProfile]]
 }
 
 object PlayerService {
@@ -29,7 +26,7 @@ object PlayerService {
     val toPlayerSimple: FetchedPlayerSimple => PlayerSimple = {
       case FetchedPlayerSimple(id, name, position, club, age, nationality, marketValue) =>
         PlayerSimple(
-          id = id.getOrElse(0),
+          id = PlayerId(id.getOrElse(0)),
           name = name.getOrElse("-"),
           position = position.getOrElse("-"),
           club = club.flatMap(_.name).getOrElse("-"),
@@ -44,7 +41,7 @@ object PlayerService {
 
     val toMarketValue: FetchedMarketValue => MarketValue = { case FetchedMarketValue(marketValue, updatedAt) =>
       MarketValue(
-        marketValue = parseMarketValueToBigDecimal(marketValue) match {
+        value = parseMarketValueToBigDecimal(marketValue) match {
           case Left(err)    => println(err); BigDecimal(0)
           case Right(value) => value
         },
@@ -68,7 +65,7 @@ object PlayerService {
             updatedAt
           ) =>
         PlayerProfile(
-          id = id.flatMap(_.toIntOption).getOrElse(0),
+          id = PlayerId(id.flatMap(_.toIntOption).getOrElse(0)),
           url = url.getOrElse("-"),
           name = name.getOrElse("-"),
           description = description.getOrElse("-"),
@@ -99,16 +96,16 @@ object PlayerService {
           case Left(err)          => Left(PlayerSearchByNameException(playerName, err.getMessage))
         })
 
-    override def getMarketValueByPlayerId(id: Int): F[Either[GameException, MarketValue]] =
+    override def getMarketValueByPlayerId(id: PlayerId): F[Either[GameException, MarketValue]] =
       client.fetchMarketValueByPlayerId(id).map(_.map(toMarketValue)).map {
         case Right(marketValue) => Right(marketValue)
-        case Left(err)          => Left(PlayerMarketValueNotFoundException(id, err.getMessage))
+        case Left(err)          => Left(PlayerMarketValueNotFoundException(id.value, err.getMessage))
       }
 
-    override def getPlayerProfileById(id: Int): F[Either[GameException, PlayerProfile]] =
+    override def getPlayerProfileById(id: PlayerId): F[Either[GameException, PlayerProfile]] =
       client.fetchPlayerProfileById(id).map(_.map(toPlayerProfile)).map {
         case Right(playerProfile) => Right(playerProfile)
-        case Left(err)            => Left(PlayerProfileNotFoundException(id, err.getMessage))
+        case Left(err)            => Left(PlayerProfileNotFoundException(id.value, err.getMessage))
 
       }
 

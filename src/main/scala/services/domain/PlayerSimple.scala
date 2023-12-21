@@ -1,7 +1,7 @@
 package services.domain
 
 final case class PlayerSimple(
-  id: Int,
+  id: PlayerId,
   name: String,
   position: String,
   club: String,

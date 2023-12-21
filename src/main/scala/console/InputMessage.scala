@@ -12,8 +12,8 @@ case class GetPlayerProfileById(playerId: Int) extends InputMessage
 case class GetPlayerValueById(playerId: Int) extends InputMessage
 
 case class GetUserState(user: String) extends InputMessage
-case class BuyShares(user: String, playerId: Int, shares: Double) extends InputMessage
-case class SellShares(user: String, playerId: Int, shares: Double) extends InputMessage
+case class BuyShares(user: String, playerId: Int, shares: Int) extends InputMessage
+case class SellShares(user: String, playerId: Int, shares: Int) extends InputMessage
 
 case class Error(message: String) extends InputMessage
 
@@ -30,14 +30,14 @@ object InputMessage {
         case ("/state", user, _, _)            => Right(GetUserState(user))
         case ("/buy", user, playerId, shares)  =>
           (for {
-            playerIdInt  <- playerId.toIntOption
-            sharesDouble <- shares.toDoubleOption
-          } yield BuyShares(user, playerIdInt, sharesDouble)).toRight(IncorrectParsingException(playerId + " / " + shares))
+            playerIdInt <- playerId.toIntOption
+            sharesInt   <- shares.toIntOption
+          } yield BuyShares(user, playerIdInt, sharesInt)).toRight(IncorrectParsingException(playerId + " / " + shares))
         case ("/sell", user, playerId, shares) =>
           (for {
-            playerIdInt  <- playerId.toIntOption
-            sharesDouble <- shares.toDoubleOption
-          } yield SellShares(user, playerIdInt, sharesDouble)).toRight(IncorrectParsingException(playerId + " / " + shares))
+            playerIdInt <- playerId.toIntOption
+            sharesInt   <- shares.toIntOption
+          } yield SellShares(user, playerIdInt, sharesInt)).toRight(IncorrectParsingException(playerId + " / " + shares))
 
         case _ => Left(IncorrectConsoleInputException(inputText))
       }
