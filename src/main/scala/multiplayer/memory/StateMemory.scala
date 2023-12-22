@@ -6,8 +6,8 @@ import cats.effect._
 import cats.implicits.toFunctorOps
 import errors.GameException._
 import errors._
-import multiplayer.domain.{Shares, UserGameState}
-import services.PlayerService
+import multiplayer.domain.Shares
+import multiplayer.domain.UserGameState
 import services.domain.MarketValue
 
 import java.time.Instant
@@ -17,6 +17,7 @@ trait StateMemory[F[_]] {
   def getUserState(user: String): F[Either[GameException, UserGameState]]
   def getAllUsersStates(): F[List[UserGameState]]
   def updateUserState(user: String)(newUserState: UserGameState): F[Either[GameException, Unit]]
+  def createUser(user: String): F[Either[GameException, Unit]]
 
 }
 
@@ -72,6 +73,19 @@ object StateMemory {
           case false => Left(SharesNumberException(sharesInPortfolio.sum - sharesToSell))
         }
       }
+
+      override def createUser(user: String): F[Either[GameException, Unit]] = (for {
+        _ <- EitherT(validateUserNotExists(user))
+        _ <- EitherT.right[GameException](ref.update(_ + (user -> UserGameState.empty)))
+      } yield ()).value
+
+      private def validateUserNotExists(user: String): F[Either[GameException, Unit]] = for {
+        map <- ref.get
+        result = map.contains(user) match {
+                   case true  => Left(UserAlreadyExistsException(user))
+                   case false => Right(())
+                 }
+      } yield result
 
     }
 

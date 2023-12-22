@@ -5,14 +5,10 @@ import cats.data.EitherT
 import cats.effect._
 import errors.GameException._
 import errors._
-import multiplayer.domain.Shares
-import multiplayer.domain.TransactionConfirmation
-import multiplayer.domain.TransactionType
-import multiplayer.domain.UserGameState
+import multiplayer.domain.{Shares, TransactionConfirmation, TransactionType, UserGameState}
 import multiplayer.memory.StateMemory
 import services.PlayerService
-import services.domain.MarketValue
-import services.domain.PlayerId
+import services.domain.{MarketValue, PlayerId}
 
 import java.time.Instant
 
@@ -22,6 +18,7 @@ trait GameEngine[F[_]] {
   def sellPlayer(user: String)(playerId: PlayerId, sharesToSell: Int): F[Either[GameException, TransactionConfirmation]]
   def getUserState(user: String): F[Either[GameException, UserGameState]]
   def getAllUsersStates(): F[List[UserGameState]]
+  def createUser(user: String): F[Either[GameException, Unit]]
 
 }
 
@@ -105,6 +102,11 @@ object GameEngine {
       ): F[Either[GameException, UserGameState]] = memory.getUserState(user)
 
       override def getAllUsersStates(): F[List[UserGameState]] = memory.getAllUsersStates()
+
+      override def createUser(
+        user: String
+      ): F[Either[GameException, Unit]] = memory.createUser(user)
+
     }
 
 }

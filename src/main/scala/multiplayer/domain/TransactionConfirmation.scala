@@ -5,7 +5,7 @@ import services.domain.PlayerId
 case class TransactionConfirmation(
   transactionType: TransactionType,
   playerId: PlayerId, //todo: to PlayerId
-  shares: Double,
+  shares: Int,
   value: BigDecimal,
   newUserState: UserGameState
 )

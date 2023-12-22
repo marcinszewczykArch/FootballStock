@@ -24,6 +24,9 @@ object GameException {
   final case class PlayerSearchByNameException(playerName: String, err: String)
     extends GameException(s"Could not find player by name [$playerName]. The reason is: $err")
 
-  final case class  PlayerProfileNotFoundException(playerId: Int, err: String)
+  final case class PlayerProfileNotFoundException(playerId: Int, err: String)
     extends GameException(s"Player profile for player with id [$playerId] not found. The reason is: $err")
+
+  final case class UserAlreadyExistsException(userName: String)
+    extends GameException(s"User with name $userName already exists.")
 }
