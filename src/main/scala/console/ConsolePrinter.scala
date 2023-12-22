@@ -5,6 +5,7 @@ import cats.Monad
 import cats.effect.std.Console
 import cats.syntax.all._
 import errors.GameException
+import multiplayer.logic.GameEngine
 import multiplayer.memory.StateMemory
 import services.PlayerService
 import services.domain.PlayerId
@@ -14,7 +15,7 @@ import scala.io.AnsiColor._
 
 trait ConsolePrinter[F[_]] {
   def readMessage[F[_]: Console: Monad]: F[InputMessage]
-  def gameLoop[F[_]: Console: Monad](playerService: PlayerService[F], stateMemory: StateMemory[F])(message: InputMessage): F[Unit]
+  def gameLoop[F[_]: Console: Monad](playerService: PlayerService[F], gameLogic: GameEngine[F])(message: InputMessage): F[Unit]
   def printStartMessage[F[_]: Applicative]: F[Unit]
 }
 
@@ -32,7 +33,7 @@ object ConsolePrinter {
       case Left(exception: GameException)    => Error(exception.getMessage)
     }
 
-    def gameLoop[F[_]: Console: Monad](playerService: PlayerService[F], stateMemory: StateMemory[F])(message: InputMessage): F[Unit] =
+    def gameLoop[F[_]: Console: Monad](playerService: PlayerService[F], gameLogic: GameEngine[F])(message: InputMessage): F[Unit] =
       message match {
         case SearchPlayerByName(input)          =>
           for {
@@ -51,17 +52,17 @@ object ConsolePrinter {
           } yield ()
         case GetUserState(user)                 =>
           for {
-            userState <- stateMemory.getUserState(user)
+            userState <- gameLogic.getUserState(user)
             _         <- prettyPrintOr[F](userState)("User game state not found")
           } yield ()
         case BuyShares(user, playerId, shares)  =>
           for {
-            confirmation <- stateMemory.buyPlayer(user)(PlayerId(playerId), shares)
+            confirmation <- gameLogic.buyPlayer(user)(PlayerId(playerId), shares)
             _            <- prettyPrintOr[F](confirmation)("Transaction error")
           } yield ()
         case SellShares(user, playerId, shares) =>
           for {
-            confirmation <- stateMemory.sellPlayer(user)(PlayerId(playerId), shares)
+            confirmation <- gameLogic.sellPlayer(user)(PlayerId(playerId), shares)
             _            <- prettyPrintOr[F](confirmation)("Transaction error")
           } yield ()
 
