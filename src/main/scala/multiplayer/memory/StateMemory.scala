@@ -11,7 +11,6 @@ import services.PlayerService
 import services.domain.{MarketValue, PlayerId}
 
 import java.time.Instant
-import scala.annotation.tailrec
 
 trait StateMemory[F[_]] {
 
@@ -40,8 +39,8 @@ object StateMemory {
       ): F[Either[GameException, TransactionConfirmation]] = (for {
         userState         <- EitherT(getUserState(user))
         playerMarketValue <- EitherT(playerService.getMarketValueByPlayerId(playerId))
-        newShares         <- EitherT(calculateNewShares(userState.portfolio.get(playerId), sharesToBuy, playerMarketValue, TransactionType.Buy))
-        transactionValue = playerMarketValue.value * sharesToBuy
+        newShares         <- EitherT(calculateSharesAfterBuy(userState.portfolio.get(playerId), sharesToBuy, playerMarketValue))
+        transactionValue = playerMarketValue.value * sharesToBuy / 100
         _                 <- EitherT(validateEnoughMoney(userState.money, transactionValue))
         newUserState = UserGameState(
                          startTimestamp = userState.startTimestamp,
@@ -55,8 +54,8 @@ object StateMemory {
         (for {
           userState         <- EitherT(getUserState(user))
           playerMarketValue <- EitherT(playerService.getMarketValueByPlayerId(playerId))
-          newShares         <- EitherT(calculateNewShares(userState.portfolio.get(playerId), sharesToSell, playerMarketValue, TransactionType.Sell))
-          transactionValue = playerMarketValue.value * sharesToSell
+          newShares         <- EitherT(calculateSharesAfterSell(userState.portfolio.get(playerId), sharesToSell))
+          transactionValue = playerMarketValue.value * sharesToSell / 100
           newUserState = UserGameState(
                            startTimestamp = userState.startTimestamp,
                            portfolio = newShares match {
@@ -87,36 +86,25 @@ object StateMemory {
           }
         )
 
-      private def calculateNewShares(
+      private def calculateSharesAfterBuy(
         sharesInPortfolio: Option[List[Shares]],
-        transactionSharesNumber: Int,
-        currentPlayerMarketValue: MarketValue,
-        transactionType: TransactionType
+        sharesToBuy: Int,
+        currentPlayerMarketValue: MarketValue
       ): F[Either[GameException, List[Shares]]] = Applicative[F].pure {
-        val sharesAfterTransaction = transactionType match {
-          case TransactionType.Sell => sharesInPortfolio.getOrElse(Nil).map(_.number).sum - transactionSharesNumber
-          case TransactionType.Buy  => sharesInPortfolio.getOrElse(Nil).map(_.number).sum + transactionSharesNumber
-        }
-
-        sharesAfterTransaction > 100 || sharesAfterTransaction < 0 match {
-          case false =>
-            Right(transactionType match {
-              case TransactionType.Buy  =>
-                sharesInPortfolio.getOrElse(Nil) :+ Shares(transactionSharesNumber, currentPlayerMarketValue.value, Instant.now)
-              case TransactionType.Sell => minus(sharesInPortfolio.getOrElse(Nil), transactionSharesNumber)
-            })
-          case true  => Left(SharesNumberException(sharesAfterTransaction))
+        sharesInPortfolio.sum + sharesToBuy <= 100 match {
+          case true  => Right(sharesInPortfolio |+| Shares(sharesToBuy, currentPlayerMarketValue.value, Instant.now))
+          case false => Left(SharesNumberException(sharesInPortfolio.sum + sharesToBuy))
         }
       }
 
-      @tailrec
-      private def minus(currentShares: List[Shares], sharesToMinus: Int): List[Shares] = currentShares match {
-        case Nil            => Nil
-        case ::(head, tail) =>
-          head.number - sharesToMinus > 0 match {
-            case true  => Shares(head.number - sharesToMinus, head.buyPrice, head.buyTimestamp) +: tail
-            case false => minus(tail, sharesToMinus - head.number)
-          }
+      private def calculateSharesAfterSell(
+        sharesInPortfolio: Option[List[Shares]],
+        sharesToSell: Int
+      ): F[Either[GameException, List[Shares]]] = Applicative[F].pure {
+        sharesInPortfolio.sum - sharesToSell >= 0 match {
+          case true  => Right(sharesInPortfolio |-| sharesToSell)
+          case false => Left(SharesNumberException(sharesInPortfolio.sum - sharesToSell))
+        }
       }
 
     }

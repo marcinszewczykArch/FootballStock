@@ -33,7 +33,7 @@ object PlayerService {
           age = age.getOrElse("-"),
           nationality = nationality.getOrElse("-"),
           marketValue = parseMarketValueToBigDecimal(marketValue) match {
-            case Left(err)    => println(err); BigDecimal(0)
+            case Left(err)    => println(s"Not able to get player value. Get 0 instead. Reason: $err"); BigDecimal(0)
             case Right(value) => value
           }
         )
@@ -42,7 +42,7 @@ object PlayerService {
     val toMarketValue: FetchedMarketValue => MarketValue = { case FetchedMarketValue(marketValue, updatedAt) =>
       MarketValue(
         value = parseMarketValueToBigDecimal(marketValue) match {
-          case Left(err)    => println(err); BigDecimal(0)
+          case Left(err)    => println(s"Not able to get player value. Get 0 instead. Reason: $err"); BigDecimal(0)
           case Right(value) => value
         },
         updatedAt = parseInstant(updatedAt)
@@ -80,7 +80,7 @@ object PlayerService {
             .getOrElse(PlayerPosition.empty),
           club = club.flatMap(_.name).getOrElse("-"),
           marketValue = parseMarketValueToBigDecimal(marketValue) match {
-            case Left(err)    => println(err); BigDecimal(0)
+            case Left(err)    => println(s"Not able to get player value. Get 0 instead. Reason: $err"); BigDecimal(0)
             case Right(value) => value
           },
           updatedAt = parseInstant(updatedAt)

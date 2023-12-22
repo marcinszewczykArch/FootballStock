@@ -1,12 +1,14 @@
 package console
 
-import cats.{Applicative, Monad}
+import cats.Applicative
+import cats.Monad
 import cats.effect.std.Console
 import cats.syntax.all._
 import errors.GameException
 import multiplayer.memory.StateMemory
 import services.PlayerService
-import services.domain.{MarketValue, PlayerId, PlayerProfile, PlayerSimple}
+import services.domain.PlayerId
+import services.domain.PlayerSimple
 
 import scala.io.AnsiColor._
 
@@ -32,36 +34,35 @@ object ConsolePrinter {
 
     def gameLoop[F[_]: Console: Monad](playerService: PlayerService[F], stateMemory: StateMemory[F])(message: InputMessage): F[Unit] =
       message match {
-        case SearchPlayerByName(input)   =>
+        case SearchPlayerByName(input)          =>
           for {
             players <- playerService.searchByName(input)
             _       <- printPlayerSearchResult[F](players)
           } yield ()
-        case GetPlayerProfileById(id) =>
+        case GetPlayerProfileById(id)           =>
           for {
             playerProfile <- playerService.getPlayerProfileById(PlayerId(id))
-            _             <- printPlayerProfile[F](playerProfile)
+            _             <- prettyPrintOr[F](playerProfile)("Player profile not found")
           } yield ()
-        case GetPlayerValueById(id)   =>
+        case GetPlayerValueById(id)             =>
           for {
             playerValue <- playerService.getMarketValueByPlayerId(PlayerId(id))
-            _           <- printPlayerValue[F](playerValue)
+            _           <- prettyPrintOr[F](playerValue)("Player value not found")
           } yield ()
-
         case GetUserState(user)                 =>
           for {
             userState <- stateMemory.getUserState(user)
-            _         <- Applicative[F].pure(println(userState))
+            _         <- prettyPrintOr[F](userState)("User game state not found")
           } yield ()
         case BuyShares(user, playerId, shares)  =>
           for {
             confirmation <- stateMemory.buyPlayer(user)(PlayerId(playerId), shares)
-            _            <- Applicative[F].pure(println(confirmation))
+            _            <- prettyPrintOr[F](confirmation)("Transaction error")
           } yield ()
         case SellShares(user, playerId, shares) =>
           for {
             confirmation <- stateMemory.sellPlayer(user)(PlayerId(playerId), shares)
-            _            <- Applicative[F].pure(println(confirmation))
+            _            <- prettyPrintOr[F](confirmation)("Transaction error")
           } yield ()
 
         case Error(msg) => printErrorMessage[F](msg) *> printInstruction[F]
@@ -92,25 +93,13 @@ object ConsolePrinter {
         }
     }
 
-  private def printPlayerProfile[F[_]: Applicative](maybePlayerProfile: Either[GameException, PlayerProfile]): F[Unit] =
-    maybePlayerProfile match {
-      case Left(err)            => Applicative[F].pure(println(s"Player profile not found. Reason: $err"))
-      case Right(playerProfile) =>
+  private def prettyPrintOr[F[_]: Applicative](maybeObject: Either[GameException, Object])(errorMessage: String = ""): F[Unit] =
+    maybeObject match {
+      case Left(err)  => Applicative[F].pure(println(s"$errorMessage. Reason: $err"))
+      case Right(obj) =>
         Applicative[F].pure {
           import utils.Parser.CaseClassToString
-          playerProfile.toStringWithFields.foreach { case (param, value) =>
-            println(param + ": " + value)
-          }
-        }
-    }
-
-  private def printPlayerValue[F[_]: Applicative](maybePlayerValue: Either[GameException, MarketValue]): F[Unit] =
-    maybePlayerValue match {
-      case Left(err)          => Applicative[F].pure(println(s"Player value not found. Reason: $err"))
-      case Right(playerValue) =>
-        Applicative[F].pure {
-          import utils.Parser.CaseClassToString
-          playerValue.toStringWithFields.foreach { case (param, value) =>
+          obj.toStringWithFields.foreach { case (param, value) =>
             println(param + ": " + value)
           }
         }
@@ -127,6 +116,10 @@ object ConsolePrinter {
         |"/search {player name}" - to search player
         |"/player {player id}" - to get player profile
         |"/value {player id}" - to get player value
+        |
+        |"/state {user name}" - to display user state
+        |"/buy {user name} {player id} {shares number 1-100}" - to buy shares
+        |"/sell {user name} {player id} {shares number 1-100}" - to sell shares
         |${RESET}
         |""".stripMargin
       )
