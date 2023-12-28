@@ -1,13 +1,15 @@
 package utils
 
+import java.time.Instant
+
 trait TimeProvider[F[_]] {
-  def getSystemNanoTime: Long
+  def getCurrentTimestamp: Instant
 }
 
 object TimeProvider {
 
   def impl[F[_]]: TimeProvider[F] = new TimeProvider[F] {
-    override def getSystemNanoTime: Long = System.nanoTime()
+    override def getCurrentTimestamp: Instant = Instant.now()
   }
 
 }

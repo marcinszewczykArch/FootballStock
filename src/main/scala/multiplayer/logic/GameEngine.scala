@@ -3,20 +3,23 @@ package multiplayer.logic
 import cats.Applicative
 import cats.data.EitherT
 import cats.effect._
+import cats.implicits.toTraverseOps
 import errors.GameException._
 import errors._
-import multiplayer.domain.{Shares, TransactionConfirmation, TransactionType, UserGameState}
+import multiplayer.domain._
 import multiplayer.memory.StateMemory
 import services.PlayerService
 import services.domain.{MarketValue, PlayerId}
-
-import java.time.Instant
+import utils.TimeProvider
 
 trait GameEngine[F[_]] {
 
   def buyPlayer(user: String)(playerId: PlayerId, sharesToBuy: Int): F[Either[GameException, TransactionConfirmation]]
   def sellPlayer(user: String)(playerId: PlayerId, sharesToSell: Int): F[Either[GameException, TransactionConfirmation]]
+
   def getUserState(user: String): F[Either[GameException, UserGameState]]
+  def getUserBalance(user: String): F[Either[GameException, UserBalance]]
+
   def getAllUsersStates(): F[List[UserGameState]]
   def createUser(user: String): F[Either[GameException, Unit]]
 
@@ -28,7 +31,8 @@ object GameEngine {
     memory: StateMemory[F],
     playerService: PlayerService[F]
   )(
-    implicit F: Sync[F]
+    implicit F: Sync[F],
+    timeProvider: TimeProvider[F]
   ): GameEngine[F] =
     new GameEngine[F] {
 
@@ -80,9 +84,11 @@ object GameEngine {
         sharesInPortfolio: Option[List[Shares]],
         sharesToBuy: Int,
         currentPlayerMarketValue: MarketValue
+      )(
+        implicit timeProvider: TimeProvider[F]
       ): F[Either[GameException, List[Shares]]] = Applicative[F].pure {
         sharesInPortfolio.sum + sharesToBuy <= 100 match {
-          case true  => Right(sharesInPortfolio |+| Shares(sharesToBuy, currentPlayerMarketValue.value, Instant.now))
+          case true  => Right(sharesInPortfolio |+| Shares(sharesToBuy, currentPlayerMarketValue.value, timeProvider.getCurrentTimestamp))
           case false => Left(SharesNumberException(sharesInPortfolio.sum + sharesToBuy))
         }
       }
@@ -106,6 +112,39 @@ object GameEngine {
       override def createUser(
         user: String
       ): F[Either[GameException, Unit]] = memory.createUser(user)
+
+      override def getUserBalance(
+        user: String
+      ): F[Either[GameException, UserBalance]] = (for {
+        userState <- EitherT(memory.getUserState(user))
+        portfolio <- userState
+                       .portfolio
+                       .map { case playerId -> shares =>
+                         for {
+                           currentPrice <- EitherT(playerService.getMarketValueByPlayerId(playerId))
+                           sharesNumber = shares.map(_.number).sum
+                           totalBuyValue = shares.map { case Shares(number, buyPrice, _) => number * buyPrice / 100 }.sum
+                           currentValue = (currentPrice.value * sharesNumber) / 100
+                           balancePerPlayer = BalancePerPlayer(
+                                                shares = sharesNumber,
+                                                averageBuyPrice = (totalBuyValue / sharesNumber) * 100,
+                                                totalBuyValue = totalBuyValue,
+                                                currentPrice = currentPrice.value,
+                                                totalCurrentValue = currentValue,
+                                                profit = currentValue - totalBuyValue,
+                                                revenuePercent = ((currentValue - totalBuyValue) / totalBuyValue).toInt * 100
+                                              )
+                         } yield playerId -> balancePerPlayer
+                       }
+                       .toList
+                       .sequence
+                       .map(_.toMap)
+
+        playersCurrentValue = portfolio.map(_._2.totalCurrentValue).sum
+        cash = userState.money
+        profit = playersCurrentValue + cash - UserGameState.initialCash
+        revenuePercent = ((profit / UserGameState.initialCash) * 100).toInt
+      } yield UserBalance(portfolio, playersCurrentValue, cash, profit, revenuePercent)).value
 
     }
 

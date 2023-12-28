@@ -9,6 +9,7 @@ import errors._
 import multiplayer.domain.Shares
 import multiplayer.domain.UserGameState
 import services.domain.MarketValue
+import utils.TimeProvider
 
 import java.time.Instant
 
@@ -26,7 +27,8 @@ object StateMemory {
   def impl[F[_]](
     ref: Ref[F, Map[String, UserGameState]]
   )(
-    implicit F: Sync[F]
+    implicit F: Sync[F],
+    timeProvider: TimeProvider[F]
   ): StateMemory[F] =
     new StateMemory[F] {
 
@@ -57,9 +59,11 @@ object StateMemory {
         sharesInPortfolio: Option[List[Shares]],
         sharesToBuy: Int,
         currentPlayerMarketValue: MarketValue
+      )(
+        implicit timeProvider: TimeProvider[F]
       ): F[Either[GameException, List[Shares]]] = Applicative[F].pure {
         sharesInPortfolio.sum + sharesToBuy <= 100 match {
-          case true  => Right(sharesInPortfolio |+| Shares(sharesToBuy, currentPlayerMarketValue.value, Instant.now))
+          case true  => Right(sharesInPortfolio |+| Shares(sharesToBuy, currentPlayerMarketValue.value, timeProvider.getCurrentTimestamp))
           case false => Left(SharesNumberException(sharesInPortfolio.sum + sharesToBuy))
         }
       }
@@ -76,7 +80,7 @@ object StateMemory {
 
       override def createUser(user: String): F[Either[GameException, Unit]] = (for {
         _ <- EitherT(validateUserNotExists(user))
-        _ <- EitherT.right[GameException](ref.update(_ + (user -> UserGameState.empty)))
+        _ <- EitherT.right[GameException](ref.update(_ + (user -> UserGameState.empty[F])))
       } yield ()).value
 
       private def validateUserNotExists(user: String): F[Either[GameException, Unit]] = for {

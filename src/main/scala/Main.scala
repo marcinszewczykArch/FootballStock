@@ -7,10 +7,10 @@ import multiplayer.logic.GameEngine
 import multiplayer.memory.StateMemory
 import services.PlayerService
 import services.domain.PlayerId
-
-import java.time.Instant
+import utils.TimeProvider
 
 object Main extends IOApp {
+  implicit val timeProvider = TimeProvider.impl[IO]
 
   def run(args: List[String]): IO[ExitCode] =
     for {
@@ -25,7 +25,11 @@ object Main extends IOApp {
       gameLogic           <- IO.pure(GameEngine.impl(stateMemory, playerService))
 
       //todo: for test only
-      gameState = UserGameState(portfolio = Map(PlayerId(38253) -> List(Shares(5, BigDecimal(20_000_000), Instant.now))))
+      gameState = UserGameState(
+                    startTimestamp = timeProvider.getCurrentTimestamp,
+                    money = BigDecimal(1_000_000),
+                    portfolio = Map(PlayerId(38253) -> List(Shares(5, BigDecimal(20_000_000), timeProvider.getCurrentTimestamp)))
+                  )
       _           <- ref.update(_ => Map("marcin" -> gameState))
       userStats   <- gameLogic.getAllUsersStates()
       _           <- IO.println(userStats)
@@ -37,6 +41,8 @@ object Main extends IOApp {
       _           <- IO.println(profile)
       marketValue <- playerService.getMarketValueByPlayerId(PlayerId(38253))
       _           <- IO.println(marketValue)
+      balance     <- gameLogic.getUserBalance("marcin")
+      _           <- IO.println(balance)
 
       exitCode <- runGame(consolePrinter, playerService, gameLogic)
     } yield exitCode
