@@ -1,25 +1,14 @@
-import cats.effect.IO
-import cats.effect.Ref
+import cats.effect.{IO, Ref}
 import cats.implicits.toTraverseOps
-import game.domain.Shares
-import game.domain.UserGameState
-import game.events.BuyPlayerEvent
-import game.events.InitializeGameEvent
-import game.events.SellPlayerEvent
-import game.events.UserEvent
+import game.domain.{Shares, UserGameState}
+import game.events.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent, UserEvent}
 import game.logic.GameEngine
-import game.memory.EventMemory
-import game.memory.StateMemory
+import game.memory.{EventMemory, StateMemory}
 import game.player.client.TransfermarktClient
-import game.player.client.domain.FetchedMarketValue
-import game.player.client.domain.FetchedPlayerProfile
-import game.player.client.domain.FetchedPlayerSimple
-import game.player.client.domain.PlayerSearchResponse
+import game.player.client.domain.{FetchedMarketValue, FetchedPlayerProfile, FetchedPlayerSimple, PlayerSearchResponse}
 import game.player.service.PlayerService
 import game.player.service.domain.PlayerId
-import io.circe
 import munit.CatsEffectSuite
-import sttp.client3.ResponseException
 import utils.JsonParser.jsonString
 import utils.Parser.CaseClassToString
 import utils.TimeProvider
@@ -31,45 +20,30 @@ class SampleGameSpec extends CatsEffectSuite {
   def getNewGameEngine(implicit timeProvider: TimeProvider[IO]): IO[GameEngine[IO]] = for {
     transfermarktClient <- IO.pure(new TransfermarktClient[IO] {
 
-                             override def searchByName(playerName: String): IO[Either[
-                               ResponseException[String, circe.Error],
-                               List[FetchedPlayerSimple]
-                             ]] =
+                             override def searchByName(playerName: String): IO[List[FetchedPlayerSimple]] =
                                IO.pure(
-                                 Right[ResponseException[String, circe.Error], List[FetchedPlayerSimple]](
-                                   io.circe
-                                     .parser
-                                     .decode[PlayerSearchResponse](jsonString("testResponseMarketValue.json"))
-                                     .toOption
-                                     .get
-                                     .result
-                                 )
-                               )
-
-                             override def fetchMarketValueByPlayerId(id: PlayerId): IO[Either[
-                               ResponseException[String, circe.Error],
-                               FetchedMarketValue
-                             ]] = IO.pure(
-                               Right[ResponseException[String, circe.Error], FetchedMarketValue](
                                  io.circe
                                    .parser
-                                   .decode[FetchedMarketValue](jsonString("testResponsePlayerProfile.json"))
+                                   .decode[PlayerSearchResponse](jsonString("testResponseMarketValue.json"))
                                    .toOption
                                    .get
+                                   .result
                                )
+
+                             override def fetchMarketValueByPlayerId(id: PlayerId): IO[FetchedMarketValue] = IO.pure(
+                               io.circe
+                                 .parser
+                                 .decode[FetchedMarketValue](jsonString("testResponsePlayerProfile.json"))
+                                 .toOption
+                                 .get
                              )
 
-                             override def fetchPlayerProfileById(id: PlayerId): IO[Either[
-                               ResponseException[String, circe.Error],
-                               FetchedPlayerProfile
-                             ]] = IO.pure(
-                               Right[ResponseException[String, circe.Error], FetchedPlayerProfile](
-                                 io.circe
-                                   .parser
-                                   .decode[FetchedPlayerProfile](jsonString("testResponsePlayerSearch.json"))
-                                   .toOption
-                                   .get
-                               )
+                             override def fetchPlayerProfileById(id: PlayerId): IO[FetchedPlayerProfile] = IO.pure(
+                               io.circe
+                                 .parser
+                                 .decode[FetchedPlayerProfile](jsonString("testResponsePlayerSearch.json"))
+                                 .toOption
+                                 .get
                              )
 
                            })
@@ -89,18 +63,17 @@ class SampleGameSpec extends CatsEffectSuite {
                                                        })
       testGameEngine                                <- getNewGameEngine(testTimeProvider)
 
-      _      <- testGameEngine.createUser("Marcin")
-      state1 <- testGameEngine.getUserState("Marcin")
+      _       <- testGameEngine.createUser("Marcin")
+      state1  <- testGameEngine.getUserState("Marcin")
       state1Expected = Right(
                          UserGameState(
                            portfolio = Map.empty,
                            money = BigDecimal(1_000_000)
                          )
                        )
-      _ = assertEquals(state1, state1Expected)
-
       events1 <- testGameEngine.getUserEvents("Marcin")
       events1Expected = Right(List(InitializeGameEvent("Marcin", BigDecimal(1_000_000), now)))
+      _ = assertEquals(state1, state1Expected)
       _ = assertEquals(events1, events1Expected)
 
       transaction1 <- testGameEngine.buyPlayer("Marcin")(PlayerId(38253), 2)

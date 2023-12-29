@@ -33,16 +33,12 @@ object Main extends IOApp {
       gameLogic           <- IO.pure(GameEngine.impl(stateMemory, eventMemory, playerService))
 
       //todo: for test only
-      gameState = UserGameState(
-                    money = BigDecimal(1_000_000),
-                    portfolio = Map(PlayerId(38253) -> List(Shares(5, BigDecimal(20_000_000), timeProvider.getCurrentTimestamp)))
-                  )
-      _           <- stateRef.update(_ => Map("marcin" -> gameState))
+      _           <- gameLogic.createUser("marcin")
       userStats   <- gameLogic.getAllUsersStates()
       _           <- IO.println(userStats)
       confBuy     <- gameLogic.buyPlayer("marcin")(PlayerId(38253), 2)
       _           <- IO.println(confBuy)
-      confSell    <- gameLogic.sellPlayer("marcin")(PlayerId(38253), 3)
+      confSell    <- gameLogic.sellPlayer("marcin")(PlayerId(38253), 1)
       _           <- IO.println(confSell)
       profile     <- playerService.getPlayerProfileById(PlayerId(38253))
       _           <- IO.println(profile)

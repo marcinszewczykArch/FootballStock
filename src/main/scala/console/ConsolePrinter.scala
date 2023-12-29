@@ -55,6 +55,16 @@ object ConsolePrinter {
             userState <- gameLogic.getUserState(user)
             _         <- prettyPrintOr[F](userState)("User game state not found")
           } yield ()
+        case GetUserBalance(user)                 =>
+          for {
+            userState <- gameLogic.getUserBalance(user)
+            _         <- prettyPrintOr[F](userState)("User game balance not found")
+          } yield ()
+        case GetUserEvents(user)                 =>
+          for {
+            userState <- gameLogic.getUserEvents(user)
+            _         <- prettyPrintOr[F](userState)("User events not found")
+          } yield ()
         case BuyShares(user, playerId, shares)  =>
           for {
             confirmation <- gameLogic.buyPlayer(user)(PlayerId(playerId), shares)

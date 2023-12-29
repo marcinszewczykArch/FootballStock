@@ -11,6 +11,8 @@ case class GetPlayerProfileById(playerId: Int) extends InputMessage
 case class GetPlayerValueById(playerId: Int) extends InputMessage
 
 case class GetUserState(user: String) extends InputMessage
+case class GetUserBalance(user: String) extends InputMessage
+case class GetUserEvents(user: String) extends InputMessage
 case class BuyShares(user: String, playerId: Int, shares: Int) extends InputMessage
 case class SellShares(user: String, playerId: Int, shares: Int) extends InputMessage
 
@@ -27,6 +29,9 @@ object InputMessage {
         case ("/value", playerId, _, _)         => playerId.toIntOption.map(GetPlayerValueById).toRight(IncorrectParsingException(playerId))
 
         case ("/state", user, _, _)            => Right(GetUserState(user))
+        case ("/balance", user, _, _)            => Right(GetUserBalance(user))
+        case ("/events", user, _, _)            => Right(GetUserEvents(user))
+
         case ("/buy", user, playerId, shares)  =>
           (for {
             playerIdInt <- playerId.toIntOption
