@@ -1,24 +1,17 @@
 package multiplayer.memory
 
-import cats.Applicative
 import cats.data.EitherT
 import cats.effect._
 import cats.implicits.toFunctorOps
 import errors.GameException._
 import errors._
-import multiplayer.domain.Shares
 import multiplayer.domain.UserGameState
-import services.domain.MarketValue
-import utils.TimeProvider
-
-import java.time.Instant
 
 trait StateMemory[F[_]] {
 
   def getUserState(user: String): F[Either[GameException, UserGameState]]
   def getAllUsersStates(): F[List[UserGameState]]
-  def updateUserState(user: String)(newUserState: UserGameState): F[Either[GameException, Unit]]
-  def createUser(user: String): F[Either[GameException, Unit]]
+  def updateUserStateRegistry(user: String)(newUserState: UserGameState): F[Either[GameException, Unit]]
 
 }
 
@@ -27,12 +20,11 @@ object StateMemory {
   def impl[F[_]](
     ref: Ref[F, Map[String, UserGameState]]
   )(
-    implicit F: Sync[F],
-    timeProvider: TimeProvider[F]
+    implicit F: Sync[F]
   ): StateMemory[F] =
     new StateMemory[F] {
 
-      def updateUserState(user: String)(newUserState: UserGameState): F[Either[GameException, Unit]] = (for {
+      def updateUserStateRegistry(user: String)(newUserState: UserGameState): F[Either[GameException, Unit]] = (for {
         _ <- EitherT.right[GameException](ref.update(_ + (user -> newUserState)))
       } yield ()).value
 
@@ -46,50 +38,6 @@ object StateMemory {
       override def getAllUsersStates(): F[List[UserGameState]] = ref
         .get
         .map(_.toList.map(_._2))
-
-      private def validateEnoughMoney(available: BigDecimal, required: BigDecimal): F[Either[GameException, Unit]] =
-        Applicative[F].pure(
-          available >= required match {
-            case true  => Right(())
-            case false => Left(NotEnoughMoneyException(available, required))
-          }
-        )
-
-      private def calculateSharesAfterBuy(
-        sharesInPortfolio: Option[List[Shares]],
-        sharesToBuy: Int,
-        currentPlayerMarketValue: MarketValue
-      )(
-        implicit timeProvider: TimeProvider[F]
-      ): F[Either[GameException, List[Shares]]] = Applicative[F].pure {
-        sharesInPortfolio.sum + sharesToBuy <= 100 match {
-          case true  => Right(sharesInPortfolio |+| Shares(sharesToBuy, currentPlayerMarketValue.value, timeProvider.getCurrentTimestamp))
-          case false => Left(SharesNumberException(sharesInPortfolio.sum + sharesToBuy))
-        }
-      }
-
-      private def calculateSharesAfterSell(
-        sharesInPortfolio: Option[List[Shares]],
-        sharesToSell: Int
-      ): F[Either[GameException, List[Shares]]] = Applicative[F].pure {
-        sharesInPortfolio.sum - sharesToSell >= 0 match {
-          case true  => Right(sharesInPortfolio |-| sharesToSell)
-          case false => Left(SharesNumberException(sharesInPortfolio.sum - sharesToSell))
-        }
-      }
-
-      override def createUser(user: String): F[Either[GameException, Unit]] = (for {
-        _ <- EitherT(validateUserNotExists(user))
-        _ <- EitherT.right[GameException](ref.update(_ + (user -> UserGameState.empty[F])))
-      } yield ()).value
-
-      private def validateUserNotExists(user: String): F[Either[GameException, Unit]] = for {
-        map <- ref.get
-        result = map.contains(user) match {
-                   case true  => Left(UserAlreadyExistsException(user))
-                   case false => Right(())
-                 }
-      } yield result
 
     }
 

@@ -26,9 +26,9 @@ object Main extends IOApp {
 
       //todo: for test only
       gameState = UserGameState(
-                    startTimestamp = timeProvider.getCurrentTimestamp,
                     money = BigDecimal(1_000_000),
-                    portfolio = Map(PlayerId(38253) -> List(Shares(5, BigDecimal(20_000_000), timeProvider.getCurrentTimestamp)))
+                    portfolio = Map(PlayerId(38253) -> List(Shares(5, BigDecimal(20_000_000), timeProvider.getCurrentTimestamp))),
+                    events = List.empty
                   )
       _           <- ref.update(_ => Map("marcin" -> gameState))
       userStats   <- gameLogic.getAllUsersStates()

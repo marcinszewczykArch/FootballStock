@@ -1,9 +1,13 @@
-import cats.effect.{IO, Ref}
+import cats.effect.IO
+import cats.effect.Ref
 import cats.implicits.toTraverseOps
 import httpClient.TransfermarktClient
-import httpClient.domain.{FetchedMarketValue, FetchedPlayerProfile, FetchedPlayerSimple, PlayerSearchResponse}
+import httpClient.domain.FetchedMarketValue
+import httpClient.domain.FetchedPlayerProfile
+import httpClient.domain.FetchedPlayerSimple
+import httpClient.domain.PlayerSearchResponse
 import io.circe
-import multiplayer.domain.{Shares, TransactionConfirmation, TransactionType, UserGameState}
+import multiplayer.domain.{BuyPlayerEvent, UserEventType, InitializeGameEvent, SellPlayerEvent, Shares, UserGameState}
 import multiplayer.logic.GameEngine
 import multiplayer.memory.StateMemory
 import munit.CatsEffectSuite
@@ -11,8 +15,8 @@ import services.PlayerService
 import services.domain.PlayerId
 import sttp.client3.ResponseException
 import utils.JsonParser.jsonString
-import utils.TimeProvider
 import utils.Parser.CaseClassToString
+import utils.TimeProvider
 
 import java.time.Instant
 
@@ -81,57 +85,55 @@ class SampleGameSpec extends CatsEffectSuite {
       state1 <- testGameEngine.getUserState("Marcin")
       state1Expected = Right(
                          UserGameState(
-                           startTimestamp = now,
                            portfolio = Map.empty,
-                           money = BigDecimal(1_000_000)
+                           money = BigDecimal(1_000_000),
+                           events = List(InitializeGameEvent(BigDecimal(1_000_000), now))
                          )
                        )
       _ = assertEquals(state1, state1Expected)
 
-      transactionConfirmation1 <- testGameEngine.buyPlayer("Marcin")(PlayerId(38253), 2)
-      state2                   <- testGameEngine.getUserState("Marcin")
+      transaction1 <- testGameEngine.buyPlayer("Marcin")(PlayerId(38253), 2)
+      state2       <- testGameEngine.getUserState("Marcin")
       state2Expected = Right(
                          UserGameState(
-                           startTimestamp = now,
                            portfolio = Map(PlayerId(38253) -> List(Shares(2, BigDecimal(30_000_000), now))),
-                           money = BigDecimal(400_000)
+                           money = BigDecimal(400_000),
+                           events = state1Expected.value.events :+ transaction1.toOption.get
                          )
                        )
-      transactionConfirmation1Expected = Right(
-                                           TransactionConfirmation(
-                                             transactionType = TransactionType.Buy,
-                                             playerId = PlayerId(38253),
-                                             shares = 2,
-                                             value = BigDecimal(600_000),
-                                             newUserState = state2Expected.value
-                                           )
-                                         )
-      _ = assertEquals(transactionConfirmation1, transactionConfirmation1Expected)
+      transaction1Expected = Right(
+                               BuyPlayerEvent(
+                                 playerId = PlayerId(38253),
+                                 shares = 2,
+                                 value = BigDecimal(600_000),
+                                 timestamp = now
+                               )
+                             )
+      _ = assertEquals(transaction1, transaction1Expected)
       _ = assertEquals(state2, state2Expected)
 
-      transactionConfirmation2 <- testGameEngine.sellPlayer("Marcin")(PlayerId(38253), 1)
-      state3                   <- testGameEngine.getUserState("Marcin")
+      transaction2 <- testGameEngine.sellPlayer("Marcin")(PlayerId(38253), 1)
+      state3       <- testGameEngine.getUserState("Marcin")
       state3Expected = Right(
                          UserGameState(
-                           startTimestamp = now,
                            portfolio = Map(PlayerId(38253) -> List(Shares(1, BigDecimal(30_000_000), now))),
-                           money = BigDecimal(700_000)
+                           money = BigDecimal(700_000),
+                           events = state2Expected.value.events :+ transaction2.toOption.get
                          )
                        )
-      transactionConfirmation2Expected = Right(
-                                           TransactionConfirmation(
-                                             transactionType = TransactionType.Sell,
-                                             playerId = PlayerId(38253),
-                                             shares = 1,
-                                             value = BigDecimal(300_000),
-                                             newUserState = state3Expected.value
-                                           )
-                                         )
-      _ = assertEquals(transactionConfirmation2, transactionConfirmation2Expected)
+      transaction2Expected = Right(
+                               SellPlayerEvent(
+                                 playerId = PlayerId(38253),
+                                 shares = 1,
+                                 value = BigDecimal(300_000),
+                                 timestamp = now
+                               )
+                             )
+      _ = assertEquals(transaction2, transaction2Expected)
       _ = assertEquals(state3, state3Expected)
 
-      userBalance                   <- testGameEngine.getUserBalance("Marcin")
-      _  <- userBalance.right.get.toStringWithFields.map(IO.println).toList.sequence
+      userBalance <- testGameEngine.getUserBalance("Marcin")
+      _           <- userBalance.right.get.toStringWithFields.map(IO.println).toList.sequence
 
     } yield ()
   }
