@@ -1,6 +1,6 @@
-package multiplayer.domain
+package game.domain
 
-import services.domain.PlayerId
+import game.player.service.domain.PlayerId
 import utils.TimeProvider
 
 import java.time.Instant

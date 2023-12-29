@@ -1,12 +1,18 @@
-import cats.effect.{ExitCode, IO, IOApp, Ref}
+import cats.effect.ExitCode
+import cats.effect.IO
+import cats.effect.IOApp
+import cats.effect.Ref
 import config.AppConfig
 import console.ConsolePrinter
-import httpClient.TransfermarktClient
-import multiplayer.domain.{Shares, UserGameState}
-import multiplayer.logic.GameEngine
-import multiplayer.memory.StateMemory
-import services.PlayerService
-import services.domain.PlayerId
+import game.domain.Shares
+import game.domain.UserGameState
+import game.events.UserEvent
+import game.logic.GameEngine
+import game.memory.EventMemory
+import game.memory.StateMemory
+import game.player.client.TransfermarktClient
+import game.player.service.PlayerService
+import game.player.service.domain.PlayerId
 import utils.TimeProvider
 
 object Main extends IOApp {
@@ -20,17 +26,18 @@ object Main extends IOApp {
       _                   <- consolePrinter.printStartMessage[IO]
       transfermarktClient <- IO.pure(TransfermarktClient.impl[IO](appConfig.transfermarktClientConfig))
       playerService       <- IO.pure(PlayerService.impl[IO](transfermarktClient))
-      ref                 <- Ref.of[IO, Map[String, UserGameState]](Map.empty[String, UserGameState])
-      stateMemory         <- IO.pure(StateMemory.impl[IO](ref))
-      gameLogic           <- IO.pure(GameEngine.impl(stateMemory, playerService))
+      stateRef            <- Ref.of[IO, Map[String, UserGameState]](Map.empty[String, UserGameState])
+      stateMemory         <- IO.pure(StateMemory.impl[IO](stateRef))
+      eventRef            <- Ref.of[IO, List[UserEvent]](Nil)
+      eventMemory         <- IO.pure(EventMemory.impl[IO](eventRef))
+      gameLogic           <- IO.pure(GameEngine.impl(stateMemory, eventMemory, playerService))
 
       //todo: for test only
       gameState = UserGameState(
                     money = BigDecimal(1_000_000),
-                    portfolio = Map(PlayerId(38253) -> List(Shares(5, BigDecimal(20_000_000), timeProvider.getCurrentTimestamp))),
-                    events = List.empty
+                    portfolio = Map(PlayerId(38253) -> List(Shares(5, BigDecimal(20_000_000), timeProvider.getCurrentTimestamp)))
                   )
-      _           <- ref.update(_ => Map("marcin" -> gameState))
+      _           <- stateRef.update(_ => Map("marcin" -> gameState))
       userStats   <- gameLogic.getAllUsersStates()
       _           <- IO.println(userStats)
       confBuy     <- gameLogic.buyPlayer("marcin")(PlayerId(38253), 2)

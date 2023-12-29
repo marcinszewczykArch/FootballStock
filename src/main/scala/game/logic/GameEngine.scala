@@ -1,15 +1,24 @@
-package multiplayer.logic
+package game.logic
 
 import cats.Applicative
 import cats.data.EitherT
 import cats.effect._
 import cats.implicits.toTraverseOps
-import errors.GameException._
-import errors._
-import multiplayer.domain._
-import multiplayer.memory.StateMemory
-import services.PlayerService
-import services.domain.{MarketValue, PlayerId}
+import game.domain._
+import game.errors.GameException
+import game.errors.GameException.NotEnoughMoneyException
+import game.errors.GameException.SharesNumberException
+import game.errors.GameException.UserAlreadyExistsException
+import game.events.BuyPlayerEvent
+import game.events.InitializeGameEvent
+import game.events.SellPlayerEvent
+import game.events.UserEvent
+import game.events.UserEventType
+import game.memory.EventMemory
+import game.memory.StateMemory
+import game.player.service.PlayerService
+import game.player.service.domain.MarketValue
+import game.player.service.domain.PlayerId
 import utils.TimeProvider
 
 trait GameEngine[F[_]] {
@@ -23,12 +32,15 @@ trait GameEngine[F[_]] {
   def getAllUsersStates(): F[List[UserGameState]]
   def createUser(user: String): F[Either[GameException, InitializeGameEvent]]
 
+  def getUserEvents(user: String): F[Either[GameException, List[UserEvent]]]
+
 }
 
 object GameEngine {
 
   def impl[F[_]](
-    memory: StateMemory[F],
+    stateMemory: StateMemory[F],
+    eventMemory: EventMemory[F],
     playerService: PlayerService[F]
   )(
     implicit F: Sync[F],
@@ -43,37 +55,37 @@ object GameEngine {
         sharesToBuy: Int
       ): F[Either[GameException, BuyPlayerEvent]] = (for {
         now               <- EitherT.pure(timeProvider.getCurrentTimestamp)
-        userState         <- EitherT(memory.getUserState(user))
+        userState         <- EitherT(stateMemory.getUserState(user))
         playerMarketValue <- EitherT(playerService.getMarketValueByPlayerId(playerId))
         newShares         <- EitherT(calculateSharesAfterBuy(userState.portfolio.get(playerId), sharesToBuy, playerMarketValue))
         transactionValue = playerMarketValue.value * sharesToBuy / 100
         _                 <- EitherT(validateEnoughMoney(userState.money, transactionValue))
-        event = BuyPlayerEvent(playerId, sharesToBuy, transactionValue, now)
+        event = BuyPlayerEvent(playerId, sharesToBuy, user, transactionValue, now)
         newUserState = UserGameState(
                          portfolio = userState.portfolio + (playerId -> newShares),
-                         money = userState.money - transactionValue,
-                         events = userState.events :+ event
+                         money = userState.money - transactionValue
                        )
-        _                 <- EitherT(memory.updateUserStateRegistry(user)(newUserState))
+        _                 <- EitherT(stateMemory.updateUserStateRegistry(user)(newUserState))
+        _                 <- EitherT.liftF[F, GameException, Unit](eventMemory.sendEvent(event))
       } yield event).value
 
       override def sellPlayer(user: String)(playerId: PlayerId, sharesToSell: Int): F[Either[GameException, SellPlayerEvent]] =
         (for {
           now               <- EitherT.pure(timeProvider.getCurrentTimestamp)
-          userState         <- EitherT(memory.getUserState(user))
+          userState         <- EitherT(stateMemory.getUserState(user))
           playerMarketValue <- EitherT(playerService.getMarketValueByPlayerId(playerId))
           newShares         <- EitherT(calculateSharesAfterSell(userState.portfolio.get(playerId), sharesToSell))
           transactionValue = playerMarketValue.value * sharesToSell / 100
-          event = SellPlayerEvent(playerId, sharesToSell, transactionValue, now)
+          event = SellPlayerEvent(playerId, sharesToSell, user, transactionValue, now)
           newUserState = UserGameState(
                            portfolio = newShares match {
                              case Nil => userState.portfolio - playerId
                              case _   => userState.portfolio + (playerId -> newShares)
                            },
-                           money = userState.money + transactionValue,
-                           events = userState.events :+ event
+                           money = userState.money + transactionValue
                          )
-          _                 <- EitherT(memory.updateUserStateRegistry(user)(newUserState))
+          _                 <- EitherT(stateMemory.updateUserStateRegistry(user)(newUserState))
+          _                 <- EitherT.liftF[F, GameException, Unit](eventMemory.sendEvent(event))
         } yield event).value
 
       private def validateEnoughMoney(available: BigDecimal, required: BigDecimal): F[Either[GameException, Unit]] =
@@ -109,9 +121,9 @@ object GameEngine {
 
       override def getUserState(
         user: String
-      ): F[Either[GameException, UserGameState]] = memory.getUserState(user)
+      ): F[Either[GameException, UserGameState]] = stateMemory.getUserState(user)
 
-      override def getAllUsersStates(): F[List[UserGameState]] = memory.getAllUsersStates()
+      override def getAllUsersStates(): F[List[UserGameState]] = stateMemory.getAllUsersStates()
 
       override def createUser(
         user: String
@@ -120,13 +132,14 @@ object GameEngine {
         _            <- EitherT(validateUserNotExists(user))
         initialCash  <- EitherT.pure(UserGameState.initialCash)
         portfolio    <- EitherT.pure(Map.empty[PlayerId, List[Shares]])
-        event        <- EitherT.pure(InitializeGameEvent(initialCash, now))
-        initialState <- EitherT.pure(UserGameState(portfolio, initialCash, Nil :+ event))
-        _            <- EitherT(memory.updateUserStateRegistry(user)(initialState))
+        event        <- EitherT.pure(InitializeGameEvent(user, initialCash, now))
+        initialState <- EitherT.pure(UserGameState(portfolio, initialCash))
+        _            <- EitherT(stateMemory.updateUserStateRegistry(user)(initialState))
+        _            <- EitherT.liftF[F, GameException, Unit](eventMemory.sendEvent(event))
       } yield event).value
 
       private def validateUserNotExists(user: String): F[Either[GameException, Unit]] = (for {
-        allUsersStates <- EitherT.liftF(memory.getAllUsersStates())
+        allUsersStates <- EitherT.liftF(stateMemory.getAllUsersStates())
         _              <- EitherT.fromEither(allUsersStates.contains(user) match {
                             case true  => Left[GameException, Unit](UserAlreadyExistsException(user))
                             case false => Right[GameException, Unit](())
@@ -136,7 +149,7 @@ object GameEngine {
       override def getUserBalance(
         user: String
       ): F[Either[GameException, UserBalance]] = (for {
-        userState <- EitherT(memory.getUserState(user))
+        userState <- EitherT(stateMemory.getUserState(user))
         portfolio <- userState
                        .portfolio
                        .map { case playerId -> shares =>
@@ -165,6 +178,9 @@ object GameEngine {
         profit = playersCurrentValue + cash - UserGameState.initialCash
         revenuePercent = ((profit / UserGameState.initialCash) * 100).toInt
       } yield UserBalance(portfolio, playersCurrentValue, cash, profit, revenuePercent)).value
+
+      override def getUserEvents(user: String): F[Either[GameException, List[UserEvent]]] =
+        eventMemory.getEventsForPlayer(user)
 
     }
 

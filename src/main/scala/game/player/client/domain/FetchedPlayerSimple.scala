@@ -1,4 +1,4 @@
-package httpClient.domain
+package game.player.client.domain
 
 import io.circe.{Decoder, Encoder}
 

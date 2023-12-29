@@ -1,12 +1,12 @@
-package httpClient
+package game.player.client
 
 import cats.Applicative
 import cats.effect._
 import cats.syntax.all._
 import config.AppConfig.TransfermarktClientConfig
-import httpClient.domain.{FetchedMarketValue, FetchedPlayerProfile, FetchedPlayerSimple, PlayerSearchResponse}
+import game.player.client.domain.{FetchedMarketValue, FetchedPlayerProfile, FetchedPlayerSimple, PlayerSearchResponse}
+import game.player.service.domain.PlayerId
 import io.circe
-import services.domain.PlayerId
 import sttp.client3._
 import sttp.client3.circe.asJson
 import sttp.model.Uri

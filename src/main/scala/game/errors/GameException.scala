@@ -1,4 +1,4 @@
-package errors
+package game.errors
 
 sealed abstract class GameException(message: String) extends Throwable(message)
 

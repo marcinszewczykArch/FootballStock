@@ -1,15 +1,12 @@
-package services
+package game.player.service
 
 import cats.effect._
 import cats.implicits.toFunctorOps
-import errors.GameException.{PlayerMarketValueNotFoundException, PlayerProfileNotFoundException, PlayerSearchByNameException, ValueParseException}
-import errors._
-import httpClient.TransfermarktClient
-import httpClient.domain.FetchedMarketValue
-import httpClient.domain.FetchedPlayerPosition
-import httpClient.domain.FetchedPlayerProfile
-import httpClient.domain.FetchedPlayerSimple
-import services.domain.{MarketValue, PlayerId, PlayerPosition, PlayerProfile, PlayerSimple}
+import game.errors.GameException
+import game.errors.GameException.{PlayerMarketValueNotFoundException, PlayerProfileNotFoundException, PlayerSearchByNameException, ValueParseException}
+import game.player.client.TransfermarktClient
+import game.player.client.domain.{FetchedMarketValue, FetchedPlayerPosition, FetchedPlayerProfile, FetchedPlayerSimple}
+import game.player.service.domain.{MarketValue, PlayerId, PlayerPosition, PlayerProfile, PlayerSimple}
 import utils.Parser.parseInstant
 import utils.Parser.parseMarketValueToBigDecimal
 

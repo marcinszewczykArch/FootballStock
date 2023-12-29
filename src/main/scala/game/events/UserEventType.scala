@@ -1,4 +1,4 @@
-package multiplayer.domain
+package game.events
 
 sealed abstract class UserEventType(val name: String)
 

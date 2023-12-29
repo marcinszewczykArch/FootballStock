@@ -4,13 +4,13 @@ import cats.Applicative
 import cats.Monad
 import cats.effect.std.Console
 import cats.syntax.all._
-import errors.GameException
-import multiplayer.logic.GameEngine
-import multiplayer.memory.StateMemory
-import services.PlayerService
-import services.domain.PlayerId
-import services.domain.PlayerSimple
+import game.errors.GameException
+import game.logic.GameEngine
+import game.memory.StateMemory
+import game.player.service.PlayerService
+import game.player.service.domain.{PlayerId, PlayerSimple}
 
+import scala.io.AnsiColor._
 import scala.io.AnsiColor._
 
 trait ConsolePrinter[F[_]] {

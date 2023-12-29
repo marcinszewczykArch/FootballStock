@@ -1,4 +1,4 @@
-package multiplayer.domain
+package game.domain
 
 import java.time.Instant
 import scala.annotation.tailrec

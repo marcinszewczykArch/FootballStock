@@ -1,4 +1,4 @@
-package services.domain
+package game.player.service.domain
 
 final case class PlayerSimple(
   id: PlayerId,

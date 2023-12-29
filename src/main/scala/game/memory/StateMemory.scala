@@ -1,11 +1,11 @@
-package multiplayer.memory
+package game.memory
 
 import cats.data.EitherT
 import cats.effect._
 import cats.implicits.toFunctorOps
-import errors.GameException._
-import errors._
-import multiplayer.domain.UserGameState
+import game.domain.UserGameState
+import game.errors.GameException
+import game.errors.GameException.UserNotFoundException
 
 trait StateMemory[F[_]] {
 
