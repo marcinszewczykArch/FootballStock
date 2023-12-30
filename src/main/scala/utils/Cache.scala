@@ -57,6 +57,7 @@ object Cache {
                              setter(Some(Entry(result, now + ttl))).as(result)
                          }
                      case None                                           =>
+                       log.info(s"Key [$key] not found in cache. Use lookup function") *>
                        lookup(key)
                          .attemptTap {
                            case Left(err)     => log.error(err)(s"Failed to initialize cache for key: $key")

@@ -2,6 +2,7 @@ import cats.effect.ExitCode
 import cats.effect.IO
 import cats.effect.IOApp
 import cats.effect.Ref
+import cats.effect.kernel.Clock
 import config.AppConfig
 import console.ConsolePrinter
 import game.domain.UserGameState
@@ -9,8 +10,10 @@ import game.events.UserEvent
 import game.logic.GameEngine
 import game.memory.EventMemory
 import game.memory.StateMemory
-import game.player.client.{PlayerProfileClient, PlayerSearchClient}
+import game.player.client.PlayerProfileClient
+import game.player.client.PlayerSearchClient
 import game.player.service.PlayerService
+import game.player.service.PlayersLoader
 import game.player.service.domain.PlayerId
 import org.typelevel.log4cats.LoggerFactory
 import utils.TimeProvider
@@ -37,20 +40,11 @@ object Main extends IOApp {
       eventMemory         <- IO.pure(EventMemory.impl[IO](eventRef))
       gameLogic           <- IO.pure(GameEngine.impl(stateMemory, eventMemory, playerService))
 
-      //todo: for test only
-      _           <- gameLogic.createUser("marcin")
-      userStats   <- gameLogic.getAllUsersStates()
-      _           <- IO.println(userStats)
-      confBuy     <- gameLogic.buyPlayer("marcin")(PlayerId(38253), 2)
-      _           <- IO.println(confBuy)
-      confSell    <- gameLogic.sellPlayer("marcin")(PlayerId(38253), 1)
-      _           <- IO.println(confSell)
-      profile     <- playerService.getPlayerProfileById(PlayerId(38253))
-      _           <- IO.println(profile)
-      marketValue <- playerService.getMarketValueByPlayerId(PlayerId(38253))
-      _           <- IO.println(marketValue)
-      balance     <- gameLogic.getUserBalance("marcin")
-      _           <- IO.println(balance)
+      playersLoader     <- IO.pure(PlayersLoader.impl[IO](playerProfileClient))
+      (duration, _) <- Clock[IO].timed {
+                             playersLoader.loadPlayersToCache(1, 100)
+                           }
+      _                 <- log.info(s"loaded 100 players in ${duration.toSeconds} seconds.")
 
       exitCode <- runGame(consolePrinter, playerService, gameLogic)
     } yield exitCode

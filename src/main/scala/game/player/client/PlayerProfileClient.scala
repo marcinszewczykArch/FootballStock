@@ -10,7 +10,7 @@ import game.player.client.domain.FetchedPlayerProfile
 import game.player.client.domain.FetchedPlayerSimple
 import game.player.client.domain.PlayerSearchResponse
 import game.player.service.domain.PlayerId
-import org.typelevel.log4cats.LoggerFactory
+import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 import sttp.client3._
 import sttp.client3.circe.asJson
 import sttp.model.Uri
@@ -26,6 +26,8 @@ object PlayerProfileClient {
   def cachedInstance[F[_]: Sync: LoggerFactory](
     config: TransfermarktClientConfig
   ): PlayerProfileClient[F] = {
+    implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[PlayerProfileClient[F]].getName)
+
     val playersClient = PlayerProfileClient.impl[F](config)
     val fetchPlayersProfileCache: Cache[F, PlayerId, FetchedPlayerProfile] =
       Cache.instance[F, PlayerId, FetchedPlayerProfile](

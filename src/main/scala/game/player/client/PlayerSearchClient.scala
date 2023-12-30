@@ -13,8 +13,8 @@ import sttp.model.Uri
 import utils.Cache
 
 //https://github.com/felipeall/transfermarkt-api
-trait PlayerSearchClient[F[_]] { //todo: PlayerProfileClient and PlayerSearchClient
-  def searchByName(playerName: String): F[List[FetchedPlayerSimple]] //todo: osobny klient
+trait PlayerSearchClient[F[_]] {
+  def searchByName(playerName: String): F[List[FetchedPlayerSimple]]
 }
 
 object PlayerSearchClient {
@@ -34,7 +34,7 @@ object PlayerSearchClient {
       )
 
     new PlayerSearchClient[F] {
-      override def searchByName(playerName: String): F[List[FetchedPlayerSimple]] = playersClient.searchByName(playerName)
+      override def searchByName(playerName: String): F[List[FetchedPlayerSimple]] = fetchPlayerSearchCache.get(playerName)
     }
   }
 
