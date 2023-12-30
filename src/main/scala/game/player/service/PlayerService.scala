@@ -7,7 +7,7 @@ import game.errors.GameException
 import game.errors.GameException.PlayerMarketValueNotFoundException
 import game.errors.GameException.PlayerProfileNotFoundException
 import game.errors.GameException.PlayerSearchByNameException
-import game.player.client.TransfermarktClient
+import game.player.client.{PlayerProfileClient, PlayerSearchClient}
 import game.player.client.domain.FetchedMarketValue
 import game.player.client.domain.FetchedPlayerPosition
 import game.player.client.domain.FetchedPlayerProfile
@@ -24,7 +24,10 @@ trait PlayerService[F[_]] {
 
 object PlayerService {
 
-  def impl[F[_]: Sync](client: TransfermarktClient[F]) = new PlayerService[F] {
+  def impl[F[_]: Sync](
+    playerProfileClient: PlayerProfileClient[F],
+    playerSearchClient: PlayerSearchClient[F]
+  ) = new PlayerService[F] {
 
     val toPlayerSimple: FetchedPlayerSimple => PlayerSimple = {
       case FetchedPlayerSimple(id, name, position, club, age, nationality, marketValue) =>
@@ -42,13 +45,12 @@ object PlayerService {
         )
     }
 
-    val toMarketValue: FetchedMarketValue => MarketValue = { case FetchedMarketValue(marketValue, updatedAt) =>
+    val toMarketValue: FetchedPlayerProfile => MarketValue = { playerProfile =>
       MarketValue(
-        value = parseMarketValueToBigDecimal(marketValue) match {
+        value = parseMarketValueToBigDecimal(playerProfile.marketValue) match {
           case Left(err)    => println(s"Not able to get player value. Get 0 instead. Reason: $err"); BigDecimal(0)
           case Right(value) => value
-        },
-        updatedAt = parseInstant(updatedAt)
+        }
       )
     }
 
@@ -92,7 +94,7 @@ object PlayerService {
     }
 
     override def searchByName(playerName: String): F[Either[GameException, List[PlayerSimple]]] =
-      client
+      playerSearchClient
         .searchByName(playerName)
         .map(_.map(toPlayerSimple))
         .attempt
@@ -102,17 +104,17 @@ object PlayerService {
         }
 
     override def getMarketValueByPlayerId(id: PlayerId): F[Either[GameException, MarketValue]] =
-      client
-        .fetchMarketValueByPlayerId(id)
+      playerProfileClient
+        .fetchPlayerProfileById(id)
         .map(toMarketValue)
         .attempt
         .map {
           case Right(marketValue) => Right(marketValue)
-          case Left(err)          => Left(PlayerMarketValueNotFoundException(id.value, err.getMessage))
+          case Left(err)          => Left(PlayerProfileNotFoundException(id.value, err.getMessage))
         }
 
     override def getPlayerProfileById(id: PlayerId): F[Either[GameException, PlayerProfile]] =
-      client
+      playerProfileClient
         .fetchPlayerProfileById(id)
         .map(toPlayerProfile)
         .attempt

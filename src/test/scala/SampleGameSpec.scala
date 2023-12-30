@@ -1,11 +1,21 @@
-import cats.effect.{IO, Ref}
+import cats.effect.IO
+import cats.effect.Ref
 import cats.implicits.toTraverseOps
-import game.domain.{Shares, UserGameState}
-import game.events.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent, UserEvent}
+import game.domain.Shares
+import game.domain.UserGameState
+import game.events.BuyPlayerEvent
+import game.events.InitializeGameEvent
+import game.events.SellPlayerEvent
+import game.events.UserEvent
 import game.logic.GameEngine
-import game.memory.{EventMemory, StateMemory}
-import game.player.client.TransfermarktClient
-import game.player.client.domain.{FetchedMarketValue, FetchedPlayerProfile, FetchedPlayerSimple, PlayerSearchResponse}
+import game.memory.EventMemory
+import game.memory.StateMemory
+import game.player.client.PlayerProfileClient
+import game.player.client.PlayerSearchClient
+import game.player.client.domain.FetchedMarketValue
+import game.player.client.domain.FetchedPlayerProfile
+import game.player.client.domain.FetchedPlayerSimple
+import game.player.client.domain.PlayerSearchResponse
 import game.player.service.PlayerService
 import game.player.service.domain.PlayerId
 import munit.CatsEffectSuite
@@ -18,41 +28,36 @@ import java.time.Instant
 class SampleGameSpec extends CatsEffectSuite {
 
   def getNewGameEngine(implicit timeProvider: TimeProvider[IO]): IO[GameEngine[IO]] = for {
-    transfermarktClient <- IO.pure(new TransfermarktClient[IO] {
-
-                             override def searchByName(playerName: String): IO[List[FetchedPlayerSimple]] =
-                               IO.pure(
-                                 io.circe
-                                   .parser
-                                   .decode[PlayerSearchResponse](jsonString("testResponseMarketValue.json"))
-                                   .toOption
-                                   .get
-                                   .result
-                               )
-
-                             override def fetchMarketValueByPlayerId(id: PlayerId): IO[FetchedMarketValue] = IO.pure(
-                               io.circe
-                                 .parser
-                                 .decode[FetchedMarketValue](jsonString("testResponsePlayerProfile.json"))
-                                 .toOption
-                                 .get
-                             )
+    playerProfileClient <- IO.pure(new PlayerProfileClient[IO] {
 
                              override def fetchPlayerProfileById(id: PlayerId): IO[FetchedPlayerProfile] = IO.pure(
                                io.circe
                                  .parser
-                                 .decode[FetchedPlayerProfile](jsonString("testResponsePlayerSearch.json"))
+                                 .decode[FetchedPlayerProfile](jsonString("testResponsePlayerProfile.json"))
                                  .toOption
                                  .get
                              )
 
                            })
-    playerService <- IO.pure(PlayerService.impl[IO](transfermarktClient))
-    stateRef      <- Ref.of[IO, Map[String, UserGameState]](Map.empty[String, UserGameState])
-    stateMemory   <- IO.pure(StateMemory.impl[IO](stateRef))
-    eventRef      <- Ref.of[IO, List[UserEvent]](Nil)
-    eventMemory   <- IO.pure(EventMemory.impl[IO](eventRef))
-    gameLogic     <- IO.pure(GameEngine.impl(stateMemory, eventMemory, playerService))
+    playerSearchClient  <- IO.pure(new PlayerSearchClient[IO] {
+
+                             override def searchByName(playerName: String): IO[List[FetchedPlayerSimple]] =
+                               IO.pure(
+                                 io.circe
+                                   .parser
+                                   .decode[PlayerSearchResponse](jsonString("testResponsePlayerSearch.json"))
+                                   .toOption
+                                   .get
+                                   .result
+                               )
+
+                           })
+    playerService       <- IO.pure(PlayerService.impl[IO](playerProfileClient, playerSearchClient))
+    stateRef            <- Ref.of[IO, Map[String, UserGameState]](Map.empty[String, UserGameState])
+    stateMemory         <- IO.pure(StateMemory.impl[IO](stateRef))
+    eventRef            <- Ref.of[IO, List[UserEvent]](Nil)
+    eventMemory         <- IO.pure(EventMemory.impl[IO](eventRef))
+    gameLogic           <- IO.pure(GameEngine.impl(stateMemory, eventMemory, playerService))
   } yield gameLogic
 
   test("Sample game one test") {

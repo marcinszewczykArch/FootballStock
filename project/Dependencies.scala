@@ -13,6 +13,18 @@ object Dependencies {
   )
   val typesafeConfig = "com.typesafe" % "config" % Versions.typesafeConfigVersion
 
+  val pureconfig = Seq(
+    "com.github.pureconfig" %% "pureconfig" % "0.17.4",
+    "eu.timepit" %% "refined-pureconfig" % "0.11.0"
+  )
+
+  val logging = Seq(
+    "org.typelevel" %% "log4cats-slf4j" % "2.5.0",
+    "org.typelevel" %% "log4cats-noop" % "2.5.0" % Test,
+    "ch.qos.logback" % "logback-classic" % "1.4.14"
+  )
+
+
 }
 
 object Versions {

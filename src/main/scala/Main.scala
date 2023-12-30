@@ -4,28 +4,33 @@ import cats.effect.IOApp
 import cats.effect.Ref
 import config.AppConfig
 import console.ConsolePrinter
-import game.domain.Shares
 import game.domain.UserGameState
 import game.events.UserEvent
 import game.logic.GameEngine
 import game.memory.EventMemory
 import game.memory.StateMemory
-import game.player.client.TransfermarktClient
+import game.player.client.{PlayerProfileClient, PlayerSearchClient}
 import game.player.service.PlayerService
 import game.player.service.domain.PlayerId
+import org.typelevel.log4cats.LoggerFactory
 import utils.TimeProvider
+import org.typelevel.log4cats.slf4j.Slf4jFactory
 
 object Main extends IOApp {
-  implicit val timeProvider = TimeProvider.impl[IO]
+  implicit val timeProvider: TimeProvider[IO] = TimeProvider.impl[IO]
+  private implicit val loggerFactory: LoggerFactory[IO] = Slf4jFactory.create[IO]
+  private val log = LoggerFactory.getLoggerFromClass(classOf[Main.type])
 
   def run(args: List[String]): IO[ExitCode] =
     for {
-      rawAppConfig        <- AppConfig.getTypesafeConfig
-      appConfig           <- AppConfig.parse(rawAppConfig)
+      _                   <- log.info("starting...")
+      rawAppConfig        <- AppConfig.getTypesafeConfig[IO]
+      appConfig           <- AppConfig.parseAppConfig[IO](rawAppConfig)
       consolePrinter      <- IO.pure(ConsolePrinter.impl[IO])
       _                   <- consolePrinter.printStartMessage[IO]
-      transfermarktClient <- IO.pure(TransfermarktClient.impl[IO](appConfig.transfermarktClientConfig))
-      playerService       <- IO.pure(PlayerService.impl[IO](transfermarktClient))
+      playerProfileClient <- IO.pure(PlayerProfileClient.cachedInstance[IO](appConfig.transfermarktClient))
+      playerSearchClient  <- IO.pure(PlayerSearchClient.cachedInstance[IO](appConfig.playerSearchClient))
+      playerService       <- IO.pure(PlayerService.impl[IO](playerProfileClient, playerSearchClient))
       stateRef            <- Ref.of[IO, Map[String, UserGameState]](Map.empty[String, UserGameState])
       stateMemory         <- IO.pure(StateMemory.impl[IO](stateRef))
       eventRef            <- Ref.of[IO, List[UserEvent]](Nil)

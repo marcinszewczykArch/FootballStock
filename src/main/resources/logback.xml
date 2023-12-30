@@ -1,0 +1,25 @@
+<configuration>
+    <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                %white(%date{yyyy-MM-dd HH:mm:ss.SSS}) %highlight(%-5level) %cyan([%15.15thread])
+                [%blue(%mdc{X-B3-TraceId:--})] %boldYellow(%-36.36logger{35}) %white(:) %message%n%xException
+            </pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
+        <param name="queueSize" value="256"/>
+        <param name="neverBlock" value="true"/>
+        <appender-ref ref="CONSOLE"/>
+    </appender>
+
+    <logger name="com.github.marcinszewczykArch" level="DEBUG"/>
+
+    <root level="INFO">
+        <appender-ref ref="ASYNC_CONSOLE"/>
+    </root>
+
+</configuration>
