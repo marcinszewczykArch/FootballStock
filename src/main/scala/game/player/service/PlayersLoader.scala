@@ -40,7 +40,7 @@ object PlayersLoader {
       .parEvalMapUnordered(maxConcurrent) { id =>
         log.info(s"Fetching PlayerId($id)") *>
           runRetry(3) {
-            playerProfileClient.fetchPlayerProfileById(PlayerId(id)).attempt
+            playerProfileClient.fetchRawPlayerProfileById(PlayerId(id)).attempt
           }
       }
       .compile

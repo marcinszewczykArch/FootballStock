@@ -9,10 +9,10 @@ import game.domain.UserGameState
 import game.events.UserEvent
 import game.logic.GameEngine
 import game.memory.EventMemory
-import game.memory.PlayerProfileClientMemory
 import game.memory.StateMemory
 import game.player.client.PlayerProfileClient
 import game.player.client.PlayerSearchClient
+import game.player.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
 import game.player.service.PlayersLoader
 import game.player.service.domain.PlayerId
@@ -28,24 +28,24 @@ object Main extends IOApp {
 
   def run(args: List[String]): IO[ExitCode] =
     for {
-      _                   <- log.info("starting...")
-      rawAppConfig        <- AppConfig.getTypesafeConfig[IO]
-      appConfig           <- AppConfig.parseAppConfig[IO](rawAppConfig)
-      consolePrinter      <- IO.pure(ConsolePrinter.impl[IO])
-      _                   <- consolePrinter.printStartMessage[IO]
+      _              <- log.info("starting...")
+      rawAppConfig   <- AppConfig.getTypesafeConfig[IO]
+      appConfig      <- AppConfig.parseAppConfig[IO](rawAppConfig)
+      consolePrinter <- IO.pure(ConsolePrinter.impl[IO])
+      _              <- consolePrinter.printStartMessage[IO]
 
       //memory - to be replaced by DynamoDb
-      stateRef            <- Ref.of[IO, Map[String, UserGameState]](Map.empty[String, UserGameState])
-      eventRef            <- Ref.of[IO, List[UserEvent]](Nil)
-      playerProfileRef    <- Ref.of[IO, Map[PlayerId, Json]](Map.empty[PlayerId, Json])
+      stateRef         <- Ref.of[IO, Map[String, UserGameState]](Map.empty[String, UserGameState])
+      eventRef         <- Ref.of[IO, List[UserEvent]](Nil)
+      playerProfileRef <- Ref.of[IO, Map[PlayerId, Json]](Map.empty[PlayerId, Json])
 
-      stateMemory         <- IO.pure(StateMemory.impl[IO](stateRef))
-      eventMemory         <- IO.pure(EventMemory.impl[IO](eventRef))
-      playerProfileMemory <- IO.pure(PlayerProfileClientMemory.impl[IO](playerProfileRef))
+      stateMemory               <- IO.pure(StateMemory.impl[IO](stateRef))
+      eventMemory               <- IO.pure(EventMemory.impl[IO](eventRef))
+      playerProfileClientMemory <- IO.pure(PlayerProfileClientMemory.impl[IO](playerProfileRef))
 
-      playerProfileClient <- IO.pure(PlayerProfileClient.cachedInstance[IO](appConfig.transfermarktClient, playerProfileMemory))
+      playerProfileClient <- IO.pure(PlayerProfileClient.impl[IO](appConfig.transfermarktClient))
       playerSearchClient  <- IO.pure(PlayerSearchClient.cachedInstance[IO](appConfig.playerSearchClient))
-      playerService       <- IO.pure(PlayerService.impl[IO](playerProfileClient, playerSearchClient))
+      playerService       <- IO.pure(PlayerService.impl[IO](playerProfileClientMemory, playerProfileClient, playerSearchClient))
       gameLogic           <- IO.pure(GameEngine.impl(stateMemory, eventMemory, playerService))
 
       playersLoader <- IO.pure(PlayersLoader.impl[IO](playerProfileClient))

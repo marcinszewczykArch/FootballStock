@@ -29,7 +29,7 @@ import java.time.Instant
 class SampleGameSpec extends CatsEffectSuite {
 
   def getNewGameEngine(implicit timeProvider: TimeProvider[IO]): IO[GameEngine[IO]] = for {
-    playerProfileClient <- IO.pure(new PlayerProfileClient[IO] {
+    playerProfileClient <- IO.pure(new PlayerProfileClient[IO] { //todo: make testImpl in PlayerProfileClient or utils
 
                              override def fetchPlayerProfileById(id: PlayerId): IO[FetchedPlayerProfile] = IO.pure(
                                io.circe

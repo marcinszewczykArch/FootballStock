@@ -1,5 +1,7 @@
 package game.errors
 
+import io.circe.DecodingFailure
+
 sealed abstract class GameException(message: String) extends Throwable(message)
 
 object GameException {
@@ -32,5 +34,11 @@ object GameException {
 
   final case class PlayerJsonNotFoundInMemoryException(playerId: Int)
     extends GameException(s"Player JSON with id $playerId not found in memory.")
+
+  final case class PlayerJsonDecodingException(decodingFailure: DecodingFailure)
+    extends GameException(s"Player JSON decoding failure: $decodingFailure")
+
+  final case class PlayerProfileClientException(cause: String)
+    extends GameException(s"Exception while invoking PlayerProfileClient. Message: $cause")
 
 }
