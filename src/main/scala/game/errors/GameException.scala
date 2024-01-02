@@ -29,4 +29,8 @@ object GameException {
 
   final case class UserAlreadyExistsException(userName: String)
     extends GameException(s"User with name $userName already exists.")
+
+  final case class PlayerJsonNotFoundInMemoryException(playerId: Int)
+    extends GameException(s"Player JSON with id $playerId not found in memory.")
+
 }

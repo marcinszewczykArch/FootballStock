@@ -18,6 +18,7 @@ import game.player.client.domain.FetchedPlayerSimple
 import game.player.client.domain.PlayerSearchResponse
 import game.player.service.PlayerService
 import game.player.service.domain.PlayerId
+import io.circe.Json
 import munit.CatsEffectSuite
 import utils.JsonParser.jsonString
 import utils.Parser.CaseClassToString
@@ -38,7 +39,11 @@ class SampleGameSpec extends CatsEffectSuite {
                                  .get
                              )
 
-                           })
+                             override def fetchRawPlayerProfileById(
+                               id: PlayerId
+                             ): IO[Json] = ???
+
+      })
     playerSearchClient  <- IO.pure(new PlayerSearchClient[IO] {
 
                              override def searchByName(playerName: String): IO[List[FetchedPlayerSimple]] =
