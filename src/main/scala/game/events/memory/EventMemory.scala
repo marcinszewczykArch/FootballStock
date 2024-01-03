@@ -1,4 +1,4 @@
-package game.memory
+package game.events.memory
 
 import cats.effect._
 import cats.implicits.toFunctorOps

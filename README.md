@@ -1,7 +1,9 @@
 # FootballStock
 
 ### plan backend:
-- move playerCache from client to memory
+~~- move playerCache from client to memory~~
+- pure to delay
+- replace println by log's
 - add console endpoints/messages to check player memory and cache
 - create stream to update players json periodically / by trigger from console and endpoint
 - design and add http endpoints

@@ -2,7 +2,8 @@ package game.player.service
 
 import cats.data.EitherT
 import cats.effect._
-import cats.implicits.{catsSyntaxApplicativeError, catsSyntaxApplyOps, toFlatMapOps, toFunctorOps}
+import cats.implicits.catsSyntaxApplicativeError
+import cats.implicits.toFunctorOps
 import game.errors.GameException
 import game.errors.GameException.PlayerSearchByNameException
 import game.player.client.PlayerProfileClient
@@ -27,7 +28,6 @@ object PlayerService {
 
   def impl[F[_]: Sync: LoggerFactory](
     playerProfileClientMemory: PlayerProfileClientMemory[F],
-    playerProfileClient: PlayerProfileClient[F],
     playerSearchClient: PlayerSearchClient[F]
   ) = new PlayerService[F] {
     implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[PlayerService[F]].getName)
@@ -50,16 +50,6 @@ object PlayerService {
 
     private def playerIdToJson(id: PlayerId): F[Either[GameException, FetchedPlayerProfile]] = (for {
       json                 <- EitherT(playerProfileClientMemory.getPlayerJson(id))
-                                .handleErrorWith(err =>
-                                  EitherT(
-                                    log.info(s"Player $id not found in memory [$err]. Calling http client...") *> {
-                                      (for {
-                                        json <- EitherT(playerProfileClient.fetchRawPlayerProfileById(id))
-                                        _    <- EitherT(playerProfileClientMemory.savePlayerJson(id)(json))
-                                      } yield json).value
-                                    }
-                                  )
-                                )
       fetchedPlayerProfile <- EitherT.fromEither(jsonToFetchedPlayerProfile(json))
     } yield fetchedPlayerProfile).value
 

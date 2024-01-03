@@ -5,8 +5,8 @@ import cats.Monad
 import cats.effect.std.Console
 import cats.syntax.all._
 import game.errors.GameException
+import game.gameState.memory.StateMemory
 import game.logic.GameEngine
-import game.memory.StateMemory
 import game.player.service.PlayerService
 import game.player.service.domain.{PlayerId, PlayerSimple}
 

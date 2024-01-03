@@ -1,4 +1,4 @@
-package game.domain
+package game.gameState
 
 import java.time.Instant
 import scala.annotation.tailrec

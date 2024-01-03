@@ -4,7 +4,7 @@ import cats.Applicative
 import cats.data.EitherT
 import cats.effect._
 import cats.implicits.toTraverseOps
-import game.domain._
+import game.gameState._
 import game.errors.GameException
 import game.errors.GameException.NotEnoughMoneyException
 import game.errors.GameException.SharesNumberException
@@ -14,8 +14,8 @@ import game.events.InitializeGameEvent
 import game.events.SellPlayerEvent
 import game.events.UserEvent
 import game.events.UserEventType
-import game.memory.EventMemory
-import game.memory.StateMemory
+import game.events.memory.{EventMemory}
+import game.gameState.memory.StateMemory
 import game.player.service.PlayerService
 import game.player.service.domain.MarketValue
 import game.player.service.domain.PlayerId

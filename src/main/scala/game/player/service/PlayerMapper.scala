@@ -85,7 +85,7 @@ object PlayerMapper {
           .getOrElse(PlayerPosition.empty),
         club = club.flatMap(_.name).getOrElse("-"),
         marketValue = parseMarketValueToBigDecimal(marketValue) match {
-          case Left(err)    => println(s"Not able to get player value. Get 0 instead. Reason: $err"); BigDecimal(0)
+          case Left(err)    => BigDecimal(0) //todo: add log
           case Right(value) => value
         },
         updatedAt = parseInstant(updatedAt)

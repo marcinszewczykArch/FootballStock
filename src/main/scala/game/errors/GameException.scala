@@ -1,5 +1,6 @@
 package game.errors
 
+import game.player.service.domain.PlayerId
 import io.circe.DecodingFailure
 
 sealed abstract class GameException(message: String) extends Throwable(message)
@@ -20,8 +21,8 @@ object GameException {
   final case class SharesNumberException(newShares: Int)
     extends GameException(s"Incorrect number of shares after transaction (new shares number = $newShares). Total must be between 0 and 100.")
 
-  final case class PlayerMarketValueNotFoundException(playerId: Int, err: String)
-    extends GameException(s"Market value for player with id [$playerId] not found. The reason is: $err")
+  final case class PlayerMarketValueNotFoundException(playerId: PlayerId, err: String)
+    extends GameException(s"Market value for player $playerId not found. The reason is: $err")
 
   final case class PlayerSearchByNameException(playerName: String, err: String)
     extends GameException(s"Could not find player by name [$playerName]. The reason is: $err")
@@ -32,8 +33,11 @@ object GameException {
   final case class UserAlreadyExistsException(userName: String)
     extends GameException(s"User with name $userName already exists.")
 
-  final case class PlayerJsonNotFoundInMemoryException(playerId: Int)
-    extends GameException(s"Player JSON with id $playerId not found in memory.")
+  final case class PlayerJsonNotFoundInMemoryException(playerId: PlayerId)
+    extends GameException(s"Player profile JSON for player $playerId not found in memory.")
+
+  final case class PlayerJsonNotFoundInMemoryCacheException(playerId: PlayerId)
+    extends GameException(s"Player profile JSON for player $playerId not found in memory cache.")
 
   final case class PlayerJsonDecodingException(decodingFailure: DecodingFailure)
     extends GameException(s"Player JSON decoding failure: $decodingFailure")

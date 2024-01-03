@@ -5,11 +5,11 @@ import cats.effect.Ref
 import cats.effect.kernel.Clock
 import config.AppConfig
 import console.ConsolePrinter
-import game.domain.UserGameState
 import game.events.UserEvent
+import game.events.memory.EventMemory
+import game.gameState.UserGameState
+import game.gameState.memory.StateMemory
 import game.logic.GameEngine
-import game.memory.EventMemory
-import game.memory.StateMemory
 import game.player.client.PlayerProfileClient
 import game.player.client.PlayerSearchClient
 import game.player.memory.PlayerProfileClientMemory
@@ -18,8 +18,8 @@ import game.player.service.PlayersLoader
 import game.player.service.domain.PlayerId
 import io.circe.Json
 import org.typelevel.log4cats.LoggerFactory
-import utils.TimeProvider
 import org.typelevel.log4cats.slf4j.Slf4jFactory
+import utils.TimeProvider
 
 object Main extends IOApp {
   implicit val timeProvider: TimeProvider[IO] = TimeProvider.impl[IO]
@@ -31,7 +31,7 @@ object Main extends IOApp {
       _              <- log.info("starting...")
       rawAppConfig   <- AppConfig.getTypesafeConfig[IO]
       appConfig      <- AppConfig.parseAppConfig[IO](rawAppConfig)
-      consolePrinter <- IO.pure(ConsolePrinter.impl[IO])
+      consolePrinter <- IO.delay(ConsolePrinter.impl[IO])
       _              <- consolePrinter.printStartMessage[IO]
 
       //memory - to be replaced by DynamoDb
@@ -39,20 +39,18 @@ object Main extends IOApp {
       eventRef         <- Ref.of[IO, List[UserEvent]](Nil)
       playerProfileRef <- Ref.of[IO, Map[PlayerId, Json]](Map.empty[PlayerId, Json])
 
-      stateMemory               <- IO.pure(StateMemory.impl[IO](stateRef))
-      eventMemory               <- IO.pure(EventMemory.impl[IO](eventRef))
-      playerProfileClientMemory <- IO.pure(PlayerProfileClientMemory.impl[IO](playerProfileRef))
+      stateMemory                     <- IO.delay(StateMemory.impl[IO](stateRef))
+      eventMemory                     <- IO.delay(EventMemory.impl[IO](eventRef))
+      playerProfileClient             <- IO.delay(PlayerProfileClient.impl[IO](appConfig.transfermarktClient))
+      playerProfileClientMemory       <- IO.delay(PlayerProfileClientMemory.impl[IO](playerProfileRef))
+      playerProfileClientMemoryCached <-
+        IO.delay(PlayerProfileClientMemory.cachedInstance[IO](appConfig.transfermarktClient, playerProfileClient, playerProfileClientMemory))
+      playerSearchClient              <- IO.delay(PlayerSearchClient.cachedInstance[IO](appConfig.playerSearchClient))
+      playerService                   <- IO.delay(PlayerService.impl[IO](playerProfileClientMemoryCached, playerSearchClient))
+      gameLogic                       <- IO.delay(GameEngine.impl(stateMemory, eventMemory, playerService))
 
-      playerProfileClient <- IO.pure(PlayerProfileClient.impl[IO](appConfig.transfermarktClient))
-      playerSearchClient  <- IO.pure(PlayerSearchClient.cachedInstance[IO](appConfig.playerSearchClient))
-      playerService       <- IO.pure(PlayerService.impl[IO](playerProfileClientMemory, playerProfileClient, playerSearchClient))
-      gameLogic           <- IO.pure(GameEngine.impl(stateMemory, eventMemory, playerService))
-
-      playersLoader <- IO.pure(PlayersLoader.impl[IO](playerProfileClient))
-      (duration, _) <- Clock[IO].timed {
-                         playersLoader.loadPlayersToCache(1, 100)
-                       }
-      _             <- log.info(s"loaded 100 players in ${duration.toSeconds} seconds.")
+      playersLoader <- IO.delay(PlayersLoader.impl[IO](playerProfileClient, playerProfileClientMemory))
+      _             <- playersLoader.loadPlayersToMemory(1, 100)
 
       exitCode <- runGame(consolePrinter, playerService, gameLogic)
     } yield exitCode

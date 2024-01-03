@@ -1,4 +1,4 @@
-package game.domain
+package game.gameState
 
 import game.player.service.domain.PlayerId
 
