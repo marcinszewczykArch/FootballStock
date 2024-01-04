@@ -1,0 +1,15 @@
+{
+  "TableName": "PlayerProfile",
+  "KeySchema": [
+    { "AttributeName": "playerId", "KeyType": "HASH" },
+    { "AttributeName": "playerActive", "KeyType": "RANGE" }
+  ],
+  "AttributeDefinitions": [
+    { "AttributeName": "playerId", "AttributeType": "S" },
+    { "AttributeName": "playerActive", "AttributeType": "S" }
+  ],
+  "ProvisionedThroughput": {
+    "ReadCapacityUnits": 5,
+    "WriteCapacityUnits": 5
+  }
+}

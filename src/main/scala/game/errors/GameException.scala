@@ -45,4 +45,6 @@ object GameException {
   final case class PlayerProfileClientException(cause: String)
     extends GameException(s"Exception while invoking PlayerProfileClient. Message: $cause")
 
+  final case class DynamoReaderException(cause: String)
+  extends GameException(s"Exception while reading from DynamoDb. Message: $cause")
 }

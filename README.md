@@ -19,3 +19,25 @@
 - display player profile
 - display user state
 - button to buy/sell player
+
+
+### DynamoDB Local
+- use docker image:
+
+  `docker pull amazon/dynamodb-local`
+
+- run docker image (`-sharedDb` is i portant to share tables through all credentials/regions):
+
+  `docker run -p 8000:8000 amazon/dynamodb-local -jar DynamoDBLocal.jar -inMemory -sharedDb`
+
+- to create all tables locally from .json file definition run:
+
+```aws dynamodb create-table --cli-input-json file://src/main/resources/playerProfileTable.json --endpoint-url http://localhost:8000```
+
+```???```
+
+```???```
+
+- to check whether tables has been created type:
+
+```aws dynamodb list-tables --endpoint-url http://localhost:8000    ```

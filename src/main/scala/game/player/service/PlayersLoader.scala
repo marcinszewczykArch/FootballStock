@@ -96,8 +96,8 @@ object PlayersLoader {
     }
 
     private def isMeetingUpdateCriteria(now: Instant)(playerJsonFromMemory: Json): Boolean = {
-      val isActivePlayer: Boolean = playerJsonFromMemory.findAllByKey("isRetired").map(_.toString()).contains("false")
-      val lastUpdate: Instant = parseInstant(playerJsonFromMemory.findAllByKey("updatedAt").headOption.map(_.toString()))
+      val isActivePlayer: Boolean = playerJsonFromMemory.findAllByKey("isRetired").map(_.asString).contains("false")
+      val lastUpdate: Instant = parseInstant(playerJsonFromMemory.findAllByKey("updatedAt").headOption.flatMap(_.asString))
       val isOlderThan12Hours = lastUpdate.isBefore(now.minus(12, ChronoUnit.HOURS))
 
       isActivePlayer && isOlderThan12Hours

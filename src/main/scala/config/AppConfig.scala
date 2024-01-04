@@ -8,7 +8,7 @@ import com.comcast.ip4s.Host
 import com.comcast.ip4s.Port
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import config.AppConfig.{HttpConfig, PlayerSearchClientConfig, TransfermarktClientConfig}
+import config.AppConfig.{AwsConfig, HttpConfig, PlayerSearchClientConfig, TransfermarktClientConfig}
 import sttp.client3.UriContext
 import sttp.model.Uri
 import cats.syntax.all._
@@ -17,6 +17,7 @@ import pureconfig._
 import pureconfig.generic.auto._
 import pureconfig.error.CannotConvert
 import eu.timepit.refined.pureconfig._
+import software.amazon.awssdk.regions.Region
 
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
@@ -24,6 +25,7 @@ import scala.util.control.NoStackTrace
 
 final case class AppConfig(
   http: HttpConfig,
+  awsConfig: AwsConfig,
   transfermarktClient: TransfermarktClientConfig,
   playerSearchClient: PlayerSearchClientConfig
 )
@@ -31,6 +33,9 @@ final case class AppConfig(
 object AppConfig {
 
   final case class HttpConfig(host: Host, port: Port)
+
+  final case class AwsConfig(awsAccessKey: String, awsSecretKey: String, awsRegion: Region)
+
 
   final case class TransfermarktClientConfig(
     uri: Uri,
@@ -54,6 +59,8 @@ object AppConfig {
       case None        => Left(CannotConvert(int.toString, "com.comcast.ip4s.Port", "not a valid port"))
     }
   }
+
+  implicit val regionConfigReader: ConfigReader[Region] = ConfigReader.fromNonEmptyStringTry(str => Try(Region.of(str)))
 
   implicit val uriConfigReader: ConfigReader[Uri] = ConfigReader.fromNonEmptyStringTry(str => Try(uri"$str"))
 

@@ -24,6 +24,10 @@ object Dependencies {
     "ch.qos.logback" % "logback-classic" % "1.4.14"
   )
 
+  val scanamo = Seq("org.scanamo" %% "scanamo" % Versions.scanamoVersion,
+  "org.scanamo" %% "scanamo-testkit" % Versions.scanamoVersion % Test
+  )
+
 
 }
 
@@ -35,4 +39,5 @@ object Versions {
   val munitVersion = "1.0.7"
   val sttpVersion = "3.9.0"
   val typesafeConfigVersion = "1.4.3"
+  val scanamoVersion = "1.0.0-M23"
 }
