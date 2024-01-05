@@ -2,10 +2,17 @@
 
 ### plan backend:
 ~~- move playerCache from client to memory~~
-- pure to delay
+- PlayerId as Long
+~~- pure to delay~~
 - replace println by log's
 - add console endpoints/messages to check player memory and cache
-- create stream to update players json periodically / by trigger from console and endpoint
+- create 2 streams to update players json periodically and combine them:
+    1. Take from db all playerIds where:
+    - player is active (not retired)
+    - last update (from client json) was more than given time period
+    2. Find last PlayerId in db and try to fetch next N players from client
+    - if all failed - stop fetching
+    - if any found - scan next N number
 - design and add http endpoints
 - read envs from cloud (aws credentials)
 - create dynamoDb client
@@ -40,4 +47,10 @@
 
 - to check whether tables has been created type:
 
-```aws dynamodb list-tables --endpoint-url http://localhost:8000    ```
+```aws dynamodb list-tables --endpoint-url http://localhost:8000```
+
+```aws dynamodb describe-table --table-name PlayerProfile  --endpoint-url http://localhost:8000```
+
+- to scan table:
+
+```aws dynamodb scan --table-name PlayerProfile --endpoint-url http://localhost:8000```

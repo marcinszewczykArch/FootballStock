@@ -55,7 +55,7 @@ object Main extends IOApp {
       gameLogic                         <- IO.delay(GameEngine.impl(stateMemory, eventMemory, playerService))
 
       playersLoader <- IO.delay(PlayersLoader.impl[IO](playerProfileClient, playerProfileClientMemoryDynamoDb))
-      _             <- playersLoader.loadPlayersToMemory(1, 1)
+      _             <- playersLoader.loadPlayersToMemory(38253, 38255)
 
       exitCode <- runGame(consolePrinter, playerService, gameLogic)
     } yield exitCode

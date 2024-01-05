@@ -28,7 +28,7 @@ object PlayersLoader {
   def impl[F[_]: Async: LoggerFactory](
     playerProfileClient: PlayerProfileClient[F],
     playerProfileClientMemory: PlayerProfileClientMemory[F]
-                                      )(
+  )(
     implicit timeProvider: TimeProvider[F]
   ) = new PlayersLoader[F] {
     val maxConcurrent = 8
@@ -53,7 +53,7 @@ object PlayersLoader {
       .parEvalMapUnordered(maxConcurrent) { playerId =>
         log.info(s"$playerId checking presence in memory...") *>
           playerProfileClientMemory
-            .getPlayerJson(playerId)
+            .getPlayerJson(playerId) // getPlayers active with update date older than T
             .flatMap {
               case Right(json) =>
                 log.info(s"$playerId found in memory. Checking update criteria...") *> {
@@ -73,6 +73,27 @@ object PlayersLoader {
       }
       .compile
       .drain
+
+    private def updateStream(ref: Ref[F, (Int, Int)], now: Instant) = fs2
+      .Stream
+      .evals(
+        playerProfileClientMemory.getAllPlayerIdsWithCriteria(
+          playerActive = true,
+          lastUpdateBefore = now.minus(12, ChronoUnit.HOURS) //todo: to update criteria
+        )
+      ).map(playerEither => PlayerId(playerEither.toOption.get.toInt)) //todo: get rid of .get
+      .parEvalMapUnordered(maxConcurrent) { playerId =>
+        fetchFromHttpClient(ref)(playerId) //todo: and then *> updatePlayerInDb
+      }
+      .compile
+      .drain //todo: plus second stream fetching players not present in db yet, then combine both
+
+    private def fetchNotPresentInDbStream(ref: Ref[F, (Int, Int)]) = fs2
+      .Stream
+    //todo: plus second stream fetching players not present in db yet, then combine both
+    // Find last PlayerId in db and try to fetch next N players from client
+    // - if all failed - stop fetching
+    // - if any found - scan next N number
 
     private def fetchFromHttpClient(
       ref: Ref[F, (Int, Int)]
