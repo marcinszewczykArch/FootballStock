@@ -47,4 +47,7 @@ object GameException {
 
   final case class DynamoReaderException(cause: String)
   extends GameException(s"Exception while reading from DynamoDb. Message: $cause")
+
+  final case class JsonParsingFailure(cause: String)
+    extends GameException(s"Exception while parsing json from string. Message: $cause")
 }

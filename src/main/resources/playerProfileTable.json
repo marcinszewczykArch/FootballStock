@@ -1,12 +1,12 @@
 {
   "TableName": "PlayerProfile",
   "KeySchema": [
-    { "AttributeName": "playerId", "KeyType": "HASH" },
-    { "AttributeName": "lastUpdate", "KeyType": "RANGE" }
+    { "AttributeName": "source", "KeyType": "HASH" },
+    { "AttributeName": "playerId", "KeyType": "RANGE" }
   ],
   "AttributeDefinitions": [
-    { "AttributeName": "playerId", "AttributeType": "N" },
-    { "AttributeName": "lastUpdate", "AttributeType": "N" }
+    { "AttributeName": "source", "AttributeType": "S" },
+    { "AttributeName": "playerId", "AttributeType": "N" }
   ],
   "ProvisionedThroughput": {
     "ReadCapacityUnits": 5,

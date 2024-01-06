@@ -9,7 +9,8 @@ import game.gameState.memory.StateMemory
 import game.logic.GameEngine
 import game.player.client.{PlayerProfileClient, PlayerSearchClient}
 import game.player.memory.PlayerProfileClientMemory
-import game.player.service.{PlayerService, PlayersLoader}
+import game.player.service.{PlayerService, PlayersUpdater}
+import game.player.service.PlayersUpdater.UpdateCriteria
 import game.player.service.domain.PlayerId
 import io.circe.Json
 import org.scanamo.Scanamo
@@ -18,6 +19,8 @@ import org.typelevel.log4cats.slf4j.Slf4jFactory
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient
 import utils.TimeProvider
+
+import scala.concurrent.duration.{FiniteDuration, HOURS}
 
 object Main extends IOApp {
   implicit val timeProvider: TimeProvider[IO] = TimeProvider.impl[IO]
@@ -54,8 +57,9 @@ object Main extends IOApp {
       playerService                     <- IO.delay(PlayerService.impl[IO](playerProfileClientMemoryCached, playerSearchClient))
       gameLogic                         <- IO.delay(GameEngine.impl(stateMemory, eventMemory, playerService))
 
-      playersLoader <- IO.delay(PlayersLoader.impl[IO](playerProfileClient, playerProfileClientMemoryDynamoDb))
-      _             <- playersLoader.loadPlayersToMemory(38253, 38255)
+      playersUpdater <- IO.delay(PlayersUpdater.impl[IO](playerProfileClient, playerProfileClientMemoryDynamoDb))
+      playersUpdateCriteria = UpdateCriteria(FiniteDuration(12, HOURS)) //todo: read from appConfig
+      _              <- playersUpdater.updatePlayersInMemory(playersUpdateCriteria)
 
       exitCode <- runGame(consolePrinter, playerService, gameLogic)
     } yield exitCode

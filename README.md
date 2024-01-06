@@ -5,6 +5,7 @@
 - PlayerId as Long
 ~~- pure to delay~~
 - replace println by log's
+- TransfermarktClientConfig rename
 - add console endpoints/messages to check player memory and cache
 - create 2 streams to update players json periodically and combine them:
     1. Take from db all playerIds where:
@@ -13,6 +14,9 @@
     2. Find last PlayerId in db and try to fetch next N players from client
     - if all failed - stop fetching
     - if any found - scan next N number
+- cleanup existing tests
+- new tests for playerProfile Client, cache and fetch streams
+- get rid of .get in fetch players streams
 - design and add http endpoints
 - read envs from cloud (aws credentials)
 - create dynamoDb client

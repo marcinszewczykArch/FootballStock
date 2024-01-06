@@ -7,23 +7,19 @@ import cats.implicits.{catsSyntaxApplyOps, toFlatMapOps, toFunctorOps}
 import cats.syntax.all._
 import config.AppConfig.TransfermarktClientConfig
 import game.errors.GameException
-import game.errors.GameException.{DynamoReaderException, PlayerJsonNotFoundInMemoryCacheException, PlayerJsonNotFoundInMemoryException}
+import game.errors.GameException.{DynamoReaderException, JsonParsingFailure, PlayerJsonNotFoundInMemoryCacheException, PlayerJsonNotFoundInMemoryException}
 import game.player.client.PlayerProfileClient
 import game.player.service.domain.PlayerId
 import io.circe.{Json, parser}
 import org.scanamo.Scanamo
 import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 import utils.Cache
-import utils.Parser.parseInstant
-
-import java.time.Instant
-import scala.util.Either
 
 trait PlayerProfileClientMemory[F[_]] {
 
-  def savePlayerJson(playerId: PlayerId)(playerJson: Json): F[Either[GameException, Unit]]
-  def getPlayerJson(playerId: PlayerId): F[Either[GameException, Json]]
-  def getAllPlayerIdsWithCriteria(playerActive: Boolean, lastUpdateBefore: Instant): F[List[Either[GameException, Long]]]
+  def getById(playerId: PlayerId): F[Either[GameException, Json]]
+  def getAll(): F[Map[PlayerId, Json]]
+  def save(playerId: PlayerId)(playerJson: Json): F[Either[GameException, Unit]]
 
 }
 
@@ -42,13 +38,13 @@ object PlayerProfileClientMemory {
       )(
         lookup = playerId =>
           log.info(s"player $playerId not found in cache. Checking memory...") *>
-            underlying.getPlayerJson(playerId).flatMap {
+            underlying.getById(playerId).flatMap {
               case Right(json) => Applicative[F].pure(json)
               case Left(err)   =>
                 (for {
                   _    <- EitherT.liftF(log.info(s"${err.getMessage} Calling http client..."))
                   json <- EitherT(playerProfileClient.fetchRawPlayerProfileById(playerId))
-                  _    <- EitherT(underlying.savePlayerJson(playerId)(json))
+                  _    <- EitherT(underlying.save(playerId)(json))
                 } yield json).rethrowT
             }
       )(
@@ -57,14 +53,14 @@ object PlayerProfileClientMemory {
       )
 
     new PlayerProfileClientMemory[F] {
-      override def savePlayerJson(playerId: PlayerId)(playerJson: Json): F[Either[GameException, Unit]] =
-        underlying.savePlayerJson(playerId)(playerJson)
-      override def getPlayerJson(playerId: PlayerId): F[Either[GameException, Json]] =
-        fetchRawPlayersProfileCache.get(playerId).attempt.map(_.left.map(_ => PlayerJsonNotFoundInMemoryCacheException(playerId)))
-      override def getAllPlayerIdsWithCriteria(
-        playerActive: Boolean,
-        lastUpdateBefore: Instant
-      ): F[List[Either[GameException, Long]]] = ???
+      def getById(playerId: PlayerId): F[Either[GameException, Json]] =
+        fetchRawPlayersProfileCache
+          .get(playerId)
+          .attempt
+          .map(_.left.map(_ => PlayerJsonNotFoundInMemoryCacheException(playerId)))
+      def getAll(): F[Map[PlayerId, Json]] = underlying.getAll()
+      def save(playerId: PlayerId)(playerJson: Json): F[Either[GameException, Unit]] =
+        underlying.save(playerId)(playerJson)
     }
   }
 
@@ -75,21 +71,18 @@ object PlayerProfileClientMemory {
   ): PlayerProfileClientMemory[F] =
     new PlayerProfileClientMemory[F] {
 
-      override def savePlayerJson(playerId: PlayerId)(playerJson: Json): F[Either[GameException, Unit]] = (for {
+      override def save(playerId: PlayerId)(playerJson: Json): F[Either[GameException, Unit]] = (for {
         json <- EitherT.right[GameException](ref.update(_ + (playerId -> playerJson)))
       } yield json).value
 
-      override def getPlayerJson(playerId: PlayerId): F[Either[GameException, Json]] = ref
+      override def getById(playerId: PlayerId): F[Either[GameException, Json]] = ref
         .get
         .map(_.get(playerId) match {
           case Some(playerJson) => Right(playerJson)
           case None             => Left(PlayerJsonNotFoundInMemoryException(playerId))
         })
 
-      override def getAllPlayerIdsWithCriteria(
-        playerActive: Boolean,
-        lastUpdateBefore: Instant
-      ): F[List[Either[GameException, Long]]] = ???
+      override def getAll(): F[Map[PlayerId, Json]] = ref.get
 
     }
 
@@ -98,17 +91,14 @@ object PlayerProfileClientMemory {
       import org.scanamo._
       import org.scanamo.generic.auto._
       import org.scanamo.syntax._
+
       implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[PlayerProfileClientMemory[F]].getName)
 
-      case class PlayerProfileTable(playerId: Long, lastUpdate: Long, playerActive: Boolean, json: String)
-      val table = Table[PlayerProfileTable]("PlayerProfile")
+      private val SOURCE_TRANSFERMARKT = "Transfermarkt"
+      private val table = Table[PlayerProfileTable]("PlayerProfile")
+      private case class PlayerProfileTable(source: String, playerId: Int, json: String)
 
-      def getPlayerStatus(playerJson: Json): Boolean =
-        !playerJson.findAllByKey("isRetired").headOption.flatMap(_.asBoolean).getOrElse(false)
-      def getLastUpdate(playerJson: Json): Long =
-        parseInstant(playerJson.findAllByKey("updatedAt").headOption.flatMap(_.asString)).toEpochMilli
-
-      override def savePlayerJson(
+      override def save(
         playerId: PlayerId
       )(
         playerJson: Json
@@ -116,9 +106,8 @@ object PlayerProfileClientMemory {
         .exec(
           table.put(
             PlayerProfileTable(
+              source = SOURCE_TRANSFERMARKT,
               playerId = playerId.value,
-              lastUpdate = getLastUpdate(playerJson),
-              playerActive = getPlayerStatus(playerJson),
               json = playerJson.toString()
             )
           )
@@ -126,29 +115,35 @@ object PlayerProfileClientMemory {
         .asRight[GameException]
         .pure
 
-      override def getPlayerJson(
+      override def getById(
         playerId: PlayerId
       ): F[Either[GameException, Json]] = scanamo
-        .exec(table.query("playerId" === playerId.value.toString))
-        .headOption
-        .map(
-          _.left
-            .map(err => DynamoReaderException(err.toString))
-        ) match {
+        .exec(table.get("source" === SOURCE_TRANSFERMARKT and "playerId" === playerId.value.toLong))
+        .map(_.left.map(err => DynamoReaderException(err.toString))) match {
         case Some(value) =>
-          Applicative[F].pure(value.map(playerProfile => parser.parse(playerProfile.json).toOption.get).leftWiden[GameException])//todo get rid of get
-        case None        => Applicative[F].pure(Left[GameException, Json](DynamoReaderException("???")))
+          value
+            .map(_.json)
+            .flatMap(str =>
+              parser.parse(str) match {
+                case Left(parsingFailure) => Left[GameException, Json](JsonParsingFailure(parsingFailure.getMessage()))
+                case Right(json)          => Right[GameException, Json](json)
+              }
+            )
+            .pure
+
+        case None => Applicative[F].pure(Left[GameException, Json](DynamoReaderException(s"Result for $playerId not found in memory.")))
       }
 
-      override def getAllPlayerIdsWithCriteria(
-        playerActive: Boolean,
-        lastUpdateBefore: Instant
-      ): F[List[Either[GameException, Long]]] = Applicative[F].pure(
-        scanamo
-          .exec(table.query("isActive" === true and "lastUpdate" < lastUpdateBefore.toEpochMilli))
-          .map(_.map(playerProfile => playerProfile.playerId))
-          .map(_.left.map(err => DynamoReaderException(err.toString)).leftWiden[GameException])
-      )
+      override def getAll(): F[Map[PlayerId, Json]] = scanamo
+        .exec(table.scan())
+        .sequence
+        .getOrElse(Nil)
+        .mapFilter { record =>
+          val playerId = PlayerId(record.playerId)
+          parser.parse(record.json).toOption.map(json => playerId -> json)
+        }
+        .toMap
+        .pure
 
     }
 

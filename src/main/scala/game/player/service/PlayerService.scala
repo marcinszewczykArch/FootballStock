@@ -49,7 +49,7 @@ object PlayerService {
       playerIdToJson(id).map(_.map(fetchedPlayerProfileToProfile))
 
     private def playerIdToJson(id: PlayerId): F[Either[GameException, FetchedPlayerProfile]] = (for {
-      json                 <- EitherT(playerProfileClientMemory.getPlayerJson(id))
+      json                 <- EitherT(playerProfileClientMemory.getById(id))
       fetchedPlayerProfile <- EitherT.fromEither(jsonToFetchedPlayerProfile(json))
     } yield fetchedPlayerProfile).value
 
