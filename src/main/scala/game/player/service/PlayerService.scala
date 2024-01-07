@@ -9,7 +9,7 @@ import game.errors.GameException.PlayerSearchByNameException
 import game.player.client.PlayerProfileClient
 import game.player.client.PlayerSearchClient
 import game.player.client.domain.FetchedPlayerProfile
-import game.player.memory.PlayerProfileClientMemory
+import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerMapper.fetchedPlayerProfileToMarketValue
 import game.player.service.PlayerMapper.fetchedPlayerProfileToProfile
 import game.player.service.PlayerMapper.fetchedPlayerSimpleToPlayerSimple

@@ -1,11 +1,11 @@
-package game.player.memory
+package game.player.client.memory
 
 import cats.Applicative
 import cats.data.EitherT
 import cats.effect._
 import cats.implicits.{catsSyntaxApplyOps, toFlatMapOps, toFunctorOps}
 import cats.syntax.all._
-import config.AppConfig.TransfermarktClientConfig
+import config.AppConfig.PlayerProfileClientConfig
 import game.errors.GameException
 import game.errors.GameException.{DynamoReaderException, JsonParsingFailure, PlayerJsonNotFoundInMemoryCacheException, PlayerJsonNotFoundInMemoryException}
 import game.player.client.PlayerProfileClient
@@ -26,7 +26,7 @@ trait PlayerProfileClientMemory[F[_]] {
 object PlayerProfileClientMemory {
 
   def cachedInstance[F[_]: Sync: LoggerFactory](
-    config: TransfermarktClientConfig,
+    config: PlayerProfileClientConfig,
     playerProfileClient: PlayerProfileClient[F],
     underlying: PlayerProfileClientMemory[F]
   ): PlayerProfileClientMemory[F] = {

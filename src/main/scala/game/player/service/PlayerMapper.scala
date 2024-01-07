@@ -18,7 +18,7 @@ import game.player.client.domain.FetchedMarketValue
 import game.player.client.domain.FetchedPlayerPosition
 import game.player.client.domain.FetchedPlayerProfile
 import game.player.client.domain.FetchedPlayerSimple
-import game.player.memory.PlayerProfileClientMemory
+import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.domain._
 import io.circe.DecodingFailure
 import io.circe.Json

@@ -4,30 +4,30 @@ import cats.effect._
 import cats.implicits.toFunctorOps
 import game.errors.GameException
 import game.errors.GameException.UserNotFoundException
-import game.events.UserEvent
+import game.events.Event
 
 trait EventMemory[F[_]] {
 
-  def sendEvent(event: UserEvent): F[Unit]
-  def getEventsForPlayer(user: String): F[Either[GameException, List[UserEvent]]]
+  def sendEvent(event: Event): F[Unit]
+  def getEventsForUser(user: String): F[Either[GameException, List[Event]]]
 
 }
 
 object EventMemory {
 
   def impl[F[_]](
-    ref: Ref[F, List[UserEvent]]
+    ref: Ref[F, List[Event]]
   )(
     implicit F: Sync[F]
   ): EventMemory[F] =
     new EventMemory[F] {
-      override def sendEvent(event: UserEvent): F[Unit] = ref.update(_ :+ event)
+      override def sendEvent(event: Event): F[Unit] = ref.update(_ :+ event)
 
-      override def getEventsForPlayer(user: String): F[Either[GameException, List[UserEvent]]] = ref
+      override def getEventsForUser(user: String): F[Either[GameException, List[Event]]] = ref
         .get
         .map(_.filter(_.user == user) match {
           case Nil                         => Left(UserNotFoundException(user))
-          case userEvents: List[UserEvent] => Right(userEvents)
+          case userEvents: List[Event] => Right(userEvents)
         })
 
     }

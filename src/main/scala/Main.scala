@@ -2,15 +2,14 @@ import cats.effect.{ExitCode, IO, IOApp, Ref}
 import config.AppConfig
 import config.AppConfig.AwsConfig
 import console.ConsolePrinter
-import game.events.UserEvent
+import game.events.Event
 import game.events.memory.EventMemory
 import game.gameState.UserGameState
 import game.gameState.memory.StateMemory
 import game.logic.GameEngine
+import game.player.client.memory.PlayerProfileClientMemory
 import game.player.client.{PlayerProfileClient, PlayerSearchClient}
-import game.player.memory.PlayerProfileClientMemory
 import game.player.service.{PlayerService, PlayersUpdater}
-import game.player.service.PlayersUpdater.UpdateCriteria
 import game.player.service.domain.PlayerId
 import io.circe.Json
 import org.scanamo.Scanamo
@@ -19,8 +18,6 @@ import org.typelevel.log4cats.slf4j.Slf4jFactory
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient
 import utils.TimeProvider
-
-import scala.concurrent.duration.{FiniteDuration, HOURS}
 
 object Main extends IOApp {
   implicit val timeProvider: TimeProvider[IO] = TimeProvider.impl[IO]
@@ -33,33 +30,31 @@ object Main extends IOApp {
       rawAppConfig   <- AppConfig.getTypesafeConfig[IO]
       appConfig      <- AppConfig.parseAppConfig[IO](rawAppConfig)
       _              <- log.info(s"config loaded: $appConfig")
-      dynamoDbClient <- buildDynamoDbClient(appConfig.awsConfig)
+      dynamoDbClient <- buildDynamoDbClient(appConfig.aws)
       scanamo = Scanamo(dynamoDbClient)
       consolePrinter <- IO.delay(ConsolePrinter.impl[IO])
       _              <- consolePrinter.printStartMessage[IO]
 
       //memory - to be replaced by DynamoDb
       stateRef         <- Ref.of[IO, Map[String, UserGameState]](Map.empty[String, UserGameState])
-      eventRef         <- Ref.of[IO, List[UserEvent]](Nil)
+      eventRef         <- Ref.of[IO, List[Event]](Nil)
       playerProfileRef <- Ref.of[IO, Map[PlayerId, Json]](Map.empty[PlayerId, Json])
 
       stateMemory                       <- IO.delay(StateMemory.impl[IO](stateRef))
       eventMemory                       <- IO.delay(EventMemory.impl[IO](eventRef))
-      playerProfileClient               <- IO.delay(PlayerProfileClient.impl[IO](appConfig.transfermarktClient))
-//      playerProfileClientMemoryRef      <- IO.delay(PlayerProfileClientMemory.implRef[IO](playerProfileRef))
+      playerProfileClient               <- IO.delay(PlayerProfileClient.impl[IO](appConfig.playerProfileClient))
       playerProfileClientMemoryDynamoDb <- IO.delay(PlayerProfileClientMemory.implDynamoDb[IO](scanamo))
       playerProfileClientMemoryCached   <-
         IO.delay(
           PlayerProfileClientMemory
-            .cachedInstance[IO](appConfig.transfermarktClient, playerProfileClient, playerProfileClientMemoryDynamoDb)
+            .cachedInstance[IO](appConfig.playerProfileClient, playerProfileClient, playerProfileClientMemoryDynamoDb)
         )
       playerSearchClient                <- IO.delay(PlayerSearchClient.cachedInstance[IO](appConfig.playerSearchClient))
       playerService                     <- IO.delay(PlayerService.impl[IO](playerProfileClientMemoryCached, playerSearchClient))
       gameLogic                         <- IO.delay(GameEngine.impl(stateMemory, eventMemory, playerService))
 
       playersUpdater <- IO.delay(PlayersUpdater.impl[IO](playerProfileClient, playerProfileClientMemoryDynamoDb))
-      playersUpdateCriteria = UpdateCriteria(FiniteDuration(12, HOURS)) //todo: read from appConfig
-      _              <- playersUpdater.updatePlayersInMemory(playersUpdateCriteria)
+      _              <- playersUpdater.updatePlayersInMemory(appConfig.playersUpdateCriteria)
 
       exitCode <- runGame(consolePrinter, playerService, gameLogic)
     } yield exitCode
@@ -75,21 +70,18 @@ object Main extends IOApp {
       .evalMap(consolePrinter.gameLoop(playerService, gameLogic))
       .compile
       .drain
-      .as(ExitCode.Success) //todo: concatenate with stream refreshing player state memory once a day
+      .as(ExitCode.Success)
 
   def buildDynamoDbClient(aws: AwsConfig): IO[DynamoDbClient] =
     for {
       _      <- log.info(s"Creating DynamoDbClient")
-      localhostIp = java.net.InetAddress.getLocalHost.getHostAddress.toString
-      _      <- log.info(s"localhostIp: $localhostIp")
-//      endpointOverride = "http://" + localhostIp + ":8000/"
       endpointOverride = "http://" + "0.0.0.0" + ":8000/"
       _      <- log.info(s"endpointOverride: $endpointOverride")
-      awsCredentials = StaticCredentialsProvider.create(AwsBasicCredentials.create(aws.awsAccessKey, aws.awsSecretKey))
+      awsCredentials = StaticCredentialsProvider.create(AwsBasicCredentials.create(aws.accessKey, aws.secretKey))
       client <- IO(
                   DynamoDbClient
                     .builder()
-                    .region(aws.awsRegion)
+                    .region(aws.region)
                     .endpointOverride(java.net.URI.create(endpointOverride)) //todo: endpoint override for local
                     .credentialsProvider(awsCredentials)
                     .build()

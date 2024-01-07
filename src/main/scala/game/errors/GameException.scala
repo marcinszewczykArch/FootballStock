@@ -10,7 +10,7 @@ object GameException {
 
   final case class IncorrectParsingException(input: String) extends GameException(s"Incorrect parsing input (must be a number): $input.")
 
-  final case class UserNotFoundException(userName: String) extends GameException(s"UserState for user $userName not found.")
+  final case class UserNotFoundException(userName: String) extends GameException(s"User with name $userName not found.")
 
   final case class NotEnoughMoneyException(available: BigDecimal, required: BigDecimal)
     extends GameException(s"Not enough money to buy. Required: $required, but available: $available.")

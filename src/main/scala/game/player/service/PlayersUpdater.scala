@@ -9,9 +9,11 @@ import cats.implicits.catsSyntaxApplicativeId
 import cats.implicits.catsSyntaxApplyOps
 import cats.implicits.toFlatMapOps
 import cats.implicits.toFunctorOps
+import config.AppConfig.PlayersUpdateCriteriaConfig
+import game.events.PlayersUpdateEvent
+import game.events.memory.EventMemory
 import game.player.client.PlayerProfileClient
-import game.player.memory.PlayerProfileClientMemory
-import game.player.service.PlayersUpdater.UpdateCriteria
+import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.domain.PlayerId
 import io.circe.Json
 import org.typelevel.log4cats.LoggerFactory
@@ -20,24 +22,24 @@ import utils.Parser.parseInstant
 import utils.TimeProvider
 
 import java.time.Instant
-import scala.concurrent.duration.FiniteDuration
 
 trait PlayersUpdater[F[_]] {
-  def updatePlayersInMemory(playersUpdateCriteria: UpdateCriteria): F[Unit]
+  def updatePlayersInMemory(playersUpdateCriteria: PlayersUpdateCriteriaConfig): F[Unit]
 }
 
 object PlayersUpdater {
 
   def impl[F[_]: Async: LoggerFactory](
     playerProfileClient: PlayerProfileClient[F],
-    playerProfileClientMemory: PlayerProfileClientMemory[F]
+    playerProfileClientMemory: PlayerProfileClientMemory[F],
+    eventMemory: EventMemory[F]
   )(
     implicit timeProvider: TimeProvider[F]
   ) = new PlayersUpdater[F] {
     val maxConcurrent = 8
     implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[PlayersUpdater[F]].getName)
 
-    override def updatePlayersInMemory(criteria: UpdateCriteria): F[Unit] = for {
+    override def updatePlayersInMemory(criteria: PlayersUpdateCriteriaConfig): F[Unit] = for {
       _                            <- log.info("Starting players update task...")
       now                          <- Applicative[F].pure(timeProvider.getCurrentTimestamp)
       thresholdTimestamp           <- Applicative[F].pure(now.minusSeconds(criteria.notUpdatedFor.toSeconds))
@@ -45,13 +47,21 @@ object PlayersUpdater {
       (updateDuration, _)          <- Clock[F].timed(underlying(updateStatisticRef)(thresholdTimestamp))
       UpdateStats(failed, success) <- updateStatisticRef.get
       _                            <- log.info(
-                                        s"Updated successfully ${success.size} players, failed to update ${failed.size}. " +
+                                        s"Updated successfully: ${success.size} players," +
+                                          s"failed to update: ${failed.size} players." +
                                           s"Total duration: ${updateDuration.toSeconds} seconds."
                                       )
-//      _                               <- sendEventWithLoadStatistic(loadStatistic) //todo: send event with statistics
+      _                            <- eventMemory.sendEvent(
+                                        PlayersUpdateEvent(
+                                          updateSuccess = success.map(PlayerId),
+                                          updateFailure = failed.map(PlayerId),
+                                          taskDurationSeconds = updateDuration.toSeconds.toInt,
+                                          timestamp = now
+                                        )
+                                      )
     } yield ()
 
-    case class UpdateStats(failed: List[Long] = Nil, success: List[Long] = Nil)
+    case class UpdateStats(failed: List[Int] = Nil, success: List[Int] = Nil)
 
     private def underlying(ref: Ref[F, UpdateStats])(threshold: Instant): F[Unit] = fs2
       .Stream
@@ -70,11 +80,13 @@ object PlayersUpdater {
       threshold: Instant
     )(
       players: Map[PlayerId, Json]
-    ): F[List[PlayerId]] = players
-      .toList
-      .filter { case (_, json) => !getIsRetired(json) && getUpdatedAt(json).isBefore(threshold) }
-      .map { case (id, _) => id }
-      .pure
+    ): F[List[PlayerId]] = for {
+      allPlayers      <- players.toList.pure
+      _               <- log.info(s"Found ${allPlayers.size} players in memory")
+      filteredPlayers <- allPlayers.filter { case (_, json) => !getIsRetired(json) && getUpdatedAt(json).isBefore(threshold) }.pure
+      filteredIds     <- filteredPlayers.map { case (id, _) => id }.pure
+      _               <- log.info(s"Found ${filteredIds.size} players matching criteria for update")
+    } yield filteredIds
 
     private def updatePlayerProfileInMemory(
       ref: Ref[F, UpdateStats]
@@ -83,7 +95,7 @@ object PlayersUpdater {
     ): F[Unit] = (for {
       json <- EitherT(playerProfileClient.fetchRawPlayerProfileById(playerId))
       _    <- EitherT(playerProfileClientMemory.save(playerId)(json))
-    } yield ()).value.map {
+    } yield ()).value.flatMap {
       case Left(err) =>
         ref.update { case UpdateStats(failed, success) => UpdateStats(failed :+ playerId.value, success) } *>
           log.error(s"$playerId NOT updated: $err")
@@ -93,7 +105,5 @@ object PlayersUpdater {
     }
 
   }
-
-  case class UpdateCriteria(notUpdatedFor: FiniteDuration)
 
 }

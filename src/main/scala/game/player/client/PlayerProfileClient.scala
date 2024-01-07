@@ -5,14 +5,14 @@ import cats.MonadThrow
 import cats.data.EitherT
 import cats.effect._
 import cats.syntax.all._
-import config.AppConfig.TransfermarktClientConfig
+import config.AppConfig.PlayerProfileClientConfig
 import game.errors.GameException
 import game.errors.GameException.PlayerProfileClientException
 import game.player.client.domain.FetchedMarketValue
 import game.player.client.domain.FetchedPlayerProfile
 import game.player.client.domain.FetchedPlayerSimple
 import game.player.client.domain.PlayerSearchResponse
-import game.player.memory.PlayerProfileClientMemory
+import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.domain.PlayerId
 import io.circe.Decoder
 import io.circe.Encoder
@@ -32,7 +32,7 @@ trait PlayerProfileClient[F[_]] {
 
 object PlayerProfileClient {
 
-  def impl[F[_]: Sync: MonadThrow](config: TransfermarktClientConfig) = new PlayerProfileClient[F] { //todo: config rename
+  def impl[F[_]: Sync: MonadThrow](config: PlayerProfileClientConfig) = new PlayerProfileClient[F] {
     val serviceUri: Uri = config.uri
     val backend: SttpBackend[Identity, Any] = HttpClientSyncBackend()
 

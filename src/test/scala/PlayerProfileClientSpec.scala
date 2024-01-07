@@ -1,13 +1,13 @@
 import cats.effect.IO
 import cats.effect.Ref
 import cats.implicits.toTraverseOps
-import config.AppConfig.TransfermarktClientConfig
+import config.AppConfig.PlayerProfileClientConfig
 import game.gameState.Shares
 import game.gameState.UserGameState
 import game.events.BuyPlayerEvent
 import game.events.InitializeGameEvent
 import game.events.SellPlayerEvent
-import game.events.UserEvent
+import game.events.Event
 import game.events.memory.{EventMemory}
 import game.gameState.memory.StateMemory
 import game.logic.GameEngine
@@ -43,7 +43,7 @@ class PlayerProfileClientSpec extends CatsEffectSuite {
                                                          override def getCurrentTimestamp: Instant = now
                                                        })
       playerProfileClient                           <- IO.pure(PlayerProfileClient.impl[IO](
-                                                         TransfermarktClientConfig(
+                                                         PlayerProfileClientConfig(
                                                            uri = uri"https://transfermarkt-api.vercel.app",
                                                            cacheTtl = FiniteDuration(300, SECONDS),
                                                            failedCacheTtl = FiniteDuration(300, SECONDS),

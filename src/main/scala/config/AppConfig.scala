@@ -1,23 +1,17 @@
 package config
 
 import cats.MonadThrow
-import cats.effect.IO
 import cats.effect.Sync
-import cats.implicits.toBifunctorOps
-import com.comcast.ip4s.Host
-import com.comcast.ip4s.Port
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import config.AppConfig.{AwsConfig, HttpConfig, PlayerSearchClientConfig, TransfermarktClientConfig}
+import cats.syntax.all._
+import com.comcast.ip4s.{Host, Port}
+import com.typesafe.config.{Config, ConfigFactory}
+import config.AppConfig.{AwsConfig, HttpConfig, PlayerProfileClientConfig, PlayerSearchClientConfig, PlayersUpdateCriteriaConfig}
+import pureconfig._
+import pureconfig.error.CannotConvert
+import pureconfig.generic.auto._
+import software.amazon.awssdk.regions.Region
 import sttp.client3.UriContext
 import sttp.model.Uri
-import cats.syntax.all._
-import pureconfig.ConfigSource
-import pureconfig._
-import pureconfig.generic.auto._
-import pureconfig.error.CannotConvert
-import eu.timepit.refined.pureconfig._
-import software.amazon.awssdk.regions.Region
 
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
@@ -25,31 +19,28 @@ import scala.util.control.NoStackTrace
 
 final case class AppConfig(
   http: HttpConfig,
-  awsConfig: AwsConfig,
-  transfermarktClient: TransfermarktClientConfig,
-  playerSearchClient: PlayerSearchClientConfig
+  aws: AwsConfig,
+  playerProfileClient: PlayerProfileClientConfig,
+  playerSearchClient: PlayerSearchClientConfig,
+  playersUpdateCriteria: PlayersUpdateCriteriaConfig
 )
 
 object AppConfig {
 
+  def getTypesafeConfig[F[_]: Sync]: F[Config] = Sync[F].blocking(ConfigFactory.load("application.conf"))
+
+  def parseAppConfig[F[_]: MonadThrow](rawConfig: Config): F[AppConfig] = pureconfig
+    .ConfigSource
+    .fromConfig(rawConfig)
+    .load[AppConfig]
+    .leftMap(failure => Failure.AppConfigParsingFailure(s"Cannot parse AppConfig: ${failure.prettyPrint()}"))
+    .liftTo[F]
+
+  private trait Failure extends NoStackTrace with Product with Serializable { _: RuntimeException => }
+
   final case class HttpConfig(host: Host, port: Port)
 
-  final case class AwsConfig(awsAccessKey: String, awsSecretKey: String, awsRegion: Region)
-
-
-  final case class TransfermarktClientConfig(
-    uri: Uri,
-    cacheTtl: FiniteDuration,
-    failedCacheTtl: FiniteDuration,
-    cacheName: String
-  )
-
-  final case class PlayerSearchClientConfig(
-    uri: Uri,
-    cacheTtl: FiniteDuration,
-    failedCacheTtl: FiniteDuration,
-    cacheName: String
-  )
+  final case class AwsConfig(accessKey: String, secretKey: String, region: Region)
 
   implicit val hostConfigReader: ConfigReader[Host] = ConfigReader.fromNonEmptyStringOpt(Host.fromString)
 
@@ -64,16 +55,21 @@ object AppConfig {
 
   implicit val uriConfigReader: ConfigReader[Uri] = ConfigReader.fromNonEmptyStringTry(str => Try(uri"$str"))
 
-  def getTypesafeConfig[F[_]: Sync]: F[Config] = Sync[F].blocking(ConfigFactory.load("application.conf"))
+  final case class PlayerProfileClientConfig(
+    uri: Uri,
+    cacheTtl: FiniteDuration,
+    failedCacheTtl: FiniteDuration,
+    cacheName: String
+  )
 
-  def parseAppConfig[F[_]: MonadThrow](rawConfig: Config): F[AppConfig] = pureconfig
-      .ConfigSource
-      .fromConfig(rawConfig)
-      .load[AppConfig]
-      .leftMap(failure => Failure.AppConfigParsingFailure(s"Cannot parse AppConfig: ${failure.prettyPrint()}"))
-      .liftTo[F]
+  final case class PlayerSearchClientConfig(
+    uri: Uri,
+    cacheTtl: FiniteDuration,
+    failedCacheTtl: FiniteDuration,
+    cacheName: String
+  )
 
-  private trait Failure extends NoStackTrace with Product with Serializable { _: RuntimeException => }
+  case class PlayersUpdateCriteriaConfig(notUpdatedFor: FiniteDuration)
 
   private object Failure {
     final case class AppConfigParsingFailure(message: String) extends RuntimeException(message) with Failure

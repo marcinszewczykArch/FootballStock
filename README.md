@@ -2,7 +2,6 @@
 
 ### plan backend:
 ~~- move playerCache from client to memory~~
-- PlayerId as Long
 ~~- pure to delay~~
 - replace println by log's
 - TransfermarktClientConfig rename

@@ -6,7 +6,7 @@ import game.gameState.UserGameState
 import game.events.BuyPlayerEvent
 import game.events.InitializeGameEvent
 import game.events.SellPlayerEvent
-import game.events.UserEvent
+import game.events.Event
 import game.events.memory.{EventMemory}
 import game.gameState.memory.StateMemory
 import game.logic.GameEngine
@@ -60,7 +60,7 @@ class SampleGameSpec extends CatsEffectSuite {
     playerService       <- IO.pure(PlayerService.impl[IO](playerProfileClient, playerSearchClient))
     stateRef            <- Ref.of[IO, Map[String, UserGameState]](Map.empty[String, UserGameState])
     stateMemory         <- IO.pure(StateMemory.impl[IO](stateRef))
-    eventRef            <- Ref.of[IO, List[UserEvent]](Nil)
+    eventRef            <- Ref.of[IO, List[Event]](Nil)
     eventMemory         <- IO.pure(EventMemory.impl[IO](eventRef))
     gameLogic           <- IO.pure(GameEngine.impl(stateMemory, eventMemory, playerService))
   } yield gameLogic
