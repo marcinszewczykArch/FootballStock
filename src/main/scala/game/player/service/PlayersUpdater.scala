@@ -2,13 +2,9 @@ package game.player.service
 
 import cats.Applicative
 import cats.data.EitherT
-import cats.effect.Async
-import cats.effect.Ref
+import cats.effect.{Async, Ref}
 import cats.effect.kernel.Clock
-import cats.implicits.catsSyntaxApplicativeId
-import cats.implicits.catsSyntaxApplyOps
-import cats.implicits.toFlatMapOps
-import cats.implicits.toFunctorOps
+import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxApplyOps, toFlatMapOps, toFunctorOps}
 import config.AppConfig.PlayersUpdateCriteriaConfig
 import game.events.PlayersUpdateEvent
 import game.events.memory.EventMemory
@@ -16,15 +12,14 @@ import game.player.client.PlayerProfileClient
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.domain.PlayerId
 import io.circe.Json
-import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 import utils.Parser.parseInstant
 import utils.TimeProvider
 
 import java.time.Instant
 
 trait PlayersUpdater[F[_]] {
-  def updatePlayersInMemory(playersUpdateCriteria: PlayersUpdateCriteriaConfig): F[Unit]
+  def updatePlayersInMemory: F[Unit]
 }
 
 object PlayersUpdater {
@@ -32,17 +27,18 @@ object PlayersUpdater {
   def impl[F[_]: Async: LoggerFactory](
     playerProfileClient: PlayerProfileClient[F],
     playerProfileClientMemory: PlayerProfileClientMemory[F],
-    eventMemory: EventMemory[F]
+    eventMemory: EventMemory[F],
+    playersUpdateCriteria: PlayersUpdateCriteriaConfig
   )(
     implicit timeProvider: TimeProvider[F]
   ) = new PlayersUpdater[F] {
     val maxConcurrent = 8
     implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[PlayersUpdater[F]].getName)
 
-    override def updatePlayersInMemory(criteria: PlayersUpdateCriteriaConfig): F[Unit] = for {
+    override def updatePlayersInMemory: F[Unit] = for {
       _                            <- log.info("Starting players update task...")
       now                          <- Applicative[F].pure(timeProvider.getCurrentTimestamp)
-      thresholdTimestamp           <- Applicative[F].pure(now.minusSeconds(criteria.notUpdatedFor.toSeconds))
+      thresholdTimestamp           <- Applicative[F].pure(now.minusSeconds(playersUpdateCriteria.notUpdatedFor.toSeconds))
       updateStatisticRef           <- Ref.of[F, UpdateStats](UpdateStats())
       (updateDuration, _)          <- Clock[F].timed(underlying(updateStatisticRef)(thresholdTimestamp))
       UpdateStats(failed, success) <- updateStatisticRef.get
