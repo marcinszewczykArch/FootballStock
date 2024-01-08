@@ -1,22 +1,17 @@
 package game.player.service
 
+import cats.Applicative
 import cats.data.EitherT
 import cats.effect._
-import cats.implicits.catsSyntaxApplicativeError
-import cats.implicits.toFunctorOps
+import cats.implicits.{catsSyntaxApplicativeError, toFlatMapOps, toFunctorOps}
 import game.errors.GameException
 import game.errors.GameException.PlayerSearchByNameException
-import game.player.client.PlayerProfileClient
 import game.player.client.PlayerSearchClient
 import game.player.client.domain.FetchedPlayerProfile
 import game.player.client.memory.PlayerProfileClientMemory
-import game.player.service.PlayerMapper.fetchedPlayerProfileToMarketValue
-import game.player.service.PlayerMapper.fetchedPlayerProfileToProfile
-import game.player.service.PlayerMapper.fetchedPlayerSimpleToPlayerSimple
-import game.player.service.PlayerMapper.jsonToFetchedPlayerProfile
+import game.player.service.PlayerMapper.{fetchedPlayerProfileToMarketValue, fetchedPlayerProfileToProfile, fetchedPlayerSimpleToPlayerSimple, jsonToFetchedPlayerProfile}
 import game.player.service.domain._
-import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 
 trait PlayerService[F[_]] {
   def searchByName(playerName: String): F[Either[GameException, List[PlayerSimple]]]
@@ -37,9 +32,13 @@ object PlayerService {
         .searchByName(playerName)
         .map(_.map(fetchedPlayerSimpleToPlayerSimple))
         .attempt
-        .map {
-          case Right(playersList) => Right(playersList)
-          case Left(err)          => Left(PlayerSearchByNameException(playerName, err.getMessage))
+        .flatMap {
+          case Right(playersList) =>
+            Applicative[F].pure(Right(playersList))
+          case Left(err)          =>
+            log.error(s"Player search for '$playerName' failed: ${err.getMessage}").as(
+                Left(PlayerSearchByNameException(playerName, err.getMessage))
+              )
         }
 
     override def getMarketValueByPlayerId(id: PlayerId): F[Either[GameException, MarketValue]] =

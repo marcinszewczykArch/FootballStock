@@ -3,26 +3,28 @@
 ### plan backend:
 ~~- move playerCache from client to memory~~
 ~~- pure to delay~~
-- replace println by log's
-- TransfermarktClientConfig rename
-- add console endpoints/messages to check player memory and cache
-- create 2 streams to update players json periodically and combine them:
-    1. Take from db all playerIds where:
-    - player is active (not retired)
-    - last update (from client json) was more than given time period
-    2. Find last PlayerId in db and try to fetch next N players from client
-    - if all failed - stop fetching
-    - if any found - scan next N number
-- cleanup existing tests
+~~- log level update~~
+~~- TransfermarktClientConfig rename~~
+- userState and events to use dynamoDB
+~~- create 2 streams to update players json periodically and combine them:~~
+    ~~1. Take from db all playerIds where:~~
+    ~~- player is active (not retired)~~
+    ~~- last update (from client json) was more than given time period~~
+    ~~__2. Find last PlayerId in db and try to fetch next N players from client__~~
+    ~~- if all failed - stop fetching~~
+    ~~- if any found - scan next N number~~§
+~~- cleanup existing tests~~
 - new tests for playerProfile Client, cache and fetch streams
-- get rid of .get in fetch players streams
+~~- get rid of .get in fetch players streams~~
 - design and add http endpoints
+- add technical endpoints to check player memory and cache
+- architectural diagram
 - read envs from cloud (aws credentials)
-- create dynamoDb client
-- create dynamoDb resources
+~~- create dynamoDb client~~
+- create dynamoDb resources in cloud
 - own instance for transfermarkt parser service - separate container
 - authentication mechanism <- sth to study, separate table in dynamo?
-- architectural diagram
+- Future improvement - use MongoDb for json storage
 
 ### plan frontend:
 - table for player search

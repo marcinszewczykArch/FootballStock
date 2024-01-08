@@ -41,12 +41,11 @@ object Main extends IOApp {
       //memory - to be replaced by DynamoDb
       stateRef         <- Ref.of[IO, Map[String, UserGameState]](Map.empty[String, UserGameState])
       eventRef         <- Ref.of[IO, List[Event]](Nil)
-      playerProfileRef <- Ref.of[IO, Map[PlayerId, Json]](Map.empty[PlayerId, Json])
 
       stateMemory                       <- IO.delay(StateMemory.impl[IO](stateRef))
       eventMemory                       <- IO.delay(EventMemory.impl[IO](eventRef))
       playerProfileClient               <- IO.delay(PlayerProfileClient.impl[IO](appConfig.playerProfileClient))
-      playerProfileClientMemoryDynamoDb <- IO.delay(PlayerProfileClientMemory.implDynamoDb[IO](scanamo))
+      playerProfileClientMemoryDynamoDb <- IO.delay(PlayerProfileClientMemory.impl[IO](scanamo))
       playerProfileClientMemoryCached   <-
         IO.delay(
           PlayerProfileClientMemory
@@ -87,7 +86,7 @@ object Main extends IOApp {
     val updatePlayersStream: Stream[IO, Unit] =
       fs2
         .Stream
-        .awakeEvery[IO](8.seconds) //todo: from config
+        .awakeEvery[IO](10.minutes) //todo: from config
         .evalMap(_ => playersUpdater.updatePlayersInMemory)
 
     Stream(gameStream, updatePlayersStream)

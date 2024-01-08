@@ -37,12 +37,12 @@ object PlayerProfileClientMemory {
         cacheName = config.cacheName
       )(
         lookup = playerId =>
-          log.info(s"player $playerId not found in cache. Checking memory...") *>
+          log.debug(s"player $playerId not found in cache. Checking memory...") *>
             underlying.getById(playerId).flatMap {
               case Right(json) => Applicative[F].pure(json)
               case Left(err)   =>
                 (for {
-                  _    <- EitherT.liftF(log.info(s"${err.getMessage} Calling http client..."))
+                  _    <- EitherT.liftF(log.debug(s"${err.getMessage} Calling http client..."))
                   json <- EitherT(playerProfileClient.fetchRawPlayerProfileById(playerId))
                   _    <- EitherT(underlying.save(playerId)(json))
                 } yield json).rethrowT
@@ -64,29 +64,7 @@ object PlayerProfileClientMemory {
     }
   }
 
-  def implRef[F[_]](
-    ref: Ref[F, Map[PlayerId, Json]]
-  )(
-    implicit F: Sync[F]
-  ): PlayerProfileClientMemory[F] =
-    new PlayerProfileClientMemory[F] {
-
-      override def save(playerId: PlayerId)(playerJson: Json): F[Either[GameException, Unit]] = (for {
-        json <- EitherT.right[GameException](ref.update(_ + (playerId -> playerJson)))
-      } yield json).value
-
-      override def getById(playerId: PlayerId): F[Either[GameException, Json]] = ref
-        .get
-        .map(_.get(playerId) match {
-          case Some(playerJson) => Right(playerJson)
-          case None             => Left(PlayerJsonNotFoundInMemoryException(playerId))
-        })
-
-      override def getAll(): F[Map[PlayerId, Json]] = ref.get
-
-    }
-
-  def implDynamoDb[F[_]: Sync: LoggerFactory](scanamo: Scanamo): PlayerProfileClientMemory[F] =
+  def impl[F[_]: Sync: LoggerFactory](scanamo: Scanamo): PlayerProfileClientMemory[F] =
     new PlayerProfileClientMemory[F] {
       import org.scanamo._
       import org.scanamo.generic.auto._
@@ -102,7 +80,7 @@ object PlayerProfileClientMemory {
         playerId: PlayerId
       )(
         playerJson: Json
-      ): F[Either[GameException, Unit]] = log.info(s"saving player $playerId to dynamoDb") *> scanamo
+      ): F[Either[GameException, Unit]] = log.debug(s"saving player $playerId to dynamoDb") *> scanamo
         .exec(
           table.put(
             PlayerProfileTable(

@@ -1,76 +1,53 @@
-import cats.effect.IO
-import cats.effect.Ref
+import cats.effect.{IO, Ref}
 import cats.implicits.toTraverseOps
-import game.gameState.Shares
-import game.gameState.UserGameState
-import game.events.BuyPlayerEvent
-import game.events.InitializeGameEvent
-import game.events.SellPlayerEvent
-import game.events.Event
-import game.events.memory.{EventMemory}
+import config.AppConfig
+import game.events.{BuyPlayerEvent, Event, InitializeGameEvent, SellPlayerEvent}
+import game.events.memory.EventMemory
+import game.gameState.{Shares, UserGameState}
 import game.gameState.memory.StateMemory
 import game.logic.GameEngine
-import game.player.client.PlayerProfileClient
-import game.player.client.PlayerSearchClient
-import game.player.client.domain.FetchedMarketValue
-import game.player.client.domain.FetchedPlayerProfile
-import game.player.client.domain.FetchedPlayerSimple
-import game.player.client.domain.PlayerSearchResponse
+import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
 import game.player.service.domain.PlayerId
 import io.circe.Json
 import munit.CatsEffectSuite
-import utils.JsonParser.jsonString
-import utils.Parser.CaseClassToString
+import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
+import org.typelevel.log4cats.slf4j.Slf4jFactory
+import testUtils.TestUtils
 import utils.TimeProvider
+import utils.Parser.CaseClassToString
 
 import java.time.Instant
 
 class SampleGameSpec extends CatsEffectSuite {
+  private implicit val testLoggerFactory: LoggerFactory[IO] = Slf4jFactory.create[IO]
+  implicit val log: SelfAwareStructuredLogger[IO] = LoggerFactory.getLoggerFromName[IO](classOf[SampleGameSpec].getName)
 
   def getNewGameEngine(implicit timeProvider: TimeProvider[IO]): IO[GameEngine[IO]] = for {
-    playerProfileClient <- IO.pure(new PlayerProfileClient[IO] { //todo: make testImpl in PlayerProfileClient or utils
-
-                             override def fetchPlayerProfileById(id: PlayerId): IO[FetchedPlayerProfile] = IO.pure(
-                               io.circe
-                                 .parser
-                                 .decode[FetchedPlayerProfile](jsonString("testResponsePlayerProfile.json"))
-                                 .toOption
-                                 .get
-                             )
-
-                             override def fetchRawPlayerProfileById(
-                               id: PlayerId
-                             ): IO[Json] = ???
-
-      })
-    playerSearchClient  <- IO.pure(new PlayerSearchClient[IO] {
-
-                             override def searchByName(playerName: String): IO[List[FetchedPlayerSimple]] =
-                               IO.pure(
-                                 io.circe
-                                   .parser
-                                   .decode[PlayerSearchResponse](jsonString("testResponsePlayerSearch.json"))
-                                   .toOption
-                                   .get
-                                   .result
-                               )
-
-                           })
-    playerService       <- IO.pure(PlayerService.impl[IO](playerProfileClient, playerSearchClient))
-    stateRef            <- Ref.of[IO, Map[String, UserGameState]](Map.empty[String, UserGameState])
-    stateMemory         <- IO.pure(StateMemory.impl[IO](stateRef))
-    eventRef            <- Ref.of[IO, List[Event]](Nil)
-    eventMemory         <- IO.pure(EventMemory.impl[IO](eventRef))
-    gameLogic           <- IO.pure(GameEngine.impl(stateMemory, eventMemory, playerService))
+    testRawAppConfig                        <- AppConfig.getTypesafeConfig[IO]
+    appConfig                           <- AppConfig.parseAppConfig[IO](testRawAppConfig)
+    _                                   <- log.info(s"Test config loaded: $appConfig")
+    testPlayerProfileClient                 <- TestUtils.testPlayerProfileClient()
+    testPlayerSearchClient                  <- TestUtils.testPlayerSearchClient()
+    playerProfileRef                    <- Ref.of[IO, Map[PlayerId, Json]](Map.empty[PlayerId, Json])
+    testPlayerProfileClientMemoryUnderlying <- TestUtils.testPlayerProfileClientMemory(playerProfileRef)
+    playerProfileClientMemoryCached     <-
+      IO.delay(
+        PlayerProfileClientMemory
+          .cachedInstance(appConfig.playerProfileClient, testPlayerProfileClient, testPlayerProfileClientMemoryUnderlying)
+      )
+    playerService                       <- IO.delay(PlayerService.impl[IO](playerProfileClientMemoryCached, testPlayerSearchClient))
+    stateRef                            <- Ref.of[IO, Map[String, UserGameState]](Map.empty[String, UserGameState])
+    stateMemory                         <- IO.delay(StateMemory.impl[IO](stateRef))
+    eventRef                            <- Ref.of[IO, List[Event]](Nil)
+    eventMemory                         <- IO.delay(EventMemory.impl[IO](eventRef))
+    gameLogic                           <- IO.delay(GameEngine.impl(stateMemory, eventMemory, playerService))
   } yield gameLogic
 
-  test("Sample game one test") {
+  test("Sample game test") {
     for {
-      now                                           <- IO.pure(Instant.now())
-      implicit0(testTimeProvider: TimeProvider[IO]) <- IO.pure(new TimeProvider[IO] {
-                                                         override def getCurrentTimestamp: Instant = now
-                                                       })
+      now                                           <- IO.delay(Instant.now())
+      implicit0(testTimeProvider: TimeProvider[IO]) <- TestUtils.testTimeProvider(now)
       testGameEngine                                <- getNewGameEngine(testTimeProvider)
 
       _       <- testGameEngine.createUser("Marcin")
@@ -82,7 +59,7 @@ class SampleGameSpec extends CatsEffectSuite {
                          )
                        )
       events1 <- testGameEngine.getUserEvents("Marcin")
-      events1Expected = Right(List(InitializeGameEvent("Marcin", BigDecimal(1_000_000), now)))
+      events1Expected = Right(List(InitializeGameEvent(BigDecimal(1_000_000), "Marcin", now)))
       _ = assertEquals(state1, state1Expected)
       _ = assertEquals(events1, events1Expected)
 

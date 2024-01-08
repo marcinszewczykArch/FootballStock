@@ -2,7 +2,8 @@ package console
 
 import cats.Applicative
 import game.errors.GameException
-import game.errors.GameException.{IncorrectConsoleInputException, IncorrectParsingException}
+import game.errors.GameException.IncorrectConsoleInputException
+import game.errors.GameException.IncorrectParsingException
 
 sealed trait InputMessage
 
@@ -23,14 +24,13 @@ object InputMessage {
   def parse[F[_]: Applicative](inputText: String): F[Either[GameException, InputMessage]] =
     Applicative[F].pure {
       splitWords(inputText) match {
-        //todo case (nickGracza, komenda, parametr) np. ("marcin_132", "search", "andrzej niedzielan")
         case ("/search", input, input2, input3) => Right(SearchPlayerByName(input + input2 + input3))
         case ("/player", playerId, _, _)        => playerId.toIntOption.map(GetPlayerProfileById).toRight(IncorrectParsingException(playerId))
         case ("/value", playerId, _, _)         => playerId.toIntOption.map(GetPlayerValueById).toRight(IncorrectParsingException(playerId))
 
-        case ("/state", user, _, _)            => Right(GetUserState(user))
-        case ("/balance", user, _, _)            => Right(GetUserBalance(user))
-        case ("/events", user, _, _)            => Right(GetUserEvents(user))
+        case ("/state", user, _, _)   => Right(GetUserState(user))
+        case ("/balance", user, _, _) => Right(GetUserBalance(user))
+        case ("/events", user, _, _)  => Right(GetUserEvents(user))
 
         case ("/buy", user, playerId, shares)  =>
           (for {

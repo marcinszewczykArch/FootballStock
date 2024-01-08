@@ -1,0 +1,31 @@
+{
+  "id" : "38255",
+  "url" : "/piotr-rafalski/profil/spieler/38255",
+  "name" : "Rafalski",
+  "description" : "Piotr Rafalski ➤ former footballer from Poland ➤ Defender ➤ last club: Mazur Karczew ➤ * Feb 12, 1985 in Warszawa, Poland",
+  "dateOfBirth" : "Feb 12, 1985",
+  "placeOfBirth" : {
+    "city" : "Warszawa",
+    "country" : "Poland"
+  },
+  "age" : "38",
+  "height" : "1,85m",
+  "citizenship" : [
+    "Poland"
+  ],
+  "isRetired" : true,
+  "retiredSince" : "Jan 1, 2011",
+  "position" : {
+    "main" : "Centre-Back"
+  },
+  "foot" : "right",
+  "club" : {
+    "name" : "Retired",
+    "lastClubID" : "30756",
+    "lastClubName" : "Mazur Karczew"
+  },
+  "agent" : {
+    "name" : "no agent"
+  },
+  "updatedAt" : "2024-01-07T22:00:52.064000"
+}

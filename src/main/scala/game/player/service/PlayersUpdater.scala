@@ -13,7 +13,7 @@ import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.domain.PlayerId
 import io.circe.Json
 import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
-import utils.Parser.parseInstant
+import utils.Parser.toInstantOrFarPast
 import utils.TimeProvider
 
 import java.time.Instant
@@ -70,7 +70,7 @@ object PlayersUpdater {
       playerJson.findAllByKey("isRetired").headOption.flatMap(_.asBoolean).getOrElse(false)
 
     def getUpdatedAt(playerJson: Json): Instant =
-      parseInstant(playerJson.findAllByKey("updatedAt").headOption.flatMap(_.asString))
+      toInstantOrFarPast(playerJson.findAllByKey("updatedAt").headOption.flatMap(_.asString))
 
     private def filteredPlayers(
       threshold: Instant
@@ -78,10 +78,10 @@ object PlayersUpdater {
       players: Map[PlayerId, Json]
     ): F[List[PlayerId]] = for {
       allPlayers      <- players.toList.pure
-      _               <- log.info(s"Found ${allPlayers.size} players in memory")
+      _               <- log.debug(s"Found ${allPlayers.size} players in memory")
       filteredPlayers <- allPlayers.filter { case (_, json) => !getIsRetired(json) && getUpdatedAt(json).isBefore(threshold) }.pure
       filteredIds     <- filteredPlayers.map { case (id, _) => id }.pure
-      _               <- log.info(s"Found ${filteredIds.size} players matching criteria for update")
+      _               <- log.debug(s"Found ${filteredIds.size} players matching criteria for update")
     } yield filteredIds
 
     private def updatePlayerProfileInMemory(
@@ -94,10 +94,10 @@ object PlayersUpdater {
     } yield ()).value.flatMap {
       case Left(err) =>
         ref.update { case UpdateStats(failed, success) => UpdateStats(failed :+ playerId.value, success) } *>
-          log.error(s"$playerId NOT updated: $err")
+          log.debug(s"$playerId NOT updated: $err")
       case Right(_)  =>
         ref.update { case UpdateStats(failed, success) => UpdateStats(failed, success :+ playerId.value) } *>
-          log.info(s"$playerId updated")
+          log.debug(s"$playerId updated")
     }
 
   }

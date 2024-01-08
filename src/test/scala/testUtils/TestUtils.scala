@@ -1,0 +1,68 @@
+package testUtils
+
+import cats.data.EitherT
+import cats.effect.{IO, Ref}
+import game.errors.GameException
+import game.errors.GameException.{PlayerJsonNotFoundInMemoryException, PlayerProfileClientException}
+import game.player.client.{PlayerProfileClient, PlayerSearchClient}
+import game.player.client.domain.{FetchedPlayerSimple, PlayerSearchResponse}
+import game.player.client.memory.PlayerProfileClientMemory
+import game.player.service.domain.PlayerId
+import io.circe.{Json, parser}
+import utils.JsonParser.jsonString
+import utils.TimeProvider
+
+import java.time.Instant
+
+object TestUtils {
+
+  def testPlayerProfileClient(): IO[PlayerProfileClient[IO]] = IO.pure((id: PlayerId) =>
+    IO.pure(
+      parser.parse(jsonString(s"players/${id.value}.json")) match {
+        case Right(json)          => Right(json)
+        case Left(parsingFailure) => Left(PlayerProfileClientException(parsingFailure.getMessage()))
+      }
+    )
+  )
+
+  def testPlayerSearchClient(): IO[PlayerSearchClient[IO]] = IO.pure(
+    new PlayerSearchClient[IO] {
+
+      def searchByName(playerName: String): IO[List[FetchedPlayerSimple]] =
+        IO.pure(
+          io.circe
+            .parser
+            .decode[PlayerSearchResponse](jsonString("playerSearch/testResponsePlayerSearch.json"))
+            .toOption
+            .get
+            .result
+        )
+
+    }
+  )
+
+  def testPlayerProfileClientMemory(
+    ref: Ref[IO, Map[PlayerId, Json]]
+  ): IO[PlayerProfileClientMemory[IO]] = IO.pure(
+    new PlayerProfileClientMemory[IO] {
+
+      override def save(playerId: PlayerId)(playerJson: Json): IO[Either[GameException, Unit]] = (for {
+        json <- EitherT.right[GameException](ref.update(_ + (playerId -> playerJson)))
+      } yield json).value
+
+      override def getById(playerId: PlayerId): IO[Either[GameException, Json]] = ref
+        .get
+        .map(_.get(playerId) match {
+          case Some(playerJson) => Right(playerJson)
+          case None             => Left(PlayerJsonNotFoundInMemoryException(playerId))
+        })
+
+      override def getAll(): IO[Map[PlayerId, Json]] = ref.get
+
+    }
+  )
+
+  def testTimeProvider(now: Instant) = IO.pure(new TimeProvider[IO] {
+      override def getCurrentTimestamp: Instant = now
+    })
+}

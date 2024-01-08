@@ -5,13 +5,22 @@ import cats.data.EitherT
 import cats.effect._
 import cats.implicits.toTraverseOps
 import game.errors.GameException
-import game.errors.GameException.{NotEnoughMoneyException, SharesNumberException, UserAlreadyExistsException}
-import game.events.{BuyPlayerEvent, Event, InitializeGameEvent, SellPlayerEvent}
+import game.errors.GameException.NotEnoughMoneyException
+import game.errors.GameException.SharesNumberException
+import game.errors.GameException.UserAlreadyExistsException
+import game.events.BuyPlayerEvent
+import game.events.Event
+import game.events.InitializeGameEvent
+import game.events.SellPlayerEvent
 import game.events.memory.EventMemory
 import game.gameState._
 import game.gameState.memory.StateMemory
+import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
-import game.player.service.domain.{MarketValue, PlayerId}
+import game.player.service.domain.MarketValue
+import game.player.service.domain.PlayerId
+import org.typelevel.log4cats.LoggerFactory
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 import utils.TimeProvider
 
 trait GameEngine[F[_]] {
@@ -31,7 +40,7 @@ trait GameEngine[F[_]] {
 
 object GameEngine {
 
-  def impl[F[_]](
+  def impl[F[_]: LoggerFactory](
     stateMemory: StateMemory[F],
     eventMemory: EventMemory[F],
     playerService: PlayerService[F]
@@ -41,12 +50,15 @@ object GameEngine {
   ): GameEngine[F] =
     new GameEngine[F] {
 
+      implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[PlayerProfileClientMemory[F]].getName)
+
       override def buyPlayer(
         user: String
       )(
         playerId: PlayerId,
         sharesToBuy: Int
       ): F[Either[GameException, BuyPlayerEvent]] = (for {
+        _                 <- EitherT.liftF(log.debug(s"Processing new transaction for user $user: BUY $sharesToBuy of $playerId..."))
         now               <- EitherT.pure(timeProvider.getCurrentTimestamp)
         userState         <- EitherT(stateMemory.getUserState(user))
         playerMarketValue <- EitherT(playerService.getMarketValueByPlayerId(playerId))
@@ -64,6 +76,7 @@ object GameEngine {
 
       override def sellPlayer(user: String)(playerId: PlayerId, sharesToSell: Int): F[Either[GameException, SellPlayerEvent]] =
         (for {
+          _                 <- EitherT.liftF(log.debug(s"Processing new transaction for user $user: SELL $sharesToSell of $playerId..."))
           now               <- EitherT.pure(timeProvider.getCurrentTimestamp)
           userState         <- EitherT(stateMemory.getUserState(user))
           playerMarketValue <- EitherT(playerService.getMarketValueByPlayerId(playerId))
@@ -121,6 +134,7 @@ object GameEngine {
       override def createUser(
         user: String
       ): F[Either[GameException, InitializeGameEvent]] = (for {
+        _            <- EitherT.liftF(log.debug(s"Start creating new USER $user..."))
         now          <- EitherT.pure(timeProvider.getCurrentTimestamp)
         _            <- EitherT(validateUserNotExists(user))
         initialCash  <- EitherT.pure(UserGameState.initialCash)
@@ -142,6 +156,7 @@ object GameEngine {
       override def getUserBalance(
         user: String
       ): F[Either[GameException, UserBalance]] = (for {
+        _         <- EitherT.liftF(log.debug(s"Checking balance for user: $user..."))
         userState <- EitherT(stateMemory.getUserState(user))
         portfolio <- userState
                        .portfolio

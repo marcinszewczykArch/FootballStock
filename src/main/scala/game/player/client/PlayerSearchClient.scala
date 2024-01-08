@@ -3,7 +3,7 @@ package game.player.client
 import cats.{Applicative, MonadThrow}
 import cats.effect._
 import cats.syntax.all._
-import config.AppConfig.{PlayerSearchClientConfig, PlayerProfileClientConfig}
+import config.AppConfig.{PlayerProfileClientConfig, PlayerSearchClientConfig}
 import game.player.client.domain.{FetchedMarketValue, FetchedPlayerProfile, FetchedPlayerSimple, PlayerSearchResponse}
 import game.player.service.domain.PlayerId
 import org.typelevel.log4cats.LoggerFactory

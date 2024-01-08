@@ -23,7 +23,6 @@ import org.typelevel.log4cats.SelfAwareStructuredLogger
 import sttp.client3._
 import sttp.client3.circe.asJson
 import sttp.model.Uri
-import utils.Cache
 
 //https://github.com/felipeall/transfermarkt-api
 trait PlayerProfileClient[F[_]] {

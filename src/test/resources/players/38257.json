@@ -1,0 +1,29 @@
+{
+  "id" : "38257",
+  "url" : "/kamil-rylka/profil/spieler/38257",
+  "name" : "Rylka",
+  "description" : "Kamil Rylka ➤ former footballer from Poland ➤ Goalkeeper ➤ last club: Rommen SK ➤ * Feb 18, 1986 in Olsztyn, Poland",
+  "nameInHomeCountry" : "Kamil Ryłka",
+  "dateOfBirth" : "Feb 18, 1986",
+  "placeOfBirth" : {
+    "city" : "Olsztyn",
+    "country" : "Poland"
+  },
+  "age" : "37",
+  "height" : "1,92m",
+  "citizenship" : [
+    "Poland"
+  ],
+  "isRetired" : true,
+  "retiredSince" : "Jan 1, 2020",
+  "position" : {
+    "main" : "Goalkeeper"
+  },
+  "foot" : "right",
+  "club" : {
+    "name" : "Retired",
+    "lastClubID" : "63608",
+    "lastClubName" : "Rommen SK"
+  },
+  "updatedAt" : "2024-01-07T22:00:54.185303"
+}

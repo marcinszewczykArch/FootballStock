@@ -9,13 +9,13 @@ object Parser {
 
   // 2023-12-19T11:30:36.754874 <- string format
   // 2007-12-03T10:15:30.00Z.   <- required format
-  def parseInstant(updatedAt: Option[String]): Instant =
+  def toInstantOrFarPast(updatedAt: Option[String]): Instant =
     updatedAt
       .map(_.take(20).concat("00Z"))
       .map(Instant.parse)
       .getOrElse(Instant.MIN)
 
-  def parseMarketValueToBigDecimal(value: Option[String]): Either[ValueParseException, BigDecimal] = Try {
+  def toBigDecimalOrZero(value: Option[String]): BigDecimal = Try {
     val str = value.get
     val strWithNoEuro = str.drop(1)
     strWithNoEuro.toList match {
@@ -23,7 +23,7 @@ object Parser {
       case value :+ 'm' => BigDecimal(value.mkString.toDouble * 1_000_000)
       case _            => BigDecimal(0)
     }
-  }.toEither.left.map((err: Throwable) => ValueParseException(value, err))
+  }.getOrElse(BigDecimal(0)) //todo: add log
 
   implicit class CaseClassToString(c: AnyRef) {
 

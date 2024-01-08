@@ -24,8 +24,7 @@ import io.circe.DecodingFailure
 import io.circe.Json
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.SelfAwareStructuredLogger
-import utils.Parser.parseInstant
-import utils.Parser.parseMarketValueToBigDecimal
+import utils.Parser.{toBigDecimalOrZero, toInstantOrFarPast}
 
 object PlayerMapper {
 
@@ -38,20 +37,12 @@ object PlayerMapper {
         club = club.flatMap(_.name).getOrElse("-"),
         age = age.getOrElse("-"),
         nationality = nationality.getOrElse("-"),
-        marketValue = parseMarketValueToBigDecimal(marketValue) match {
-          case Left(err)    => println(s"Not able to get player value. Get 0 instead. Reason: $err"); BigDecimal(0)
-          case Right(value) => value
-        }
+        marketValue = toBigDecimalOrZero(marketValue)
       )
   }
 
   val fetchedPlayerProfileToMarketValue: FetchedPlayerProfile => MarketValue = { playerProfile =>
-    MarketValue(
-      value = parseMarketValueToBigDecimal(playerProfile.marketValue) match {
-        case Left(err)    => println(s"Not able to get player value. Get 0 instead. Reason: $err"); BigDecimal(0)
-        case Right(value) => value
-      }
-    )
+    MarketValue(toBigDecimalOrZero(playerProfile.marketValue))
   }
 
   val fetchedPlayerProfileToProfile: FetchedPlayerProfile => PlayerProfile = {
@@ -84,11 +75,8 @@ object PlayerMapper {
           }
           .getOrElse(PlayerPosition.empty),
         club = club.flatMap(_.name).getOrElse("-"),
-        marketValue = parseMarketValueToBigDecimal(marketValue) match {
-          case Left(err)    => BigDecimal(0) //todo: add log
-          case Right(value) => value
-        },
-        updatedAt = parseInstant(updatedAt)
+        marketValue = toBigDecimalOrZero(marketValue),
+        updatedAt = toInstantOrFarPast(updatedAt)
       )
 
   }
