@@ -5,12 +5,12 @@ import cats.Monad
 import cats.effect.std.Console
 import cats.syntax.all._
 import game.errors.GameException
-import game.gameState.memory.StateMemory
+import game.gameState.User
 import game.logic.GameEngine
 import game.player.service.PlayerService
-import game.player.service.domain.{PlayerId, PlayerSimple}
+import game.player.service.domain.PlayerId
+import game.player.service.domain.PlayerSimple
 
-import scala.io.AnsiColor._
 import scala.io.AnsiColor._
 
 trait ConsolePrinter[F[_]] {
@@ -35,44 +35,60 @@ object ConsolePrinter {
 
     def gameLoop[F[_]: Console: Monad](playerService: PlayerService[F], gameLogic: GameEngine[F])(message: InputMessage): F[Unit] =
       message match {
-        case SearchPlayerByName(input)          =>
+        case SearchPlayerByName(input) =>
           for {
             players <- playerService.searchByName(input)
             _       <- printPlayerSearchResult[F](players)
           } yield ()
-        case GetPlayerProfileById(id)           =>
+        case GetPlayerProfileById(id)  =>
           for {
             playerProfile <- playerService.getPlayerProfileById(PlayerId(id))
             _             <- prettyPrintOr[F](playerProfile)("Player profile not found")
           } yield ()
-        case GetPlayerValueById(id)             =>
+        case GetPlayerValueById(id)    =>
           for {
             playerValue <- playerService.getMarketValueByPlayerId(PlayerId(id))
             _           <- prettyPrintOr[F](playerValue)("Player value not found")
           } yield ()
-        case GetUserState(user)                 =>
+
+        case CreateNewUser(userName)                =>
           for {
-            userState <- gameLogic.getUserState(user)
+            initializeGameEvent <- gameLogic.createUser(User(userName))
+            _                   <- prettyPrintOr[F](initializeGameEvent)(s"${User(userName)} could not be created")
+          } yield ()
+        case GetUserState(userName)                 =>
+          for {
+            userState <- gameLogic.getUserState(User(userName))
             _         <- prettyPrintOr[F](userState)("User game state not found")
           } yield ()
-        case GetUserBalance(user)                 =>
+        case GetAllUsersStates()                =>
           for {
-            userState <- gameLogic.getUserBalance(user)
+            allUsersStates <- gameLogic.getAllUsersStates()
+            _              <- allUsersStates
+                                .map { case (user, state) =>
+                                  prettyPrintOr[F]((user -> state).asRight)("Could not get all users states")
+                                }
+                                .toList
+                                .sequence
+          } yield ()
+        case GetUserBalance(userName)               =>
+          for {
+            userState <- gameLogic.getUserBalance(User(userName))
             _         <- prettyPrintOr[F](userState)("User game balance not found")
           } yield ()
-        case GetUserEvents(user)                 =>
+        case GetUserEvents(userName)                =>
           for {
-            userState <- gameLogic.getUserEvents(user)
+            userState <- gameLogic.getUserEvents(User(userName))
             _         <- prettyPrintOr[F](userState)("User events not found")
           } yield ()
-        case BuyShares(user, playerId, shares)  =>
+        case BuyShares(userName, playerId, shares)  =>
           for {
-            confirmation <- gameLogic.buyPlayer(user)(PlayerId(playerId), shares)
+            confirmation <- gameLogic.buyPlayer(User(userName))(PlayerId(playerId), shares)
             _            <- prettyPrintOr[F](confirmation)("Transaction error")
           } yield ()
-        case SellShares(user, playerId, shares) =>
+        case SellShares(userName, playerId, shares) =>
           for {
-            confirmation <- gameLogic.sellPlayer(user)(PlayerId(playerId), shares)
+            confirmation <- gameLogic.sellPlayer(User(userName))(PlayerId(playerId), shares)
             _            <- prettyPrintOr[F](confirmation)("Transaction error")
           } yield ()
 
@@ -128,7 +144,9 @@ object ConsolePrinter {
         |"/player {player id}" - to get player profile
         |"/value {player id}" - to get player value
         |
+        |"/newUser {user name}" - to create new user
         |"/state {user name}" - to display user state
+        |"/allStates" - to display all users states
         |"/buy {user name} {player id} {shares number 1-100}" - to buy shares
         |"/sell {user name} {player id} {shares number 1-100}" - to sell shares
         |${RESET}

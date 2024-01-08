@@ -13,5 +13,6 @@ lazy val root = project
         sttp ++
         pureconfig ++
         logging ++
-        scanamo
+        scanamo ++
+        circe
   )

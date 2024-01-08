@@ -1,5 +1,8 @@
 package game.gameState
 
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.{Decoder, Encoder}
+
 import java.time.Instant
 import scala.annotation.tailrec
 
@@ -10,6 +13,9 @@ case class Shares(
 )
 
 object Shares {
+  implicit val sharesDecoder: Decoder[Shares] = deriveDecoder
+  implicit val sharesEncoder: Encoder[Shares] = deriveEncoder
+
   def totalValue(shares: List[Shares]): BigDecimal = shares.map { case Shares(shares, buyPrice, _) => shares * buyPrice }.sum
 
   implicit class SharesOps(shares: Option[List[Shares]]) {

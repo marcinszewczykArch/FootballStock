@@ -3,7 +3,9 @@ package testUtils
 import cats.data.EitherT
 import cats.effect.{IO, Ref}
 import game.errors.GameException
-import game.errors.GameException.{PlayerJsonNotFoundInMemoryException, PlayerProfileClientException}
+import game.errors.GameException.{PlayerJsonNotFoundInMemoryException, PlayerProfileClientException, UserNotFoundException}
+import game.gameState.memory.UserGameStateMemory
+import game.gameState.{User, UserGameState}
 import game.player.client.{PlayerProfileClient, PlayerSearchClient}
 import game.player.client.domain.{FetchedPlayerSimple, PlayerSearchResponse}
 import game.player.client.memory.PlayerProfileClientMemory
@@ -58,6 +60,27 @@ object TestUtils {
         })
 
       override def getAll(): IO[Map[PlayerId, Json]] = ref.get
+
+    }
+  )
+
+  def testUserGameStateMemory(
+    ref: Ref[IO, Map[User, UserGameState]]
+  ): IO[UserGameStateMemory[IO]] = IO.pure(
+    new UserGameStateMemory[IO] {
+
+      def save(user: User)(newUserState: UserGameState): IO[Either[GameException, Unit]] = (for {
+        _ <- EitherT.right[GameException](ref.update(_ + (user -> newUserState)))
+      } yield ()).value
+
+      override def getByUser(user: User): IO[Either[GameException, UserGameState]] = ref
+        .get
+        .map(_.get(user) match {
+          case Some(userStats) => Right(userStats)
+          case None            => Left(UserNotFoundException(user))
+        })
+
+      override def getAll(): IO[Map[User, UserGameState]] = ref.get
 
     }
   )

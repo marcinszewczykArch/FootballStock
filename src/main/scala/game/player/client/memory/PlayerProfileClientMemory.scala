@@ -7,7 +7,7 @@ import cats.implicits.{catsSyntaxApplyOps, toFlatMapOps, toFunctorOps}
 import cats.syntax.all._
 import config.AppConfig.PlayerProfileClientConfig
 import game.errors.GameException
-import game.errors.GameException.{DynamoReaderException, JsonParsingFailure, PlayerJsonNotFoundInMemoryCacheException, PlayerJsonNotFoundInMemoryException}
+import game.errors.GameException.{DynamoReaderException, JsonParsingFailure, PlayerJsonNotFoundInMemoryCacheException}
 import game.player.client.PlayerProfileClient
 import game.player.service.domain.PlayerId
 import io.circe.{Json, parser}
@@ -76,52 +76,51 @@ object PlayerProfileClientMemory {
       private val table = Table[PlayerProfileTable]("PlayerProfile")
       private case class PlayerProfileTable(source: String, playerId: Int, json: String)
 
-      override def save(
-        playerId: PlayerId
-      )(
-        playerJson: Json
-      ): F[Either[GameException, Unit]] = log.debug(s"saving player $playerId to dynamoDb") *> scanamo
-        .exec(
-          table.put(
-            PlayerProfileTable(
-              source = SOURCE_TRANSFERMARKT,
-              playerId = playerId.value,
-              json = playerJson.toString()
+      override def save(playerId: PlayerId)(playerJson: Json): F[Either[GameException, Unit]] =
+        log.debug(s"saving player $playerId to dynamoDb") *> scanamo
+          .exec(
+            table.put(
+              PlayerProfileTable(
+                source = SOURCE_TRANSFERMARKT,
+                playerId = playerId.value,
+                json = playerJson.toString()
+              )
             )
           )
-        )
-        .asRight[GameException]
-        .pure
+          .asRight[GameException]
+          .pure
 
       override def getById(
         playerId: PlayerId
-      ): F[Either[GameException, Json]] = scanamo
-        .exec(table.get("source" === SOURCE_TRANSFERMARKT and "playerId" === playerId.value.toLong))
-        .map(_.left.map(err => DynamoReaderException(err.toString))) match {
-        case Some(value) =>
-          value
-            .map(_.json)
-            .flatMap(str =>
-              parser.parse(str) match {
-                case Left(parsingFailure) => Left[GameException, Json](JsonParsingFailure(parsingFailure.getMessage()))
-                case Right(json)          => Right[GameException, Json](json)
-              }
-            )
-            .pure
+      ): F[Either[GameException, Json]] =
+        log.debug(s"getting player profile json $playerId from dynamoDb") *> (scanamo
+          .exec(table.get("source" === SOURCE_TRANSFERMARKT and "playerId" === playerId.value.toLong))
+          .map(_.left.map(err => DynamoReaderException(err.toString))) match {
+          case Some(value) =>
+            value
+              .map(_.json)
+              .flatMap(str =>
+                parser.parse(str) match {
+                  case Left(parsingFailure) => Left[GameException, Json](JsonParsingFailure(parsingFailure.getMessage()))
+                  case Right(json)          => Right[GameException, Json](json)
+                }
+              )
+              .pure
 
-        case None => Applicative[F].pure(Left[GameException, Json](DynamoReaderException(s"Result for $playerId not found in memory.")))
-      }
+          case None => Applicative[F].pure(Left[GameException, Json](DynamoReaderException(s"Result for $playerId not found in memory.")))
+        })
 
-      override def getAll(): F[Map[PlayerId, Json]] = scanamo
-        .exec(table.scan())
-        .sequence
-        .getOrElse(Nil)
-        .mapFilter { record =>
-          val playerId = PlayerId(record.playerId)
-          parser.parse(record.json).toOption.map(json => playerId -> json)
-        }
-        .toMap
-        .pure
+      override def getAll(): F[Map[PlayerId, Json]] =
+        log.debug(s"getting all player profiles json from dynamoDb") *> scanamo
+          .exec(table.scan())
+          .sequence
+          .getOrElse(Nil)
+          .mapFilter { record =>
+            val playerId = PlayerId(record.playerId)
+            parser.parse(record.json).toOption.map(json => playerId -> json)
+          }
+          .toMap
+          .pure
 
     }
 

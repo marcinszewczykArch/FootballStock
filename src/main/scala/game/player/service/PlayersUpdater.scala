@@ -49,8 +49,8 @@ object PlayersUpdater {
                                       )
       _                            <- eventMemory.sendEvent(
                                         PlayersUpdateEvent(
-                                          updateSuccess = success.map(PlayerId),
-                                          updateFailure = failed.map(PlayerId),
+                                          updateSuccess = success.map(PlayerId(_)),
+                                          updateFailure = failed.map(PlayerId(_)),
                                           taskDurationSeconds = updateDuration.toSeconds.toInt,
                                           timestamp = now
                                         )

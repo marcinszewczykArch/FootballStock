@@ -12,20 +12,22 @@ object Dependencies {
     "com.softwaremill.sttp.client3" %% "circe" % Versions.sttpVersion
   )
   val typesafeConfig = "com.typesafe" % "config" % Versions.typesafeConfigVersion
-
   val pureconfig = Seq(
     "com.github.pureconfig" %% "pureconfig" % "0.17.4",
     "eu.timepit" %% "refined-pureconfig" % "0.11.0"
   )
-
   val logging = Seq(
     "org.typelevel" %% "log4cats-slf4j" % "2.5.0",
     "org.typelevel" %% "log4cats-noop" % "2.5.0" % Test,
     "ch.qos.logback" % "logback-classic" % "1.4.14"
   )
-
   val scanamo = Seq("org.scanamo" %% "scanamo" % Versions.scanamoVersion,
   "org.scanamo" %% "scanamo-testkit" % Versions.scanamoVersion % Test
+  )
+  val circe = Seq(
+    "io.circe" %% "circe-core" % Versions.circeVersion,
+    "io.circe" %% "circe-generic" % Versions.circeVersion,
+    "io.circe" %% "circe-parser" % Versions.circeVersion
   )
 
 
@@ -40,4 +42,5 @@ object Versions {
   val sttpVersion = "3.9.0"
   val typesafeConfigVersion = "1.4.3"
   val scanamoVersion = "1.0.0-M23"
+  val circeVersion = "0.14.3"
 }

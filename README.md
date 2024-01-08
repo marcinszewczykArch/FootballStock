@@ -5,7 +5,6 @@
 ~~- pure to delay~~
 ~~- log level update~~
 ~~- TransfermarktClientConfig rename~~
-- userState and events to use dynamoDB
 ~~- create 2 streams to update players json periodically and combine them:~~
     ~~1. Take from db all playerIds where:~~
     ~~- player is active (not retired)~~
@@ -14,13 +13,15 @@
     ~~- if all failed - stop fetching~~
     ~~- if any found - scan next N number~~§
 ~~- cleanup existing tests~~
-- new tests for playerProfile Client, cache and fetch streams
 ~~- get rid of .get in fetch players streams~~
+~~- create dynamoDb client~~
+- userState and events to use dynamoDB
+- cleanup with decoders / encoders
+- implement more test cases
+- architectural diagram
 - design and add http endpoints
 - add technical endpoints to check player memory and cache
-- architectural diagram
 - read envs from cloud (aws credentials)
-~~- create dynamoDb client~~
 - create dynamoDb resources in cloud
 - own instance for transfermarkt parser service - separate container
 - authentication mechanism <- sth to study, separate table in dynamo?
@@ -46,7 +47,7 @@
 
 ```aws dynamodb create-table --cli-input-json file://src/main/resources/playerProfileTable.json --endpoint-url http://localhost:8000```
 
-```???```
+```aws dynamodb create-table --cli-input-json file://src/main/resources/userGameStateTable.json --endpoint-url http://localhost:8000```
 
 ```???```
 

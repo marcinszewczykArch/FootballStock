@@ -1,5 +1,6 @@
 package game.errors
 
+import game.gameState.User
 import game.player.service.domain.PlayerId
 import io.circe.DecodingFailure
 
@@ -10,7 +11,7 @@ object GameException {
 
   final case class IncorrectParsingException(input: String) extends GameException(s"Incorrect parsing input (must be a number): $input.")
 
-  final case class UserNotFoundException(userName: String) extends GameException(s"User with name $userName not found.")
+  final case class UserNotFoundException(user: User) extends GameException(s"User with name ${user.value} not found.")
 
   final case class NotEnoughMoneyException(available: BigDecimal, required: BigDecimal)
     extends GameException(s"Not enough money to buy. Required: $required, but available: $available.")
@@ -30,8 +31,8 @@ object GameException {
   final case class PlayerProfileNotFoundException(playerId: Int, err: String)
     extends GameException(s"Player profile for player with id [$playerId] not found. The reason is: $err")
 
-  final case class UserAlreadyExistsException(userName: String)
-    extends GameException(s"User with name $userName already exists.")
+  final case class UserAlreadyExistsException(user: User)
+    extends GameException(s"User with name ${user.value} already exists.")
 
   final case class PlayerJsonNotFoundInMemoryException(playerId: PlayerId)
     extends GameException(s"Player profile JSON for player $playerId not found in memory.")

@@ -31,7 +31,7 @@ object PlayersWriter {
     private def underlying(path: String, playerIds: List[Int]): F[Unit] = fs2
       .Stream(playerIds: _*)
       .covary[F]
-      .map(PlayerId)
+      .map(PlayerId(_))
       .parEvalMapUnordered(maxConcurrent) { id =>
         val player = playerProfileClient.fetchRawPlayerProfileById(id).map(_.map((id, _)))
         player.flatMap {
