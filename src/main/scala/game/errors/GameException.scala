@@ -51,4 +51,7 @@ object GameException {
 
   final case class JsonParsingFailure(cause: String)
     extends GameException(s"Exception while parsing json from string. Message: $cause")
+
+  final case class DynamoDbUpdateException(cause: String)
+    extends GameException(s"Exception while updating record in DynamoDb. Message: $cause")
 }

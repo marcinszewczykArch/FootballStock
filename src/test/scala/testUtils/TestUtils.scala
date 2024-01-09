@@ -73,14 +73,17 @@ object TestUtils {
         _ <- EitherT.right[GameException](ref.update(_ + (user -> newUserState)))
       } yield ()).value
 
-      override def getByUser(user: User): IO[Either[GameException, UserGameState]] = ref
+      def update(user: User)(newUserState: UserGameState)(versionNumber: Instant): IO[Either[GameException, Unit]] =
+        save(user)(newUserState)
+
+      def getByUser(user: User): IO[Either[GameException, UserGameState]] = ref
         .get
         .map(_.get(user) match {
           case Some(userStats) => Right(userStats)
           case None            => Left(UserNotFoundException(user))
         })
 
-      override def getAll(): IO[Map[User, UserGameState]] = ref.get
+      def getAll(): IO[Map[User, UserGameState]] = ref.get
 
     }
   )

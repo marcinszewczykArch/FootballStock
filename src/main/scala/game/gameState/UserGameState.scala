@@ -4,9 +4,12 @@ import game.player.service.domain.PlayerId
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder, Json, KeyDecoder, KeyEncoder}
 
+import java.time.Instant
+
 final case class UserGameState(
   portfolio: Map[PlayerId, List[Shares]],
-  money: BigDecimal
+  money: BigDecimal,
+  updatedAt: Instant //as versionNumber to process optimistic locking
 )
 
 object UserGameState {

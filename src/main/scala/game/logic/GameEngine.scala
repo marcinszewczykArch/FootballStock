@@ -5,22 +5,15 @@ import cats.data.EitherT
 import cats.effect._
 import cats.implicits.toTraverseOps
 import game.errors.GameException
-import game.errors.GameException.NotEnoughMoneyException
-import game.errors.GameException.SharesNumberException
-import game.errors.GameException.UserAlreadyExistsException
-import game.events.BuyPlayerEvent
-import game.events.Event
-import game.events.InitializeGameEvent
-import game.events.SellPlayerEvent
+import game.errors.GameException.{NotEnoughMoneyException, SharesNumberException, UserAlreadyExistsException}
+import game.events.{BuyPlayerEvent, Event, InitializeGameEvent, SellPlayerEvent}
 import game.events.memory.EventMemory
 import game.gameState._
 import game.gameState.memory.UserGameStateMemory
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
-import game.player.service.domain.MarketValue
-import game.player.service.domain.PlayerId
-import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import game.player.service.domain.{MarketValue, PlayerId}
+import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 import utils.TimeProvider
 
 trait GameEngine[F[_]] {
@@ -68,9 +61,10 @@ object GameEngine {
         event = BuyPlayerEvent(playerId, sharesToBuy, transactionValue, user, now)
         newUserState = UserGameState(
                          portfolio = userState.portfolio + (playerId -> newShares),
-                         money = userState.money - transactionValue
+                         money = userState.money - transactionValue,
+                         updatedAt = now
                        )
-        _                 <- EitherT(stateMemory.save(user)(newUserState))
+        _                 <- EitherT(stateMemory.update(user)(newUserState)(versionNumber = userState.updatedAt))
         _                 <- EitherT.liftF[F, GameException, Unit](eventMemory.sendEvent(event))
       } yield event).value
 
@@ -88,9 +82,10 @@ object GameEngine {
                              case Nil => userState.portfolio - playerId
                              case _   => userState.portfolio + (playerId -> newShares)
                            },
-                           money = userState.money + transactionValue
+                           money = userState.money + transactionValue,
+                           updatedAt = now
                          )
-          _                 <- EitherT(stateMemory.save(user)(newUserState))
+          _                 <- EitherT(stateMemory.update(user)(newUserState)(versionNumber = userState.updatedAt))
           _                 <- EitherT.liftF[F, GameException, Unit](eventMemory.sendEvent(event))
         } yield event).value
 
@@ -138,7 +133,7 @@ object GameEngine {
         initialCash  <- EitherT.pure(UserGameState.initialCash)
         portfolio    <- EitherT.pure(Map.empty[PlayerId, List[Shares]])
         event        <- EitherT.pure(InitializeGameEvent(initialCash, user, now))
-        initialState <- EitherT.pure(UserGameState(portfolio, initialCash))
+        initialState <- EitherT.pure(UserGameState(portfolio, initialCash, now))
         _            <- EitherT(stateMemory.save(user)(initialState))
         _            <- EitherT.liftF[F, GameException, Unit](eventMemory.sendEvent(event))
       } yield event).value

@@ -38,7 +38,7 @@ object Main extends IOApp {
       //memory - to be replaced by DynamoDb
       eventRef <- Ref.of[IO, List[Event]](Nil)
 
-      stateMemory                     <- IO.delay(UserGameStateMemory.implDynamoDb[IO](scanamo))
+      stateMemory                     <- IO.delay(UserGameStateMemory.impl[IO](scanamo))
       eventMemory                     <- IO.delay(EventMemory.impl[IO](eventRef))
       playerProfileClientMemory       <- IO.delay(PlayerProfileClientMemory.impl[IO](scanamo))
       playerProfileClient             <- IO.delay(PlayerProfileClient.impl[IO](appConfig.playerProfileClient))

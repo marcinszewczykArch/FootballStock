@@ -18,6 +18,7 @@
 - userState and events to use dynamoDB
 - cleanup with decoders / encoders
 - implement more test cases
+- implement Integration Tests with local DynamoDb container (e.g. check optimistic locking conditions)
 - architectural diagram
 - design and add http endpoints
 - add technical endpoints to check player memory and cache

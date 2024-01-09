@@ -60,7 +60,8 @@ class SampleGameSpec extends CatsEffectSuite {
       state1Expected = Right(
                          UserGameState(
                            portfolio = Map.empty,
-                           money = BigDecimal(1_000_000)
+                           money = BigDecimal(1_000_000),
+                           updatedAt = now
                          )
                        )
       events1 <- testGameEngine.getUserEvents(testUser)
@@ -73,7 +74,8 @@ class SampleGameSpec extends CatsEffectSuite {
       state2Expected = Right(
                          UserGameState(
                            portfolio = Map(PlayerId(38253) -> List(Shares(2, BigDecimal(30_000_000), now))),
-                           money = BigDecimal(400_000)
+                           money = BigDecimal(400_000),
+                           updatedAt = now
                          )
                        )
       transaction1Expected = Right(
@@ -99,7 +101,8 @@ class SampleGameSpec extends CatsEffectSuite {
       state3Expected = Right(
                          UserGameState(
                            portfolio = Map(PlayerId(38253) -> List(Shares(1, BigDecimal(30_000_000), now))),
-                           money = BigDecimal(700_000)
+                           money = BigDecimal(700_000),
+                           updatedAt = now
                          )
                        )
       transaction2Expected = Right(
