@@ -1,35 +1,77 @@
-import sbt._
+import sbt.*
 
 object Dependencies {
-  val ScalaTest = "org.scalatest" %% "scalatest" % Versions.scalaTestVersion
-  val catsCore = "org.typelevel" %% "cats-core" % Versions.catsVersion
-  val catsEffects = "org.typelevel" %% "cats-effect" % Versions.catsEffectsVersion
-  val fs2 = "co.fs2" %% "fs2-core" % Versions.fs2Version
-  val munit = "org.typelevel" %% "munit-cats-effect-3" % Versions.munitVersion
+
+  val scalaTest = Seq(
+    "org.scalatest" %% "scalatest" % Versions.scalaTestVersion
+  )
+
+  val catsCore = Seq(
+    "org.typelevel" %% "cats-core" % Versions.catsVersion
+  )
+
+  val catsEffects = Seq(
+    "org.typelevel" %% "cats-effect" % Versions.catsEffectsVersion
+  )
+
+  val fs2 = Seq(
+    "co.fs2" %% "fs2-core" % Versions.fs2Version
+  )
+
+  val munit = Seq(
+    "org.typelevel" %% "munit-cats-effect-3" % Versions.munitVersion
+  )
+
   val sttp = Seq(
     "com.softwaremill.sttp.client3" %% "cats" % Versions.sttpVersion,
     "com.softwaremill.sttp.client3" %% "http4s-backend" % Versions.sttpVersion,
     "com.softwaremill.sttp.client3" %% "circe" % Versions.sttpVersion
   )
-  val typesafeConfig = "com.typesafe" % "config" % Versions.typesafeConfigVersion
+
+  val typesafeConfig = Seq(
+    "com.typesafe" % "config" % Versions.typesafeConfigVersion
+  )
+
   val pureconfig = Seq(
     "com.github.pureconfig" %% "pureconfig" % "0.17.4",
     "eu.timepit" %% "refined-pureconfig" % "0.11.0"
   )
+
   val logging = Seq(
     "org.typelevel" %% "log4cats-slf4j" % "2.5.0",
     "org.typelevel" %% "log4cats-noop" % "2.5.0" % Test,
     "ch.qos.logback" % "logback-classic" % "1.4.14"
   )
-  val scanamo = Seq("org.scanamo" %% "scanamo" % Versions.scanamoVersion,
-  "org.scanamo" %% "scanamo-testkit" % Versions.scanamoVersion % Test
+
+  val scanamo = Seq(
+    "org.scanamo" %% "scanamo" % Versions.scanamoVersion,
+    "org.scanamo" %% "scanamo-testkit" % Versions.scanamoVersion % Test
   )
+
   val circe = Seq(
     "io.circe" %% "circe-core" % Versions.circeVersion,
     "io.circe" %% "circe-generic" % Versions.circeVersion,
+    "io.circe" %% "circe-generic-extras" % Versions.circeVersion,
+    "io.circe" %% "circe-optics" % Versions.circeVersion,
     "io.circe" %% "circe-parser" % Versions.circeVersion
   )
 
+  val tapir = Seq(
+    "com.softwaremill.sttp.tapir" %% "tapir-cats" % Versions.tapirVersion,
+    "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % Versions.tapirVersion,
+    "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % Versions.tapirVersion,
+    "com.softwaremill.sttp.tapir" %% "tapir-openapi-docs" % Versions.tapirVersion,
+    "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui" % Versions.tapirVersion,
+    "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % Versions.tapirVersion
+  )
+
+  val http4s = Seq(
+    "org.http4s" %% "http4s-blaze-server" % Versions.http4sBlazeVersion,
+    "org.http4s" %% "http4s-blaze-client" % Versions.http4sBlazeVersion,
+    "org.http4s" %% "http4s-ember-server" % Versions.http4sVersion,
+    "org.http4s" %% "http4s-circe" % Versions.http4sVersion,
+    "org.http4s" %% "http4s-dsl" % Versions.http4sVersion
+  )
 
 }
 
@@ -42,5 +84,8 @@ object Versions {
   val sttpVersion = "3.9.0"
   val typesafeConfigVersion = "1.4.3"
   val scanamoVersion = "1.0.0-M23"
-  val circeVersion = "0.14.3"
+  val circeVersion = "0.14.1"
+  val tapirVersion = "1.4.0"
+  val http4sVersion = "0.23.18"
+  val http4sBlazeVersion = "0.23.14"
 }

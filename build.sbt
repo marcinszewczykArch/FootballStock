@@ -9,10 +9,18 @@ lazy val root = project
   .settings(
     name := "FootballStock",
     libraryDependencies ++=
-      Seq(ScalaTest, catsCore, catsEffects, fs2, munit, typesafeConfig, compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")) ++
+      Seq(compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")) ++
+        scalaTest ++
+        catsCore ++
+        catsEffects ++
+        fs2 ++
+        munit ++
+        typesafeConfig ++
         sttp ++
         pureconfig ++
         logging ++
         scanamo ++
-        circe
+        circe ++
+        tapir ++
+        http4s
   )
