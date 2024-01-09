@@ -2,41 +2,68 @@ package game.events
 
 import game.gameState.User
 import game.player.service.domain.PlayerId
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.{Decoder, Encoder}
 
 import java.time.Instant
 
-sealed trait Event {
-  def user: User
-  def timestamp: Instant
+sealed abstract class Event(user: User, timestamp: Instant){
+  def getUser: User = user
+  def getTimestamp: Instant = timestamp
+  def getEventName: String
 }
 
-case class SellPlayerEvent(
-  playerId: PlayerId,
-  shares: Int,
-  value: BigDecimal,
-  override val user: User,
-  override val timestamp: Instant
-) extends Event
+object Event {
+  implicit val eventDecoder: Decoder[Event] = deriveDecoder
+  implicit val eventEncoder: Encoder[Event] = deriveEncoder
 
-case class BuyPlayerEvent(
-  playerId: PlayerId,
-  shares: Int,
-  value: BigDecimal,
-  override val user: User,
-  override val timestamp: Instant
-) extends Event
+  final case class SellPlayerEvent(
+    playerId: PlayerId,
+    shares: Int,
+    value: BigDecimal,
+    user: User,
+    timestamp: Instant
+  ) extends Event(user, timestamp) {
+    override def getEventName: String = "SELL_PLAYER"
+  }
 
-case class InitializeGameEvent(
-  value: BigDecimal,
-  override val user: User,
-  override val timestamp: Instant
-) extends Event
+//  implicit val sellPlayerEventDecoder: Decoder[SellPlayerEvent] = deriveDecoder
+//  implicit val sellPlayerEventEncoder: Encoder[SellPlayerEvent] = deriveEncoder
 
-case class PlayersUpdateEvent(
-  updateSuccess: List[PlayerId],
-  updateFailure: List[PlayerId],
-  taskDurationSeconds: Int,
-  override val timestamp: Instant
-) extends Event {
-  override def user: User = User("SYSTEM")
+  final case class BuyPlayerEvent(
+    playerId: PlayerId,
+    shares: Int,
+    value: BigDecimal,
+    user: User,
+    timestamp: Instant
+  ) extends Event(user, timestamp) {
+    override def getEventName: String = "BUY_PLAYER"
+  }
+
+//  implicit val buyPlayerEventDecoder: Decoder[BuyPlayerEvent] = deriveDecoder
+//  implicit val buyPlayerEventEncoder: Encoder[BuyPlayerEvent] = deriveEncoder
+
+  final case class InitializeGameEvent(
+    value: BigDecimal,
+    user: User,
+    timestamp: Instant
+  ) extends Event(user, timestamp) {
+    override def getEventName: String = "INITIALIZE_GAME"
+  }
+
+//  implicit val initializeGameEventDecoder: Decoder[InitializeGameEvent] = deriveDecoder
+//  implicit val initializeGameEventEncoder: Encoder[InitializeGameEvent] = deriveEncoder
+
+  final case class PlayersUpdateEvent(
+    updateSuccess: List[PlayerId],
+    updateFailure: List[PlayerId],
+    taskDurationSeconds: Int,
+    timestamp: Instant
+  ) extends Event(User("SYSTEM"), timestamp) {
+    override def getEventName: String = "PLAYERS_UPDATE"
+  }
+
+//  implicit val playersUpdateEventDecoder: Decoder[PlayersUpdateEvent] = deriveDecoder
+//  implicit val playersUpdateEventEncoder: Encoder[PlayersUpdateEvent] = deriveEncoder
+
 }

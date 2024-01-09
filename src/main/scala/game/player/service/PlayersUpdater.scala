@@ -6,7 +6,7 @@ import cats.effect.{Async, Ref}
 import cats.effect.kernel.Clock
 import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxApplyOps, toFlatMapOps, toFunctorOps}
 import config.AppConfig.PlayersUpdateCriteriaConfig
-import game.events.PlayersUpdateEvent
+import game.events.Event.PlayersUpdateEvent
 import game.events.memory.EventMemory
 import game.player.client.PlayerProfileClient
 import game.player.client.memory.PlayerProfileClientMemory

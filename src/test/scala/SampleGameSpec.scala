@@ -1,8 +1,8 @@
 import cats.effect.{IO, Ref}
 import cats.implicits.toTraverseOps
 import config.AppConfig
-import game.events.{BuyPlayerEvent, Event, InitializeGameEvent, SellPlayerEvent}
-import game.events.memory.EventMemory
+import game.events.Event
+import game.events.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
 import game.gameState.{Shares, User, UserGameState}
 import game.logic.GameEngine
 import game.player.client.memory.PlayerProfileClientMemory
@@ -24,7 +24,8 @@ class SampleGameSpec extends CatsEffectSuite {
 
   def getNewGameEngine(
     playerProfileRef: Ref[IO, Map[PlayerId, Json]],
-    stateRef: Ref[IO, Map[User, UserGameState]]
+    stateRef: Ref[IO, Map[User, UserGameState]],
+    eventRef: Ref[IO, List[Event]]
   )(
     implicit timeProvider: TimeProvider[IO]
   ): IO[GameEngine[IO]] = for {
@@ -41,9 +42,8 @@ class SampleGameSpec extends CatsEffectSuite {
       )
     playerService                           <- IO.delay(PlayerService.impl[IO](playerProfileClientMemoryCached, testPlayerSearchClient))
     testStateMemory                         <- TestUtils.testUserGameStateMemory(stateRef)
-    eventRef                                <- Ref.of[IO, List[Event]](Nil)
-    eventMemory                             <- IO.delay(EventMemory.impl[IO](eventRef))
-    gameLogic                               <- IO.delay(GameEngine.impl(testStateMemory, eventMemory, playerService))
+    testEventMemory                         <- TestUtils.testEventMemory(eventRef)
+    gameLogic                               <- IO.delay(GameEngine.impl(testStateMemory, testEventMemory, playerService))
   } yield gameLogic
 
   test("Sample game test") {
@@ -52,7 +52,8 @@ class SampleGameSpec extends CatsEffectSuite {
       implicit0(testTimeProvider: TimeProvider[IO]) <- TestUtils.testTimeProvider(now)
       playerProfileRef                              <- Ref.of[IO, Map[PlayerId, Json]](Map.empty[PlayerId, Json])
       stateRef                                      <- Ref.of[IO, Map[User, UserGameState]](Map.empty[User, UserGameState])
-      testGameEngine                                <- getNewGameEngine(playerProfileRef, stateRef)
+      eventRef                                      <- Ref.of[IO, List[Event]](Nil)
+      testGameEngine                                <- getNewGameEngine(playerProfileRef, stateRef, eventRef)
       testUser = User("TestUserName")
 
       _       <- testGameEngine.createUser(testUser)

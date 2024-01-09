@@ -50,7 +50,8 @@
 
 ```aws dynamodb create-table --cli-input-json file://src/main/resources/userGameStateTable.json --endpoint-url http://localhost:8000```
 
-```???```
+```aws dynamodb create-table --cli-input-json file://src/main/resources/eventTable.json --endpoint-url http://localhost:8000```
+
 
 - to check whether tables has been created type:
 

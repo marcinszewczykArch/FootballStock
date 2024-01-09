@@ -5,7 +5,7 @@ import cats.effect._
 import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxApplyOps}
 import cats.syntax.all._
 import game.errors.GameException
-import game.errors.GameException.{DynamoDbUpdateException, DynamoReaderException, JsonParsingFailure, PlayerJsonDecodingException}
+import game.errors.GameException.{DynamoDbUpdateException, DynamoReaderException, JsonParsingFailure, JsonDecodingException}
 import game.gameState.{User, UserGameState}
 import io.circe.parser
 import io.circe.syntax.EncoderOps
@@ -56,7 +56,7 @@ object UserGameStateMemory {
         case Left(parsingFailure) => Left[GameException, UserGameState](JsonParsingFailure(parsingFailure.getMessage()))
         case Right(json)          =>
           json.as[UserGameState] match {
-            case Left(decodingFailure) => Left[GameException, UserGameState](PlayerJsonDecodingException(decodingFailure))
+            case Left(decodingFailure) => Left[GameException, UserGameState](JsonDecodingException(decodingFailure))
             case Right(userGameState)  => Right[GameException, UserGameState](userGameState)
           }
       }

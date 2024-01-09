@@ -36,7 +36,7 @@ class PlayerUpdaterSpec extends CatsEffectSuite {
     _                                       <- log.info(s"Test config loaded: $appConfig")
     testPlayerProfileClient                 <- TestUtils.testPlayerProfileClient()
     testPlayerProfileClientMemoryUnderlying <- TestUtils.testPlayerProfileClientMemory(playerProfileClientMemoryRef)
-    testEventMemory                         <- IO.delay(EventMemory.impl[IO](eventMemoryRef))
+    testEventMemory                         <- TestUtils.testEventMemory(eventMemoryRef)
     playersUpdater                          <- IO.delay(
                                                  PlayersUpdater.impl[IO](
                                                    playerProfileClient = testPlayerProfileClient,

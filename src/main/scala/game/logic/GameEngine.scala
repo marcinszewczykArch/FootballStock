@@ -6,7 +6,8 @@ import cats.effect._
 import cats.implicits.toTraverseOps
 import game.errors.GameException
 import game.errors.GameException.{NotEnoughMoneyException, SharesNumberException, UserAlreadyExistsException}
-import game.events.{BuyPlayerEvent, Event, InitializeGameEvent, SellPlayerEvent}
+import game.events.Event
+import game.events.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
 import game.events.memory.EventMemory
 import game.gameState._
 import game.gameState.memory.UserGameStateMemory

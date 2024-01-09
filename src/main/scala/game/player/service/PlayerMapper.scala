@@ -8,7 +8,7 @@ import cats.implicits.catsSyntaxApplyOps
 import cats.implicits.toFlatMapOps
 import cats.implicits.toFunctorOps
 import game.errors.GameException
-import game.errors.GameException.PlayerJsonDecodingException
+import game.errors.GameException.JsonDecodingException
 import game.errors.GameException.PlayerMarketValueNotFoundException
 import game.errors.GameException.PlayerProfileNotFoundException
 import game.errors.GameException.PlayerSearchByNameException
@@ -82,6 +82,6 @@ object PlayerMapper {
   }
 
   val jsonToFetchedPlayerProfile: Json => Either[GameException, FetchedPlayerProfile] =
-    _.as[FetchedPlayerProfile].left.map(decodingFailure => PlayerJsonDecodingException(decodingFailure))
+    _.as[FetchedPlayerProfile].left.map(decodingFailure => JsonDecodingException(decodingFailure))
 
 }

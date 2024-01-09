@@ -5,6 +5,7 @@ import cats.Monad
 import cats.effect.std.Console
 import cats.syntax.all._
 import game.errors.GameException
+import game.events.Event
 import game.gameState.User
 import game.logic.GameEngine
 import game.player.service.PlayerService
@@ -61,7 +62,7 @@ object ConsolePrinter {
             userState <- gameLogic.getUserState(User(userName))
             _         <- prettyPrintOr[F](userState)("User game state not found")
           } yield ()
-        case GetAllUsersStates()                =>
+        case GetAllUsersStates()                    =>
           for {
             allUsersStates <- gameLogic.getAllUsersStates()
             _              <- allUsersStates
@@ -78,8 +79,13 @@ object ConsolePrinter {
           } yield ()
         case GetUserEvents(userName)                =>
           for {
-            userState <- gameLogic.getUserEvents(User(userName))
-            _         <- prettyPrintOr[F](userState)("User events not found")
+            userEvents <- gameLogic.getUserEvents(User(userName))
+            _ =
+              userEvents
+                .sequence
+                .foreach(either =>
+                  either.map(event => Applicative[F].pure(println(event.getEventName)) *> prettyPrintOr[F](either)("User events not found"))
+                )
           } yield ()
         case BuyShares(userName, playerId, shares)  =>
           for {
@@ -147,6 +153,7 @@ object ConsolePrinter {
         |"/newUser {user name}" - to create new user
         |"/state {user name}" - to display user state
         |"/allStates" - to display all users states
+        |"/events {user name}" - to display user events
         |"/buy {user name} {player id} {shares number 1-100}" - to buy shares
         |"/sell {user name} {player id} {shares number 1-100}" - to sell shares
         |${RESET}

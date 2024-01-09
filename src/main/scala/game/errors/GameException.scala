@@ -40,8 +40,8 @@ object GameException {
   final case class PlayerJsonNotFoundInMemoryCacheException(playerId: PlayerId)
     extends GameException(s"Player profile JSON for player $playerId not found in memory cache.")
 
-  final case class PlayerJsonDecodingException(decodingFailure: DecodingFailure)
-    extends GameException(s"Player JSON decoding failure: $decodingFailure")
+  final case class JsonDecodingException(decodingFailure: DecodingFailure)
+    extends GameException(s"JSON decoding failure: $decodingFailure")
 
   final case class PlayerProfileClientException(cause: String)
     extends GameException(s"Exception while invoking PlayerProfileClient. Message: $cause")
