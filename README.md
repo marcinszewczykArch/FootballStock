@@ -73,6 +73,51 @@
 
 ### C4 diagram
 
+```mermaid
+    C4Context
+    title Football Stock Game
+
+    Boundary(Internet, "Public Internet") {
+        Person_Ext(User, "Game User", "???")
+
+        Boundary(FootballStock, "FootballStock") {
+            Container_Boundary(transportLayer, "transportLayer") {
+                Component(Http, "http endpoints", "id", "???")
+                Component(Console, "console printer", "id", "???")
+            }
+
+            Container_Boundary(logicLayer, "logicLayer") {
+                Component(GameEngine, "GameEngine", "id", "Process game logic")
+            }
+
+            Container_Boundary(serviceLayer, "serviceLayer") {
+                Component(UserGameStateMemory, "UserGameStateMemory", "id", "description")
+                Component(EventMemory, "EventMemory", "id", "description")
+                Component(PlayerService, "PlayerService", "id", "description")
+            }
+        }
+
+        Boundary(ResourcesLayer, "ResourcesLayer") {
+            ComponentDb_Ext(DynamoDB, "DynamoDB - 3 tables", "???")
+            Container(TransferMarktApi, "transfermarkt-api.vercel.app", "???")
+        }
+    }
+
+    Rel(User, Http, "???")
+    Rel(User, Console, "???")
+    Rel(Http, GameEngine, "???")
+    Rel(Console, GameEngine, "???")
+    Rel(GameEngine, UserGameStateMemory, "???")
+    Rel(GameEngine, EventMemory, "???")
+    Rel(GameEngine, PlayerService, "???")
+    Rel(UserGameStateMemory, DynamoDB, "???")
+    Rel(EventMemory, DynamoDB, "???")
+    Rel(PlayerService, DynamoDB, "???")
+    Rel(PlayerService, TransferMarktApi, "???")
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="3")
+
+```
+
 ### Player Profile Sequence diagram
 
 ```mermaid
@@ -82,52 +127,63 @@ sequenceDiagram
     participant PlayerProfileCache
     participant PlayerProfileMemory
     participant PlayerProfileClient
-    User ->> PlayerService: player profile request
-    PlayerService ->> PlayerProfileCache: player profile request
-    PlayerProfileCache -->> PlayerService: return player profile json if present or
-    PlayerProfileCache ->> PlayerProfileMemory: first lookup
-    PlayerProfileMemory -->> PlayerProfileCache: return player profile json and update cache if present or
-    PlayerProfileCache -->> PlayerService: return player profile json if present or
-    PlayerProfileCache ->> PlayerProfileClient: second lookup
-    
-    par update memory
-    PlayerProfileClient ->> PlayerProfileMemory: player profile json
-    and update cache
-    PlayerProfileClient ->> PlayerProfileCache: player profile json
+    User ->> PlayerService: player profile domain object request
+    PlayerService ->> PlayerProfileCache: player profile json request
+    PlayerProfileCache -->> PlayerService: player profile json if present or
+    alt cache first lookup
+        PlayerProfileCache ->> PlayerProfileMemory: player profile json request
+        PlayerProfileMemory ->> PlayerProfileCache: player profile json response
+    else cache second lookup
+        PlayerProfileCache ->> PlayerProfileClient: player profile json request
+        par update memory
+            PlayerProfileClient ->> PlayerProfileMemory: player profile json response
+        and update cache
+            PlayerProfileClient ->> PlayerProfileCache: player profile json response
+        end
     end
-    
-    PlayerProfileCache ->> PlayerService: return player profile json
-    PlayerService ->> User: return player profile domain object
-
-
-
-
+    PlayerProfileCache ->> PlayerService: player profile json response
+    PlayerService ->> User: player profile domain object response
 ```
 
 ### Player Search Sequence diagram
 
-### User State Sequence diagram
+```mermaid
+sequenceDiagram
+    actor User
+    participant PlayerService
+    participant PlayerSearchCache
+    participant PlayerSearchClient
+    User ->> PlayerService: player search domain object request
+    PlayerService ->> PlayerSearchCache: player search json request
+    PlayerSearchCache -->> PlayerService: player search json if present or
+    PlayerSearchCache ->> PlayerSearchClient: player search json request
+    PlayerSearchClient ->> PlayerSearchCache: player search json response
+    PlayerSearchCache ->> PlayerService: player search json response
+    PlayerService ->> User: player search domain object response
+```
+
+### User Game State Sequence diagram
 
 ```mermaid
 sequenceDiagram
     actor User
-    participant Validation
     participant GameState
-    participant EventPool
-    Note over User, EventPool: Create new user game state
+    participant PlayerService
+    participant EventMemory
+    Note over User, EventMemory: Create new user game state
     User ->> GameState: create new user request
-    Validation -->> User: or validation error
-    GameState ->> EventPool: send event [INITIALIZE_GAME]
     GameState ->> User: new user created
-    Note over User, EventPool: Buy player stock
+    GameState -->> EventMemory: send event [INITIALIZE_GAME]
+    Note over User, EventMemory: Buy player stock
     User ->> GameState: buy player stock request
-    Validation -->> User: or validation error
-    GameState ->> EventPool: send event [BUY_PLAYER]
-    GameState ->> User: player stock bought
-    Note over User, EventPool: Sell player stock
+    GameState ->> PlayerService: player profile request
+    PlayerService ->> GameState: player profile response
+    GameState ->> User: buy player stock response
+    GameState -->> EventMemory: send event [BUY_PLAYER]
+    Note over User, EventMemory: Sell player stock
     User ->> GameState: sell player stock request
-    Validation -->> User: or validation error
-    GameState ->> EventPool: send event [SELL_PLAYER]
-    GameState ->> User: player stock sold
-
+    GameState ->> PlayerService: player profile request
+    PlayerService ->> GameState: player profile response
+    GameState ->> User: sell player stock response
+    GameState -->> EventMemory: send event [SELL_PLAYER]
 ```
