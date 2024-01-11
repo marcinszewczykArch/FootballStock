@@ -3,6 +3,7 @@
 ### further improvement backend:
 
 - readme content list and cleanup
+- add EventService and UserGameStateService
 - cleanup with decoders / encoders
 - implement more test cases
 - implement Integration Tests with local DynamoDb container (e.g. check optimistic locking conditions)
@@ -75,46 +76,70 @@
 
 ```mermaid
     C4Context
-    title Football Stock Game
+    Boundary(Internet, "public Internet") {
+        Boundary(users, "app users") {
+            Person_Ext(User, "Game User", "???")
+            Person_Ext(Admin, "Administration User", "???")
+        }
 
-    Boundary(Internet, "Public Internet") {
-        Person_Ext(User, "Game User", "???")
+        Deployment_Node(UI, "FootballStock App UI") {
+            Container(UIWeb, "Web UI", "id", "???")
+          Container(UINative, "Native Mobile UI", "id", "???")
+        }
 
-        Boundary(FootballStock, "FootballStock") {
-            Container_Boundary(transportLayer, "transportLayer") {
-                Component(Http, "http endpoints", "id", "???")
-                Component(Console, "console printer", "id", "???")
+        Deployment_Node(FootballStock, "FootballStock App Backend") {
+            Boundary(communicationLayer, "communication layer") {
+                Container(Http, "API", "id", "http endpoints")
+                Container(Console, "Console", "id", "???")
             }
 
-            Container_Boundary(logicLayer, "logicLayer") {
-                Component(GameEngine, "GameEngine", "id", "Process game logic")
+            Boundary(logicLayer, "logic layer") {
+                Container(GameEngine, "GameEngine", "id", "Process game logic")
             }
 
-            Container_Boundary(serviceLayer, "serviceLayer") {
-                Component(UserGameStateMemory, "UserGameStateMemory", "id", "description")
-                Component(EventMemory, "EventMemory", "id", "description")
-                Component(PlayerService, "PlayerService", "id", "description")
+            Boundary(serviceLayer, "service layer") {
+                Container(PlayerService, "Player Service", "id", "description")
+                Container(EventService, "Event Service", "id", "description")
+                Container(GameStateService, "Game State Service", "id", "description")
+            }
+
+            Boundary(memoryLayer, "memory layer") {
+                Container(PlayerMemory, "Player Memory", "id", "description")
+                Container(EventMemory, "Event Memory", "id", "description")
+                Container(GameStateMemory, "Game State Memory", "id", "description")
             }
         }
 
-        Boundary(ResourcesLayer, "ResourcesLayer") {
-            ComponentDb_Ext(DynamoDB, "DynamoDB - 3 tables", "???")
-            Container(TransferMarktApi, "transfermarkt-api.vercel.app", "???")
+        Boundary(resourcesLayer, "External Resources") {
+            Component(TransferMarktParserApi, "transfermarkt parser API", "transfermarkt-api.vercel.app")
+            Component(TransfermarktWeb, "transfermarkt.com", "transfermarkt.com webpage")
+            Boundary(AWS, "AWS") {
+                ComponentDb_Ext(PlayerProfileTable, "Player Profile Table", "AWS DynamoDB")
+                ComponentDb_Ext(EventTable, "Event Table", "AWS DynamoDB")
+                ComponentDb_Ext(GameStateTable, "Game State Table", "AWS DynamoDB")
+            }
         }
     }
 
-    Rel(User, Http, "???")
-    Rel(User, Console, "???")
-    Rel(Http, GameEngine, "???")
-    Rel(Console, GameEngine, "???")
-    Rel(GameEngine, UserGameStateMemory, "???")
-    Rel(GameEngine, EventMemory, "???")
-    Rel(GameEngine, PlayerService, "???")
-    Rel(UserGameStateMemory, DynamoDB, "???")
-    Rel(EventMemory, DynamoDB, "???")
-    Rel(PlayerService, DynamoDB, "???")
-    Rel(PlayerService, TransferMarktApi, "???")
-    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="3")
+    Rel(User, UIWeb, "Uses", "HTTPS")
+    Rel(Admin, Http, "Uses", "HTTPS")
+    Rel(Admin, Console, "Uses")
+    Rel(UIWeb, Http, "Uses", "HTTPS / WEBSOCKET")
+    Rel(Http, GameEngine, "Uses")
+    Rel(Console, GameEngine, "Uses")
+    Rel(GameEngine, PlayerService, "Uses")
+    Rel(GameEngine, GameStateService, "Uses")
+    Rel(GameEngine, EventService, "Uses")
+    Rel(PlayerService, PlayerMemory, "Uses")
+    Rel(PlayerService, EventMemory, "Uses")
+    Rel(GameStateService, GameStateMemory, "Uses")
+    Rel(EventService, EventMemory, "Uses")
+    BiRel(PlayerMemory, PlayerProfileTable, "Connect", "JSON/HTTPS")
+    BiRel(GameStateMemory, GameStateTable, "Connect", "JSON/HTTPS")
+    BiRel(EventMemory, EventTable, "Connect", "JSON/HTTPS")
+    Rel(PlayerMemory, TransferMarktParserApi, "Uses", "JSON/HTTPS")
+    Rel(TransferMarktParserApi, TransfermarktWeb, "Uses", "HTTPS")
+    UpdateLayoutConfig($c4ShapeInRow="5", $c4BoundaryInRow="5")
 
 ```
 
