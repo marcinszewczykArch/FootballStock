@@ -1,15 +1,16 @@
 package game.gameState
 
-import game.player.service.domain.PlayerId
+import game.player.service.domain.{PlayerId, PlayerProfile}
 
 import java.time.Instant
 
 final case class UserBalance(
-  portfolio: Map[PlayerId, BalancePerPlayer],
+  portfolio: List[(PlayerProfile, BalancePerPlayer)],
   playersCurrentValue: BigDecimal,
   cash: BigDecimal,
   profit: BigDecimal,
-  revenuePercent: Int
+  revenuePercent: Int,
+  updatedAt: Instant
 )
 
 final case class BalancePerPlayer(

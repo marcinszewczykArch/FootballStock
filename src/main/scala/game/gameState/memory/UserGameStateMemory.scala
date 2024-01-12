@@ -5,7 +5,7 @@ import cats.effect._
 import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxApplyOps}
 import cats.syntax.all._
 import game.errors.GameException
-import game.errors.GameException.{DynamoDbUpdateException, DynamoReaderException, JsonParsingFailure, JsonDecodingException}
+import game.errors.GameException.{DynamoDbUpdateException, DynamoReaderException, JsonDecodingException, JsonParsingFailure}
 import game.gameState.{User, UserGameState}
 import io.circe.parser
 import io.circe.syntax.EncoderOps

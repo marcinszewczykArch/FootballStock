@@ -1,8 +1,10 @@
-import cats.effect.{ExitCode, IO, IOApp, Ref}
+import cats.effect._
+import cats.implicits.toSemigroupKOps
 import config.AppConfig
-import config.AppConfig.AwsConfig
+import config.AppConfig.{AwsConfig, HttpConfig}
 import console.ConsolePrinter
 import fs2.Stream
+import game.errors.GameException
 import game.events.Event
 import game.events.memory.EventMemory
 import game.gameState.memory.UserGameStateMemory
@@ -10,6 +12,12 @@ import game.logic.GameEngine
 import game.player.client.{PlayerProfileClient, PlayerSearchClient}
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.{PlayerService, PlayersUpdater, PlayersWriter}
+import http.SwaggerRoutes
+import http.gameState.{GameStateLogic, GameStateRoutes}
+import http.security.{EloTokenVerification, TokenVerification}
+import org.http4s.ember.server.EmberServerBuilder
+import org.http4s.{BuildInfo, HttpRoutes}
+import org.http4s.server.{Router, Server}
 import org.scanamo.Scanamo
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
@@ -22,47 +30,52 @@ import scala.concurrent.duration.DurationInt
 object Main extends IOApp {
   implicit val timeProvider: TimeProvider[IO] = TimeProvider.impl[IO]
   private implicit val loggerFactory: LoggerFactory[IO] = Slf4jFactory.create[IO]
+  implicit val tokenVerification: TokenVerification[IO] = EloTokenVerification
   private val log = LoggerFactory.getLoggerFromClass(classOf[Main.type])
 
-  def run(args: List[String]): IO[ExitCode] =
-    for {
-      _              <- log.info("starting...")
-      rawAppConfig   <- AppConfig.getTypesafeConfig[IO]
-      appConfig      <- AppConfig.parseAppConfig[IO](rawAppConfig)
-      _              <- log.info(s"config loaded: $appConfig")
-      dynamoDbClient <- buildDynamoDbClient(appConfig.aws)
-      scanamo = Scanamo(dynamoDbClient)
-      consolePrinter <- IO.delay(ConsolePrinter.impl[IO])
-      _              <- consolePrinter.printStartMessage[IO]
+  type Result[A] = Either[GameException, A] //todo: this can be used in multiple places for simplification
 
-      stateMemory                     <- IO.delay(UserGameStateMemory.impl[IO](scanamo))
-      eventMemory                     <- IO.delay(EventMemory.impl[IO](scanamo))
-      playerProfileClientMemory       <- IO.delay(PlayerProfileClientMemory.impl[IO](scanamo))
-      playerProfileClient             <- IO.delay(PlayerProfileClient.impl[IO](appConfig.playerProfileClient))
+  def run(args: List[String]): IO[ExitCode] =
+    (for {
+      _              <- Resource.eval(log.info("starting..."))
+      rawAppConfig   <- Resource.eval(AppConfig.getTypesafeConfig[IO])
+      appConfig      <- Resource.eval(AppConfig.parseAppConfig[IO](rawAppConfig))
+      _              <- Resource.eval(log.info(s"config loaded: $appConfig"))
+      dynamoDbClient <- Resource.eval(buildDynamoDbClient(appConfig.aws))
+      scanamo = Scanamo(dynamoDbClient)
+      consolePrinter <- Resource.eval(IO.delay(ConsolePrinter.impl[IO]))
+      _              <- Resource.eval(consolePrinter.printStartMessage[IO])
+
+      stateMemory                     <- Resource.eval(IO.delay(UserGameStateMemory.impl[IO](scanamo)))
+      eventMemory                     <- Resource.eval(IO.delay(EventMemory.impl[IO](scanamo)))
+      playerProfileClientMemory       <- Resource.eval(IO.delay(PlayerProfileClientMemory.impl[IO](scanamo)))
+      playerProfileClient             <- Resource.eval(IO.delay(PlayerProfileClient.impl[IO](appConfig.playerProfileClient)))
       playerProfileClientMemoryCached <-
-        IO.delay(
+        Resource.eval(IO.delay(
           PlayerProfileClientMemory
             .cachedInstance[IO](appConfig.playerProfileClient, playerProfileClient, playerProfileClientMemory)
-        )
-      playerSearchClient              <- IO.delay(PlayerSearchClient.cachedInstance[IO](appConfig.playerSearchClient))
-      playerService                   <- IO.delay(PlayerService.impl[IO](playerProfileClientMemoryCached, playerSearchClient))
-      gameLogic                       <- IO.delay(GameEngine.impl(stateMemory, eventMemory, playerService))
-      playersUpdater                  <- IO.delay(
+        ))
+      playerSearchClient              <- Resource.eval(IO.delay(PlayerSearchClient.cachedInstance[IO](appConfig.playerSearchClient)))
+      playerService                   <- Resource.eval(IO.delay(PlayerService.impl[IO](playerProfileClientMemoryCached, playerSearchClient)))
+      gameEngine                       <- Resource.eval(IO.delay(GameEngine.impl(stateMemory, eventMemory, playerService)))
+      playersUpdater                  <- Resource.eval(IO.delay(
                                            PlayersUpdater.impl[IO](
                                              playerProfileClient,
                                              playerProfileClientMemory,
                                              eventMemory,
                                              appConfig.playersUpdateCriteria
                                            )
-                                         )
+                                         ))
 
-      playersWriter <- IO.delay(PlayersWriter.impl(playerProfileClient))
+      gameStateLogic = GameStateLogic.impl[IO](gameEngine)
+      _              <- httpServerResource(appConfig, gameStateLogic)
+      //      playersWriter <- IO.delay(PlayersWriter.impl(playerProfileClient))
       //      _             <- playersWriter.writeToFile(
       //                         path = "src/main/resources/players",
       //                         playerIds = List(38253, 38254, 38255, 38256, 38257)
       //                       )
-      exitCode      <- runGame(consolePrinter, playerService, gameLogic, playersUpdater)
-    } yield exitCode
+      exitCode      <- Resource.eval(runGame(consolePrinter, playerService, gameEngine, playersUpdater))
+    } yield ()).useForever
 
   private def runGame(
     consolePrinter: ConsolePrinter[IO],
@@ -76,13 +89,13 @@ object Main extends IOApp {
         .repeatEval(consolePrinter.readMessage[IO])
         .evalMap(consolePrinter.gameLoop(playerService, gameLogic))
 
-    val updatePlayersStream: Stream[IO, Unit] =
+    val updatePlayersInMemoryStream: Stream[IO, Unit] =
       fs2
         .Stream
-        .awakeEvery[IO](10.minutes) //todo: from config
-        .evalMap(_ => playersUpdater.updatePlayersInMemory)
+        .awakeEvery[IO](10.seconds) //todo: from config
+        .evalMap(_ => playersUpdater.updateAllPlayersInMemory)
 
-    Stream(gameStream, updatePlayersStream)
+    Stream(gameStream, updatePlayersInMemoryStream)
       .parJoinUnbounded
       .compile
       .drain
@@ -106,4 +119,32 @@ object Main extends IOApp {
       _      <- log.info(s"DynamoDbClient created")
     } yield client
 
+
+  def httpServerResource(
+    appConfig: AppConfig,
+    gameStateLogic: GameStateLogic[IO]
+  )(
+    implicit tokenVerification: TokenVerification[IO]
+  ): Resource[IO, Server] = for {
+      gameStateRoutes <- Resource.eval(new GameStateRoutes[IO](tokenVerification).routes(gameStateLogic))
+      swaggerRoutes  <- Resource.eval(SwaggerRoutes.routes)
+      server         <- buildServer(swaggerRoutes <+> gameStateRoutes , appConfig.http)
+    } yield server
+
+
+  def buildServer(
+    routes: HttpRoutes[IO],
+    httpConfig: HttpConfig
+  ): Resource[IO, Server] =
+    for {
+      _      <- Resource.eval(log.info(s"Starting $BuildInfo on ${httpConfig.host}:${httpConfig.port}"))
+      server <- EmberServerBuilder
+                  .default[IO]
+                  .withHost(httpConfig.host)
+                  .withPort(httpConfig.port)
+                  .withHttpApp(Router("/" -> routes).orNotFound)
+                  .build
+      _      <- Resource.eval(log.info(s"Started $BuildInfo HTTP server"))
+      _      <- Resource.eval(IO.println(s"Go to http://localhost:${server.address.getPort}/swagger to open SwaggerUI"))
+    } yield server
 }

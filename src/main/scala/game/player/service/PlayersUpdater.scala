@@ -18,8 +18,9 @@ import utils.TimeProvider
 
 import java.time.Instant
 
-trait PlayersUpdater[F[_]] {
-  def updatePlayersInMemory: F[Unit]
+trait PlayersUpdater[F[_]] { //todo: to PlayerService
+  def updateAllPlayersInMemory: F[Unit]
+  def updatePlayersInUsersPortfolios: F[List[PlayerId]] = ???
 }
 
 object PlayersUpdater {
@@ -35,8 +36,8 @@ object PlayersUpdater {
     val maxConcurrent = 8
     implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[PlayersUpdater[F]].getName)
 
-    override def updatePlayersInMemory: F[Unit] = for {
-      _                            <- log.info("Starting players update task...")
+    override def updateAllPlayersInMemory: F[Unit] = for {
+      _                            <- log.info("Starting players profile update task for all players in memory...")
       now                          <- Applicative[F].pure(timeProvider.getCurrentTimestamp)
       thresholdTimestamp           <- Applicative[F].pure(now.minusSeconds(playersUpdateCriteria.notUpdatedFor.toSeconds))
       updateStatisticRef           <- Ref.of[F, UpdateStats](UpdateStats())
@@ -56,6 +57,30 @@ object PlayersUpdater {
                                         )
                                       )
     } yield ()
+
+//    override def updatePlayersInUsersPortfolios: F[List[PlayerId]] = for {
+//        _                            <- log.info("Starting players profile update task for players in users portfolios...")
+//        now                          <- Applicative[F].pure(timeProvider.getCurrentTimestamp)
+//        thresholdTimestamp           <- Applicative[F].pure(now.minusSeconds(playersUpdateCriteria.notUpdatedFor.toSeconds))
+//        updateStatisticRef           <- Ref.of[F, UpdateStats](UpdateStats())
+//        (updateDuration, _)          <- Clock[F].timed(underlying(updateStatisticRef)(thresholdTimestamp))
+//        UpdateStats(failed, success) <- updateStatisticRef.get
+//        _                            <- log.info(
+//                                          s"Updated successfully: ${success.size} players," +
+//                                            s"failed to update: ${failed.size} players." +
+//                                            s"Total duration: ${updateDuration.toSeconds} seconds."
+//                                        )
+//        _                            <- eventMemory.sendEvent(
+//                                          PlayersUpdateEvent(
+//                                            updateSuccess = success.map(PlayerId(_)),
+//                                            updateFailure = failed.map(PlayerId(_)),
+//                                            taskDurationSeconds = updateDuration.toSeconds.toInt,
+//                                            timestamp = now
+//                                          )
+//                                        )
+//      } yield ()
+
+
 
     case class UpdateStats(failed: List[Int] = Nil, success: List[Int] = Nil)
 

@@ -5,17 +5,25 @@ import cats.data.EitherT
 import cats.effect._
 import cats.implicits.toTraverseOps
 import game.errors.GameException
-import game.errors.GameException.{NotEnoughMoneyException, SharesNumberException, UserAlreadyExistsException}
+import game.errors.GameException.NotEnoughMoneyException
+import game.errors.GameException.SharesNumberException
+import game.errors.GameException.UserAlreadyExistsException
 import game.events.Event
-import game.events.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
+import game.events.Event.BuyPlayerEvent
+import game.events.Event.InitializeGameEvent
+import game.events.Event.SellPlayerEvent
 import game.events.memory.EventMemory
 import game.gameState._
 import game.gameState.memory.UserGameStateMemory
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
-import game.player.service.domain.{MarketValue, PlayerId}
-import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
+import game.player.service.domain.MarketValue
+import game.player.service.domain.PlayerId
+import org.typelevel.log4cats.LoggerFactory
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 import utils.TimeProvider
+
+import scala.math.BigDecimal
 
 trait GameEngine[F[_]] {
 
@@ -156,7 +164,8 @@ object GameEngine {
                        .portfolio
                        .map { case playerId -> shares =>
                          for {
-                           currentPrice <- EitherT(playerService.getMarketValueByPlayerId(playerId))
+                           playerProfile <- EitherT(playerService.getPlayerProfileById(playerId))
+                           currentPrice  <- EitherT(playerService.getMarketValueByPlayerId(playerId))
                            sharesNumber = shares.map(_.number).sum
                            totalBuyValue = shares.map { case Shares(number, buyPrice, _) => number * buyPrice / 100 }.sum
                            currentValue = (currentPrice.value * sharesNumber) / 100
@@ -167,19 +176,22 @@ object GameEngine {
                                                 currentPrice = currentPrice.value,
                                                 totalCurrentValue = currentValue,
                                                 profit = currentValue - totalBuyValue,
-                                                revenuePercent = ((currentValue - totalBuyValue) / totalBuyValue).toInt * 100
+                                                revenuePercent = totalBuyValue match {
+                                                  case value if value == 0 => 0
+                                                  case _                   => ((currentValue - totalBuyValue) / totalBuyValue).toInt * 100
+                                                }
                                               )
-                         } yield playerId -> balancePerPlayer
+                         } yield (playerProfile, balancePerPlayer)
                        }
                        .toList
                        .sequence
-                       .map(_.toMap)
 
         playersCurrentValue = portfolio.map(_._2.totalCurrentValue).sum
         cash = userState.money
         profit = playersCurrentValue + cash - UserGameState.initialCash
         revenuePercent = ((profit / UserGameState.initialCash) * 100).toInt
-      } yield UserBalance(portfolio, playersCurrentValue, cash, profit, revenuePercent)).value
+        updatedAt = userState.updatedAt
+      } yield UserBalance(portfolio, playersCurrentValue, cash, profit, revenuePercent, updatedAt)).value
 
       override def getUserEvents(user: User): F[Either[GameException, List[Event]]] =
         eventMemory.getEventsForUser(user)

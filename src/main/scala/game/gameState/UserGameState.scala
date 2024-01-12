@@ -3,6 +3,8 @@ package game.gameState
 import game.player.service.domain.PlayerId
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder, Json, KeyDecoder, KeyEncoder}
+import io.circe.Codec
+import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
 import java.time.Instant
 
@@ -13,6 +15,8 @@ final case class UserGameState(
 )
 
 object UserGameState {
+  import sttp.tapir.generic.auto._
+
   val initialCash: BigDecimal = BigDecimal(1_000_000) //todo: from config?
 
   implicit val userGameStateDecoder: Decoder[UserGameState] = deriveDecoder[UserGameState]
@@ -23,4 +27,5 @@ object UserGameState {
 
   implicit val mapEncoder: Encoder[Map[PlayerId, List[Shares]]] = Encoder.encodeMap[PlayerId, List[Shares]]
   implicit val mapDecoder: Decoder[Map[PlayerId, List[Shares]]] = Decoder.decodeMap[PlayerId, List[Shares]]
+
 }
