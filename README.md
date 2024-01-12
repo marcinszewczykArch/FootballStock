@@ -78,35 +78,35 @@
     C4Context
     Boundary(Internet, "public Internet") {
         Boundary(users, "app users") {
-            Person_Ext(User, "Game User", "???")
-            Person_Ext(Admin, "Administration User", "???")
+            Person_Ext(User, "Game User", "Multiple users processing the game in parallel.")
+            Person_Ext(Admin, "Administration User", "With access to technical and diagnostic endpoints.")
         }
 
         Deployment_Node(UI, "FootballStock App UI") {
-            Container(UIWeb, "Web UI", "id", "???")
-          Container(UINative, "Native Mobile UI", "id", "???")
+            Container(UIWeb, "Web UI", "TypeScript, React", "Web frontend.")
+            Container(UINative, "Native Mobile UI", "id", "Frontend for mobile devices.")
         }
 
         Deployment_Node(FootballStock, "FootballStock App Backend") {
             Boundary(communicationLayer, "communication layer") {
-                Container(Http, "API", "id", "http endpoints")
-                Container(Console, "Console", "id", "???")
+                Container(Http, "API", "Scala, Tapir, http4s", "Http endpoints.")
+                Container(Console, "CLI", "Scala", "Command-line interface.")
             }
 
             Boundary(logicLayer, "logic layer") {
-                Container(GameEngine, "GameEngine", "id", "Process game logic")
+                Container(GameEngine, "GameEngine", "Scala, fs2, cats, cats-effect", "Process game logic using services underneath.")
             }
 
             Boundary(serviceLayer, "service layer") {
-                Container(PlayerService, "Player Service", "id", "description")
-                Container(EventService, "Event Service", "id", "description")
-                Container(GameStateService, "Game State Service", "id", "description")
+                Container(PlayerService, "Player Service", "id", "Processing player data.")
+                Container(EventService, "Event Service", "id", "Processing game events.")
+                Container(GameStateService, "Game State Service", "id", "Processing game state.")
             }
 
             Boundary(memoryLayer, "memory layer") {
-                Container(PlayerMemory, "Player Memory", "id", "description")
-                Container(EventMemory, "Event Memory", "id", "description")
-                Container(GameStateMemory, "Game State Memory", "id", "description")
+                Container(PlayerMemory, "Player Memory", "scala", "Access to player data R/W.")
+                Container(EventMemory, "Event Memory", "scala", "Access to game events R/W.")
+                Container(GameStateMemory, "Game State Memory", "scala", "Access to game state R/W.")
             }
         }
 
@@ -122,6 +122,7 @@
     }
 
     Rel(User, UIWeb, "Uses", "HTTPS")
+    Rel(User, UINative, "Uses", "HTTPS")
     Rel(Admin, Http, "Uses", "HTTPS")
     Rel(Admin, Console, "Uses")
     Rel(UIWeb, Http, "Uses", "HTTPS / WEBSOCKET")
