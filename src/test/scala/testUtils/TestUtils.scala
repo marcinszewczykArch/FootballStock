@@ -9,9 +9,9 @@ import game.errors.GameException.PlayerProfileClientException
 import game.errors.GameException.UserNotFoundException
 import game.events.Event
 import game.events.memory.EventMemory
-import game.gameState.domain.User
-import game.gameState.domain.UserGameState
-import game.gameState.memory.UserGameStateMemory
+import game.state.domain.User
+import game.state.domain.UserGameState
+import game.state.memory.UserGameStateMemory
 import game.player.client.PlayerProfileClient
 import game.player.client.PlayerSearchClient
 import game.player.client.domain.FetchedPlayerSimple

@@ -1,6 +1,6 @@
 package game.events
 
-import game.gameState.domain.User
+import game.state.domain.User
 import game.player.service.domain.PlayerId
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.generic.semiauto.deriveEncoder

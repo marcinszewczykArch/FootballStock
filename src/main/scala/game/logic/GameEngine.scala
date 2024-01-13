@@ -13,14 +13,15 @@ import game.events.Event.BuyPlayerEvent
 import game.events.Event.InitializeGameEvent
 import game.events.Event.SellPlayerEvent
 import game.events.memory.EventMemory
-import game.gameState.domain
-import game.gameState._
-import game.gameState.domain.BalancePerPlayer
-import game.gameState.domain.Shares
-import game.gameState.domain.User
-import game.gameState.domain.UserBalance
-import game.gameState.domain.UserGameState
-import game.gameState.service.UserGameStateService
+import game.events.service.EventService
+import game.state.domain
+import game.state._
+import game.state.domain.BalancePerPlayer
+import game.state.domain.Shares
+import game.state.domain.User
+import game.state.domain.UserBalance
+import game.state.domain.UserGameState
+import game.state.service.UserGameStateService
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
 import game.player.service.domain.MarketValue
@@ -48,7 +49,7 @@ object GameEngine {
 
   def impl[F[_]: LoggerFactory](
     stateService: UserGameStateService[F],
-    eventMemory: EventMemory[F],
+    eventService: EventService[F],
     playerService: PlayerService[F]
   )(
     implicit F: Sync[F],
@@ -78,7 +79,7 @@ object GameEngine {
                          updatedAt = now
                        )
         _ <- EitherT(stateService.updateGameStateFroUser(user)(newUserState)(versionNumber = userState.updatedAt))
-        _ <- EitherT.liftF[F, GameException, Unit](eventMemory.sendEvent(event))
+        _ <- EitherT.liftF[F, GameException, Unit](eventService.sendEvent(event))
       } yield event).value
 
       override def sellPlayer(user: User)(playerId: PlayerId, sharesToSell: Int): F[Either[GameException, SellPlayerEvent]] =
@@ -99,7 +100,7 @@ object GameEngine {
                                updatedAt = now
                              )
           _ <- EitherT(stateService.updateGameStateFroUser(user)(newUserState)(versionNumber = userState.updatedAt))
-          _ <- EitherT.liftF[F, GameException, Unit](eventMemory.sendEvent(event))
+          _ <- EitherT.liftF[F, GameException, Unit](eventService.sendEvent(event))
         } yield event).value
 
       private def validateEnoughMoney(available: BigDecimal, required: BigDecimal): F[Either[GameException, Unit]] =
@@ -125,7 +126,7 @@ object GameEngine {
         event        <- EitherT.pure(InitializeGameEvent(initialCash, user, now))
         initialState <- EitherT.pure(UserGameState(portfolio, initialCash, now))
         _            <- EitherT(stateService.saveGameStateFroUser(user)(initialState))
-        _            <- EitherT.liftF[F, GameException, Unit](eventMemory.sendEvent(event))
+        _            <- EitherT.liftF[F, GameException, Unit](eventService.sendEvent(event))
       } yield event).value
 
       override def getUserBalance(
@@ -167,7 +168,7 @@ object GameEngine {
       } yield domain.UserBalance(portfolio, playersCurrentValue, cash, profit, revenuePercent, updatedAt)).value
 
       override def getUserEvents(user: User): F[Either[GameException, List[Event]]] =
-        eventMemory.getEventsForUser(user)
+        eventService.getEventsForUser(user)
 
       override def getAllUsersStates(
       ): F[Map[User, UserGameState]] = stateService.getAllGameStates()

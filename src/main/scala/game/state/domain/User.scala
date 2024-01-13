@@ -1,4 +1,4 @@
-package game.gameState.domain
+package game.state.domain
 
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.generic.semiauto.deriveEncoder

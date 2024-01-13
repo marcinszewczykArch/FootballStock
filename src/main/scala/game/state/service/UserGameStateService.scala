@@ -1,4 +1,4 @@
-package game.gameState.service
+package game.state.service
 
 import cats.Applicative
 import cats.data.EitherT
@@ -6,10 +6,10 @@ import cats.effect._
 import game.errors.GameException
 import game.errors.GameException.SharesNumberException
 import game.errors.GameException.UserAlreadyExistsException
-import game.gameState.domain.Shares
-import game.gameState.domain.User
-import game.gameState.domain.UserGameState
-import game.gameState.memory.UserGameStateMemory
+import game.state.domain.Shares
+import game.state.domain.User
+import game.state.domain.UserGameState
+import game.state.memory.UserGameStateMemory
 import game.player.service.domain._
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.SelfAwareStructuredLogger

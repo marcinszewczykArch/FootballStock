@@ -15,7 +15,7 @@ import game.events.Event.BuyPlayerEvent
 import game.events.Event.InitializeGameEvent
 import game.events.Event.PlayersUpdateEvent
 import game.events.Event.SellPlayerEvent
-import game.gameState.domain.User
+import game.state.domain.User
 import io.circe.parser
 import io.circe.syntax.EncoderOps
 import org.scanamo.Scanamo

@@ -1,4 +1,4 @@
-package game.gameState.memory
+package game.state.memory
 
 import cats.Applicative
 import cats.effect._
@@ -10,8 +10,8 @@ import game.errors.GameException.DynamoDbUpdateException
 import game.errors.GameException.DynamoReaderException
 import game.errors.GameException.JsonDecodingException
 import game.errors.GameException.JsonParsingFailure
-import game.gameState.domain.User
-import game.gameState.domain.UserGameState
+import game.state.domain.User
+import game.state.domain.UserGameState
 import io.circe.parser
 import io.circe.syntax.EncoderOps
 import org.scanamo.Scanamo

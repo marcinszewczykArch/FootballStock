@@ -1,22 +1,18 @@
-import cats.effect.IO
-import cats.effect.Ref
+import cats.effect.{IO, Ref}
 import cats.implicits.toTraverseOps
 import config.AppConfig
 import game.events.Event
-import game.events.Event.BuyPlayerEvent
-import game.events.Event.InitializeGameEvent
-import game.events.Event.SellPlayerEvent
-import game.gameState.domain.Shares
-import game.gameState.domain.User
-import game.gameState.domain.UserGameState
+import game.events.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
+import game.events.service.EventService
 import game.logic.GameEngine
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
 import game.player.service.domain.PlayerId
+import game.state.domain.{Shares, User, UserGameState}
+import game.state.service.UserGameStateService
 import io.circe.Json
 import munit.CatsEffectSuite
-import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 import testUtils.TestUtils
 import utils.Parser.CaseClassToString
@@ -35,9 +31,12 @@ class SampleGameSpec extends CatsEffectSuite {
   )(
     implicit timeProvider: TimeProvider[IO]
   ): IO[GameEngine[IO]] = for {
+    //config
     testRawAppConfig                        <- AppConfig.getTypesafeConfig[IO]
     appConfig                               <- AppConfig.parseAppConfig[IO](testRawAppConfig)
     _                                       <- log.info(s"Test config loaded: $appConfig")
+
+    //memory, clients
     testPlayerProfileClient                 <- TestUtils.testPlayerProfileClient()
     testPlayerSearchClient                  <- TestUtils.testPlayerSearchClient()
     testPlayerProfileClientMemoryUnderlying <- TestUtils.testPlayerProfileClientMemory(playerProfileRef)
@@ -46,10 +45,14 @@ class SampleGameSpec extends CatsEffectSuite {
         PlayerProfileClientMemory
           .cachedInstance(appConfig.playerProfileClient, testPlayerProfileClient, testPlayerProfileClientMemoryUnderlying)
       )
-    playerService                           <- IO.delay(PlayerService.impl[IO](playerProfileClientMemoryCached, testPlayerSearchClient))
     testStateMemory                         <- TestUtils.testUserGameStateMemory(stateRef)
     testEventMemory                         <- TestUtils.testEventMemory(eventRef)
-    gameLogic                               <- IO.delay(GameEngine.impl(testStateMemory, testEventMemory, playerService))
+
+    //services
+    eventService  = EventService.impl(testEventMemory)
+    stateService  = UserGameStateService.impl(testStateMemory)
+    playerService = PlayerService.impl[IO](playerProfileClientMemoryCached, testPlayerSearchClient)
+    gameLogic     = GameEngine.impl(stateService, eventService, playerService)
   } yield gameLogic
 
   test("Sample game test") {

@@ -1,4 +1,4 @@
-package game.gameState.domain
+package game.state.domain
 
 import game.player.service.domain.PlayerId
 import io.circe.generic.semiauto.deriveDecoder

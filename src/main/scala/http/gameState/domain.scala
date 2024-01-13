@@ -1,8 +1,8 @@
 package http.gameState
 
-import game.gameState.domain.BalancePerPlayer
-import game.gameState.domain.Shares
-import game.gameState.domain.UserBalance
+import game.state.domain.BalancePerPlayer
+import game.state.domain.Shares
+import game.state.domain.UserBalance
 import game.player.service.domain.PlayerId
 import game.player.service.domain.PlayerProfile
 import game.player.service.domain.PlayerSimple

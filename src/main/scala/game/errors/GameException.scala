@@ -1,6 +1,6 @@
 package game.errors
 
-import game.gameState.domain.User
+import game.state.domain.User
 import game.player.service.domain.PlayerId
 import io.circe.DecodingFailure
 

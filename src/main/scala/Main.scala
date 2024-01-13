@@ -6,12 +6,13 @@ import console.ConsolePrinter
 import fs2.Stream
 import game.errors.GameException
 import game.events.memory.EventMemory
-import game.gameState.memory.UserGameStateMemory
-import game.gameState.service.UserGameStateService
+import game.events.service.EventService
 import game.logic.GameEngine
 import game.player.client.{PlayerProfileClient, PlayerSearchClient}
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.{PlayerService, PlayersUpdater}
+import game.state.memory.UserGameStateMemory
+import game.state.service.UserGameStateService
 import http.SwaggerRoutes
 import http.gameState.{GameStateLogic, GameStateRoutes}
 import http.security.{EloTokenVerification, TokenVerification}
@@ -29,19 +30,21 @@ import scala.concurrent.duration.DurationInt
 
 object Main extends IOApp {
   implicit val timeProvider: TimeProvider[IO]           = TimeProvider.impl[IO]
-  private implicit val loggerFactory: LoggerFactory[IO] = Slf4jFactory.create[IO]
+  implicit val loggerFactory: LoggerFactory[IO]         = Slf4jFactory.create[IO]
   implicit val tokenVerification: TokenVerification[IO] = EloTokenVerification
   type Result[A] = Either[GameException, A] //todo: this can be used in multiple places for simplification
   private val log = LoggerFactory.getLoggerFromClass(classOf[Main.type])
 
   def run(args: List[String]): IO[ExitCode] =
     (for {
+      //config
       _              <- Resource.eval(log.info("starting..."))
       rawAppConfig   <- Resource.eval(AppConfig.getTypesafeConfig[IO])
       appConfig      <- Resource.eval(AppConfig.parseAppConfig[IO](rawAppConfig))
       _              <- Resource.eval(log.info(s"config loaded: $appConfig"))
       dynamoDbClient <- Resource.eval(buildDynamoDbClient(appConfig.aws))
 
+      //memory, clients
       scanamo                         = Scanamo(dynamoDbClient)
       consolePrinter                  = ConsolePrinter.impl[IO]
       stateMemory                     = UserGameStateMemory.impl[IO](scanamo)
@@ -51,17 +54,21 @@ object Main extends IOApp {
       playerProfileClientMemoryCached =
         PlayerProfileClientMemory.cachedInstance[IO](appConfig.playerProfileClient, playerProfileClient, playerProfileClientMemory)
       playerSearchClient              = PlayerSearchClient.cachedInstance[IO](appConfig.playerSearchClient)
-      playerService                   = PlayerService.impl[IO](playerProfileClientMemoryCached, playerSearchClient)
-      gameStateService                = UserGameStateService.impl[IO](stateMemory)
-      gameEngine                      = GameEngine.impl(gameStateService, eventMemory, playerService)
-      playersUpdater                  = PlayersUpdater.impl[IO](
-                                          playerProfileClient,
-                                          playerProfileClientMemory,
-                                          eventMemory,
-                                          appConfig.playersUpdateCriteria
-                                        )
-      gameStateLogic                  = GameStateLogic.impl[IO](gameEngine)
 
+      //services
+      gameStateService = UserGameStateService.impl[IO](stateMemory)
+      eventService     = EventService.impl(eventMemory)
+      playerService    = PlayerService.impl[IO](playerProfileClientMemoryCached, playerSearchClient)
+      playersUpdater   = PlayersUpdater.impl[IO](
+                           playerProfileClient,
+                           playerProfileClientMemory,
+                           eventMemory,
+                           appConfig.playersUpdateCriteria
+                         )
+      gameEngine       = GameEngine.impl(gameStateService, eventService, playerService)
+      gameStateLogic   = GameStateLogic.impl[IO](gameEngine)
+
+      //server
       _ <- httpServerResource(appConfig, gameStateLogic)
       _ <- Resource.eval(consolePrinter.printStartMessage[IO])
       _ <- Resource.eval(runGame(consolePrinter, playerService, gameEngine, playersUpdater))

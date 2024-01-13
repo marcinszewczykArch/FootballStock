@@ -1,6 +1,6 @@
 package http.gameState
 
-import game.gameState.domain.User
+import game.state.domain.User
 import http.gameState.domain.UserGameStateResponse
 import http.security.SecuredEndpoints.secretBearer
 import http.security.SecuredEndpoints.AppEndpointSecret
