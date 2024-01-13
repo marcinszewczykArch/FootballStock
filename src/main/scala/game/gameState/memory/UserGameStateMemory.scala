@@ -2,15 +2,21 @@ package game.gameState.memory
 
 import cats.Applicative
 import cats.effect._
-import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxApplyOps}
+import cats.implicits.catsSyntaxApplicativeId
+import cats.implicits.catsSyntaxApplyOps
 import cats.syntax.all._
 import game.errors.GameException
-import game.errors.GameException.{DynamoDbUpdateException, DynamoReaderException, JsonDecodingException, JsonParsingFailure}
-import game.gameState.{User, UserGameState}
+import game.errors.GameException.DynamoDbUpdateException
+import game.errors.GameException.DynamoReaderException
+import game.errors.GameException.JsonDecodingException
+import game.errors.GameException.JsonParsingFailure
+import game.gameState.domain.User
+import game.gameState.domain.UserGameState
 import io.circe.parser
 import io.circe.syntax.EncoderOps
 import org.scanamo.Scanamo
-import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
+import org.typelevel.log4cats.LoggerFactory
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 
 import java.time.Instant
 
@@ -67,7 +73,7 @@ object UserGameStateMemory {
         .sequence
         .getOrElse(Nil)
         .mapFilter { record =>
-          val user = User(record.user)
+          val user          = User(record.user)
           val userGameState = toUserState(record.json).toOption
           userGameState.map(user -> _)
         }
