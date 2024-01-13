@@ -1,8 +1,7 @@
 import cats.effect._
 import cats.implicits.toSemigroupKOps
 import config.AppConfig
-import config.AppConfig.AwsConfig
-import config.AppConfig.HttpConfig
+import config.AppConfig.{AwsConfig, HttpConfig}
 import console.ConsolePrinter
 import fs2.Stream
 import game.errors.GameException
@@ -10,26 +9,19 @@ import game.events.memory.EventMemory
 import game.gameState.memory.UserGameStateMemory
 import game.gameState.service.UserGameStateService
 import game.logic.GameEngine
-import game.player.client.PlayerProfileClient
-import game.player.client.PlayerSearchClient
+import game.player.client.{PlayerProfileClient, PlayerSearchClient}
 import game.player.client.memory.PlayerProfileClientMemory
-import game.player.service.PlayerService
-import game.player.service.PlayersUpdater
+import game.player.service.{PlayerService, PlayersUpdater}
 import http.SwaggerRoutes
-import http.gameState.GameStateLogic
-import http.gameState.GameStateRoutes
-import http.security.EloTokenVerification
-import http.security.TokenVerification
-import org.http4s.BuildInfo
-import org.http4s.HttpRoutes
+import http.gameState.{GameStateLogic, GameStateRoutes}
+import http.security.{EloTokenVerification, TokenVerification}
+import org.http4s.{BuildInfo, HttpRoutes}
 import org.http4s.ember.server.EmberServerBuilder
-import org.http4s.server.Router
-import org.http4s.server.Server
+import org.http4s.server.{Router, Server}
 import org.scanamo.Scanamo
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient
 import utils.TimeProvider
 
@@ -49,36 +41,30 @@ object Main extends IOApp {
       appConfig      <- Resource.eval(AppConfig.parseAppConfig[IO](rawAppConfig))
       _              <- Resource.eval(log.info(s"config loaded: $appConfig"))
       dynamoDbClient <- Resource.eval(buildDynamoDbClient(appConfig.aws))
-      scanamo        = Scanamo(dynamoDbClient)
-      consolePrinter = ConsolePrinter.impl[IO]
-      _ <- Resource.eval(consolePrinter.printStartMessage[IO])
 
+      scanamo                         = Scanamo(dynamoDbClient)
+      consolePrinter                  = ConsolePrinter.impl[IO]
       stateMemory                     = UserGameStateMemory.impl[IO](scanamo)
       eventMemory                     = EventMemory.impl[IO](scanamo)
       playerProfileClientMemory       = PlayerProfileClientMemory.impl[IO](scanamo)
       playerProfileClient             = PlayerProfileClient.impl[IO](appConfig.playerProfileClient)
       playerProfileClientMemoryCached =
         PlayerProfileClientMemory.cachedInstance[IO](appConfig.playerProfileClient, playerProfileClient, playerProfileClientMemory)
+      playerSearchClient              = PlayerSearchClient.cachedInstance[IO](appConfig.playerSearchClient)
+      playerService                   = PlayerService.impl[IO](playerProfileClientMemoryCached, playerSearchClient)
+      gameStateService                = UserGameStateService.impl[IO](stateMemory)
+      gameEngine                      = GameEngine.impl(gameStateService, eventMemory, playerService)
+      playersUpdater                  = PlayersUpdater.impl[IO](
+                                          playerProfileClient,
+                                          playerProfileClientMemory,
+                                          eventMemory,
+                                          appConfig.playersUpdateCriteria
+                                        )
+      gameStateLogic                  = GameStateLogic.impl[IO](gameEngine)
 
-      playerSearchClient = PlayerSearchClient.cachedInstance[IO](appConfig.playerSearchClient)
-      playerService      = PlayerService.impl[IO](playerProfileClientMemoryCached, playerSearchClient)
-      gameStateService   = UserGameStateService.impl[IO](stateMemory)
-      gameEngine         = GameEngine.impl(gameStateService, eventMemory, playerService)
-      playersUpdater     = PlayersUpdater.impl[IO](
-                             playerProfileClient,
-                             playerProfileClientMemory,
-                             eventMemory,
-                             appConfig.playersUpdateCriteria
-                           )
-
-      gameStateLogic = GameStateLogic.impl[IO](gameEngine)
-      _        <- httpServerResource(appConfig, gameStateLogic)
-      //      playersWriter <- IO.delay(PlayersWriter.impl(playerProfileClient))
-      //      _             <- playersWriter.writeToFile(
-      //                         path = "src/main/resources/players",
-      //                         playerIds = List(38253, 38254, 38255, 38256, 38257)
-      //                       )
-      exitCode <- Resource.eval(runGame(consolePrinter, playerService, gameEngine, playersUpdater))
+      _ <- httpServerResource(appConfig, gameStateLogic)
+      _ <- Resource.eval(consolePrinter.printStartMessage[IO])
+      _ <- Resource.eval(runGame(consolePrinter, playerService, gameEngine, playersUpdater))
     } yield ()).useForever
 
   private def runGame(
