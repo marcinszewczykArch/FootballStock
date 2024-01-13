@@ -1,18 +1,25 @@
 package testUtils
 
 import cats.data.EitherT
-import cats.effect.{IO, Ref}
+import cats.effect.IO
+import cats.effect.Ref
 import game.errors.GameException
-import game.errors.GameException.{PlayerJsonNotFoundInMemoryException, PlayerProfileClientException, UserNotFoundException}
+import game.errors.GameException.PlayerJsonNotFoundInMemoryException
+import game.errors.GameException.PlayerProfileClientException
+import game.errors.GameException.UserNotFoundException
 import game.events.Event
 import game.events.memory.EventMemory
-import game.gameState.{User, UserGameState}
+import game.gameState.domain.User
+import game.gameState.domain.UserGameState
 import game.gameState.memory.UserGameStateMemory
-import game.player.client.{PlayerProfileClient, PlayerSearchClient}
-import game.player.client.domain.{FetchedPlayerSimple, PlayerSearchResponse}
+import game.player.client.PlayerProfileClient
+import game.player.client.PlayerSearchClient
+import game.player.client.domain.FetchedPlayerSimple
+import game.player.client.domain.PlayerSearchResponse
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.domain.PlayerId
-import io.circe.{Json, parser}
+import io.circe.Json
+import io.circe.parser
 import utils.JsonParser.jsonString
 import utils.TimeProvider
 
@@ -97,7 +104,7 @@ object TestUtils {
       override def getEventsForUser(user: User): IO[Either[GameException, List[Event]]] = ref
         .get
         .map(_.filter(_.getUser == user) match {
-          case Nil                 => Left(UserNotFoundException(user))
+          case Nil                     => Left(UserNotFoundException(user))
           case userEvents: List[Event] => Right(userEvents)
         })
 

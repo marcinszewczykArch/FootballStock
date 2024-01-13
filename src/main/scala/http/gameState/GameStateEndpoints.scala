@@ -1,6 +1,6 @@
 package http.gameState
 
-import game.gameState.User
+import game.gameState.domain.User
 import http.gameState.domain.UserGameStateResponse
 import http.security.SecuredEndpoints.secretBearer
 import http.security.SecuredEndpoints.AppEndpointSecret
@@ -15,8 +15,8 @@ object GameStateEndpoints {
   lazy val endpoints: List[Endpoint[_, _, _, _, _]] = List(
     getUserGameState
   )
-  val ApiVersion = "v1"
 
+  val ApiVersion                                    = "v1"
 
   lazy val getUserGameState: AppEndpointSecret[User, Failure[Unit], UserGameStateResponse] = baseEndpoint
     .get

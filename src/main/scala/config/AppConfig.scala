@@ -3,9 +3,15 @@ package config
 import cats.MonadThrow
 import cats.effect.Sync
 import cats.syntax.all._
-import com.comcast.ip4s.{Host, Port}
-import com.typesafe.config.{Config, ConfigFactory}
-import config.AppConfig.{AwsConfig, HttpConfig, PlayerProfileClientConfig, PlayerSearchClientConfig, PlayersUpdateCriteriaConfig}
+import com.comcast.ip4s.Host
+import com.comcast.ip4s.Port
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import config.AppConfig.AwsConfig
+import config.AppConfig.HttpConfig
+import config.AppConfig.PlayerProfileClientConfig
+import config.AppConfig.PlayerSearchClientConfig
+import config.AppConfig.PlayersUpdateCriteriaConfig
 import pureconfig._
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._

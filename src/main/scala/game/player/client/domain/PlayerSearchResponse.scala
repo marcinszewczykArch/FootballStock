@@ -1,6 +1,7 @@
 package game.player.client.domain
 
-import io.circe.{Decoder, Encoder}
+import io.circe.Decoder
+import io.circe.Encoder
 
 final case class PlayerSearchResponse(result: List[FetchedPlayerSimple])
 

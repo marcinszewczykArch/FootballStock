@@ -1,6 +1,6 @@
 package game.events
 
-import game.gameState.User
+import game.gameState.domain.User
 import game.player.service.domain.PlayerId
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.generic.semiauto.deriveEncoder
@@ -10,7 +10,7 @@ import io.circe.Encoder
 import java.time.Instant
 
 sealed abstract class Event(user: User, timestamp: Instant) {
-  def getUser: User = user
+  def getUser: User         = user
   def getTimestamp: Instant = timestamp
   def getEventName: String
 }

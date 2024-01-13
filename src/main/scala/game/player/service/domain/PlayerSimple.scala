@@ -10,6 +10,4 @@ final case class PlayerSimple(
   marketValue: BigDecimal
 )
 
-object PlayerSimple {
-
-}
+object PlayerSimple {}

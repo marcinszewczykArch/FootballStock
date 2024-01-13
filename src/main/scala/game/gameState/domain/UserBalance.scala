@@ -1,6 +1,6 @@
-package game.gameState
+package game.gameState.domain
 
-import game.player.service.domain.{PlayerId, PlayerProfile}
+import game.player.service.domain.PlayerProfile
 
 import java.time.Instant
 

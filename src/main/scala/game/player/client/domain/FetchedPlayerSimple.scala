@@ -1,6 +1,7 @@
 package game.player.client.domain
 
-import io.circe.{Decoder, Encoder}
+import io.circe.Decoder
+import io.circe.Encoder
 
 final case class FetchedPlayerSimple(
   id: Option[Int],
@@ -14,28 +15,30 @@ final case class FetchedPlayerSimple(
 
 object FetchedPlayerSimple {
 
-  implicit val decoder: Decoder[FetchedPlayerSimple] = Decoder.forProduct7[FetchedPlayerSimple, Option[Int], Option[String], Option[String], Option[
-    FetchedPlayerClub
-  ], Option[String], Option[String], Option[String]](
-    "id",
-    "name",
-    "position",
-    "club",
-    "age",
-    "nationality",
-    "marketValue"
-  )(FetchedPlayerSimple.apply)
+  implicit val decoder: Decoder[FetchedPlayerSimple] =
+    Decoder.forProduct7[FetchedPlayerSimple, Option[Int], Option[String], Option[String], Option[
+      FetchedPlayerClub
+    ], Option[String], Option[String], Option[String]](
+      "id",
+      "name",
+      "position",
+      "club",
+      "age",
+      "nationality",
+      "marketValue"
+    )(FetchedPlayerSimple.apply)
 
-  implicit val encoder: Encoder[FetchedPlayerSimple] = Encoder.forProduct7[FetchedPlayerSimple, Option[Int], Option[String], Option[String], Option[
-    FetchedPlayerClub
-  ], Option[String], Option[String], Option[String]](
-    "id",
-    "name",
-    "position",
-    "club",
-    "age",
-    "nationality",
-    "marketValue"
-  )(Function.unlift(FetchedPlayerSimple.unapply))
+  implicit val encoder: Encoder[FetchedPlayerSimple] =
+    Encoder.forProduct7[FetchedPlayerSimple, Option[Int], Option[String], Option[String], Option[
+      FetchedPlayerClub
+    ], Option[String], Option[String], Option[String]](
+      "id",
+      "name",
+      "position",
+      "club",
+      "age",
+      "nationality",
+      "marketValue"
+    )(Function.unlift(FetchedPlayerSimple.unapply))
 
 }

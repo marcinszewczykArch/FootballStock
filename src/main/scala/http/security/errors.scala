@@ -1,7 +1,11 @@
 package http.security
 
-import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveUnwrappedCodec}
-import io.circe.{Codec, DecodingFailure, HCursor, JsonObject}
+import io.circe.generic.extras.semiauto.deriveConfiguredCodec
+import io.circe.generic.extras.semiauto.deriveUnwrappedCodec
+import io.circe.Codec
+import io.circe.DecodingFailure
+import io.circe.HCursor
+import io.circe.JsonObject
 import sttp.model._
 import sttp.tapir.EndpointOutput.OneOfVariant
 import sttp.tapir._
@@ -40,13 +44,13 @@ object errors extends CirceExtraConfiguration {
 
   implicit final val codecUnit: io.circe.Codec[Unit] = io.circe.Codec.from[Unit](decodeUnit, encodeUnit)
 
-  def unauthenticated[T]: OneOfVariant[Unauthenticated] =
+  def unauthenticated[T]: OneOfVariant[Unauthenticated]                       =
     oneOfVariantValueMatcher(
       StatusCode.Unauthorized,
       jsonBody[Unauthenticated].example(Unauthenticated("Failed to authenticate"))
     ) { case _: Unauthenticated => true }
 
-  def unauthorized[T]: OneOfVariant[Unauthorized] =
+  def unauthorized[T]: OneOfVariant[Unauthorized]                             =
     oneOfVariantValueMatcher(
       StatusCode.Forbidden,
       jsonBody[Unauthorized].example(Unauthorized("Insufficient privileges or invalid scope"))

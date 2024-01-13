@@ -2,11 +2,14 @@ package game.player.service
 
 import cats.Applicative
 import cats.effect.Async
-import cats.implicits.{catsSyntaxApplyOps, toFlatMapOps, toFunctorOps}
+import cats.implicits.catsSyntaxApplyOps
+import cats.implicits.toFlatMapOps
+import cats.implicits.toFunctorOps
 import game.player.client.PlayerProfileClient
 import game.player.service.domain.PlayerId
 import io.circe.Json
-import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
+import org.typelevel.log4cats.LoggerFactory
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 
 trait PlayersWriter[F[_]] {
   def writeToFile(path: String, playerIds: List[Int]): F[Unit]
@@ -17,10 +20,11 @@ object PlayersWriter {
   def impl[F[_]: Async: LoggerFactory](
     playerProfileClient: PlayerProfileClient[F]
   ) = new PlayersWriter[F] {
-    val maxConcurrent = 8
+    val maxConcurrent                              = 8
     implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[PlayersUpdater[F]].getName)
 
-    import java.io.{File, PrintWriter}
+    import java.io.File
+    import java.io.PrintWriter
 
     override def writeToFile(path: String, playerIds: List[Int]): F[Unit] = for {
       _ <- log.info("Starting writing players to file...")
@@ -48,9 +52,9 @@ object PlayersWriter {
       path: String,
       playerId: PlayerId,
       json: Json
-    ): F[Unit] = Applicative[F].pure{
+    ): F[Unit] = Applicative[F].pure {
       val file = new File(s"$path/${playerId.value}.json")
-      val pw = new PrintWriter(file)
+      val pw   = new PrintWriter(file)
       pw.write(json.toString())
       pw.close()
     }

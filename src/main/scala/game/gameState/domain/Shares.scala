@@ -1,15 +1,17 @@
-package game.gameState
+package game.gameState.domain
 
-import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto.deriveEncoder
+import io.circe.Decoder
+import io.circe.Encoder
 
 import java.time.Instant
 import scala.annotation.tailrec
 
 case class Shares(
-                   number: Int,
-                   buyPrice: BigDecimal,
-                   buyTimestamp: Instant
+  number: Int,
+  buyPrice: BigDecimal,
+  buyTimestamp: Instant
 )
 
 object Shares {
@@ -20,9 +22,9 @@ object Shares {
 
   implicit class SharesOps(shares: Option[List[Shares]]) {
 
-    def |-|(sharesToMinus: Int) = minus(shares.getOrElse(Nil), sharesToMinus)
+    def |-|(sharesToMinus: Int)                 = minus(shares.getOrElse(Nil), sharesToMinus)
     def |+|(sharesToPlus: Shares): List[Shares] = shares.getOrElse(Nil) :+ sharesToPlus
-    def sum = shares.getOrElse(Nil).map(_.number).sum
+    def sum                                     = shares.getOrElse(Nil).map(_.number).sum
 
     @tailrec
     private def minus(currentShares: List[Shares], sharesToMinus: Int): List[Shares] = currentShares match {

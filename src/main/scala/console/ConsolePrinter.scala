@@ -6,7 +6,7 @@ import cats.effect.std.Console
 import cats.syntax.all._
 import game.errors.GameException
 import game.events.Event
-import game.gameState.User
+import game.gameState.domain.User
 import game.logic.GameEngine
 import game.player.service.PlayerService
 import game.player.service.domain.PlayerId

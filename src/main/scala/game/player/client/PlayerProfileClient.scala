@@ -32,7 +32,7 @@ trait PlayerProfileClient[F[_]] {
 object PlayerProfileClient {
 
   def impl[F[_]: Sync: MonadThrow](config: PlayerProfileClientConfig) = new PlayerProfileClient[F] {
-    val serviceUri: Uri = config.uri
+    val serviceUri: Uri                     = config.uri
     val backend: SttpBackend[Identity, Any] = HttpClientSyncBackend()
 
     override def fetchRawPlayerProfileById(id: PlayerId): F[Either[GameException, Json]] = Applicative[F].pure(for {

@@ -16,7 +16,7 @@ object Parser {
       .getOrElse(Instant.MIN)
 
   def toBigDecimalOrZero(value: Option[String]): BigDecimal = Try {
-    val str = value.get
+    val str           = value.get
     val strWithNoEuro = str.drop(1)
     strWithNoEuro.toList match {
       case value :+ 'k' => BigDecimal(value.mkString.toDouble * 1_000)

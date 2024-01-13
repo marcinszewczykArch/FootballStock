@@ -1,16 +1,22 @@
-import cats.effect.{IO, Ref}
+import cats.effect.IO
+import cats.effect.Ref
 import cats.implicits.toTraverseOps
 import config.AppConfig
 import game.events.Event
-import game.events.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
-import game.gameState.{Shares, User, UserGameState}
+import game.events.Event.BuyPlayerEvent
+import game.events.Event.InitializeGameEvent
+import game.events.Event.SellPlayerEvent
+import game.gameState.domain.Shares
+import game.gameState.domain.User
+import game.gameState.domain.UserGameState
 import game.logic.GameEngine
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
 import game.player.service.domain.PlayerId
 import io.circe.Json
 import munit.CatsEffectSuite
-import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
+import org.typelevel.log4cats.LoggerFactory
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 import testUtils.TestUtils
 import utils.Parser.CaseClassToString
@@ -20,7 +26,7 @@ import java.time.Instant
 
 class SampleGameSpec extends CatsEffectSuite {
   private implicit val testLoggerFactory: LoggerFactory[IO] = Slf4jFactory.create[IO]
-  implicit val log: SelfAwareStructuredLogger[IO] = LoggerFactory.getLoggerFromName[IO](classOf[SampleGameSpec].getName)
+  implicit val log: SelfAwareStructuredLogger[IO]           = LoggerFactory.getLoggerFromName[IO](classOf[SampleGameSpec].getName)
 
   def getNewGameEngine(
     playerProfileRef: Ref[IO, Map[PlayerId, Json]],
@@ -56,8 +62,8 @@ class SampleGameSpec extends CatsEffectSuite {
       testGameEngine                                <- getNewGameEngine(playerProfileRef, stateRef, eventRef)
       testUser = User("TestUserName")
 
-      _       <- testGameEngine.createUser(testUser)
-      state1  <- testGameEngine.getUserState(testUser)
+      _      <- testGameEngine.createUser(testUser)
+      state1 <- testGameEngine.getUserState(testUser)
       state1Expected = Right(
                          UserGameState(
                            portfolio = Map.empty,
@@ -67,18 +73,18 @@ class SampleGameSpec extends CatsEffectSuite {
                        )
       events1 <- testGameEngine.getUserEvents(testUser)
       events1Expected = Right(List(InitializeGameEvent(BigDecimal(1_000_000), testUser, now)))
-      _ = assertEquals(state1, state1Expected)
-      _ = assertEquals(events1, events1Expected)
+      _               = assertEquals(state1, state1Expected)
+      _               = assertEquals(events1, events1Expected)
 
       transaction1 <- testGameEngine.buyPlayer(testUser)(PlayerId(38253), 2)
       state2       <- testGameEngine.getUserState(testUser)
-      state2Expected = Right(
-                         UserGameState(
-                           portfolio = Map(PlayerId(38253) -> List(Shares(2, BigDecimal(30_000_000), now))),
-                           money = BigDecimal(400_000),
-                           updatedAt = now
-                         )
-                       )
+      state2Expected       = Right(
+                               UserGameState(
+                                 portfolio = Map(PlayerId(38253) -> List(Shares(2, BigDecimal(30_000_000), now))),
+                                 money = BigDecimal(400_000),
+                                 updatedAt = now
+                               )
+                             )
       transaction1Expected = Right(
                                BuyPlayerEvent(
                                  playerId = PlayerId(38253),
@@ -88,24 +94,24 @@ class SampleGameSpec extends CatsEffectSuite {
                                  timestamp = now
                                )
                              )
-      events2      <- testGameEngine.getUserEvents(testUser)
+      events2 <- testGameEngine.getUserEvents(testUser)
       events2Expected = for {
                           prev <- events1
                           curr <- transaction1
                         } yield prev :+ curr
-      _ = assertEquals(transaction1, transaction1Expected)
-      _ = assertEquals(state2, state2Expected)
-      _ = assertEquals(events2, events2Expected)
+      _               = assertEquals(transaction1, transaction1Expected)
+      _               = assertEquals(state2, state2Expected)
+      _               = assertEquals(events2, events2Expected)
 
       transaction2 <- testGameEngine.sellPlayer(testUser)(PlayerId(38253), 1)
       state3       <- testGameEngine.getUserState(testUser)
-      state3Expected = Right(
-                         UserGameState(
-                           portfolio = Map(PlayerId(38253) -> List(Shares(1, BigDecimal(30_000_000), now))),
-                           money = BigDecimal(700_000),
-                           updatedAt = now
-                         )
-                       )
+      state3Expected       = Right(
+                               UserGameState(
+                                 portfolio = Map(PlayerId(38253) -> List(Shares(1, BigDecimal(30_000_000), now))),
+                                 money = BigDecimal(700_000),
+                                 updatedAt = now
+                               )
+                             )
       transaction2Expected = Right(
                                SellPlayerEvent(
                                  playerId = PlayerId(38253),
@@ -115,14 +121,14 @@ class SampleGameSpec extends CatsEffectSuite {
                                  timestamp = now
                                )
                              )
-      events3      <- testGameEngine.getUserEvents(testUser)
+      events3 <- testGameEngine.getUserEvents(testUser)
       events3Expected = for {
                           prev <- events2
                           curr <- transaction2
                         } yield prev :+ curr
-      _ = assertEquals(transaction2, transaction2Expected)
-      _ = assertEquals(state3, state3Expected)
-      _ = assertEquals(events3, events3Expected)
+      _               = assertEquals(transaction2, transaction2Expected)
+      _               = assertEquals(state3, state3Expected)
+      _               = assertEquals(events3, events3Expected)
 
       userBalance <- testGameEngine.getUserBalance(testUser)
       _           <- userBalance.right.get.toStringWithFields.map(IO.println).toList.sequence

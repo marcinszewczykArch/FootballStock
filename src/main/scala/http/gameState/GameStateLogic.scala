@@ -2,7 +2,7 @@ package http.gameState
 
 import cats.data.EitherT
 import cats.effect.Sync
-import game.gameState.User
+import game.gameState.domain.User
 import game.logic.GameEngine
 import http.gameState.domain.UserGameStateResponse
 import org.typelevel.log4cats.LoggerFactory

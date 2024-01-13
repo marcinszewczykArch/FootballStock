@@ -1,19 +1,21 @@
 package player
 
-import cats.effect.{IO, Ref}
+import cats.effect.IO
+import cats.effect.Ref
 import config.AppConfig
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
 import game.player.service.domain.PlayerId
 import io.circe.Json
 import munit.CatsEffectSuite
-import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
+import org.typelevel.log4cats.LoggerFactory
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 import testUtils._
 
 class PlayerServiceSpec extends CatsEffectSuite {
   private implicit val testLoggerFactory: LoggerFactory[IO] = Slf4jFactory.create[IO]
-  implicit val log: SelfAwareStructuredLogger[IO] = LoggerFactory.getLoggerFromName[IO](classOf[PlayerServiceSpec].getName)
+  implicit val log: SelfAwareStructuredLogger[IO]           = LoggerFactory.getLoggerFromName[IO](classOf[PlayerServiceSpec].getName)
 
   def getTestPlayerService(playerProfileClientMemoryRef: Ref[IO, Map[PlayerId, Json]]): IO[PlayerService[IO]] = for {
     testRawAppConfig                        <- AppConfig.getTypesafeConfig[IO]

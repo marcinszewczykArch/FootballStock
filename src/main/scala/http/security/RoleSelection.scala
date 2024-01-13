@@ -30,5 +30,5 @@ object RoleSelection {
 
 object Roles {
   val Admin = "ADMIN_ROLE"
-  val User = "USER_ROLE"
+  val User  = "USER_ROLE"
 }

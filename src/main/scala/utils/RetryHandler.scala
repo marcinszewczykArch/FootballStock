@@ -4,11 +4,13 @@ import cats.effect.Async
 import cats.implicits.catsSyntaxApplicativeError
 import org.typelevel.log4cats.Logger
 
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.FiniteDuration
 
 object RetryHandler {
 
-  /** Retry the wrappedAction if it fails.
+  /**
+    * Retry the wrappedAction if it fails.
     *
     * @param maxRetryAttempt maximum number of wrappedAction retries after the initial attempt fails
     * @param delay           delay time for the next attempt if the previous one fails

@@ -3,16 +3,22 @@ package game.player.client.memory
 import cats.Applicative
 import cats.data.EitherT
 import cats.effect._
-import cats.implicits.{catsSyntaxApplyOps, toFlatMapOps, toFunctorOps}
+import cats.implicits.catsSyntaxApplyOps
+import cats.implicits.toFlatMapOps
+import cats.implicits.toFunctorOps
 import cats.syntax.all._
 import config.AppConfig.PlayerProfileClientConfig
 import game.errors.GameException
-import game.errors.GameException.{DynamoReaderException, JsonParsingFailure, PlayerJsonNotFoundInMemoryCacheException}
+import game.errors.GameException.DynamoReaderException
+import game.errors.GameException.JsonParsingFailure
+import game.errors.GameException.PlayerJsonNotFoundInMemoryCacheException
 import game.player.client.PlayerProfileClient
 import game.player.service.domain.PlayerId
-import io.circe.{Json, parser}
+import io.circe.Json
+import io.circe.parser
 import org.scanamo.Scanamo
-import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
+import org.typelevel.log4cats.LoggerFactory
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 import utils.Cache
 
 trait PlayerProfileClientMemory[F[_]] {
@@ -53,12 +59,12 @@ object PlayerProfileClientMemory {
       )
 
     new PlayerProfileClientMemory[F] {
-      def getById(playerId: PlayerId): F[Either[GameException, Json]] =
+      def getById(playerId: PlayerId): F[Either[GameException, Json]]                =
         fetchRawPlayersProfileCache
           .get(playerId)
           .attempt
           .map(_.left.map(_ => PlayerJsonNotFoundInMemoryCacheException(playerId)))
-      def getAll(): F[Map[PlayerId, Json]] = underlying.getAll()
+      def getAll(): F[Map[PlayerId, Json]]                                           = underlying.getAll()
       def save(playerId: PlayerId)(playerJson: Json): F[Either[GameException, Unit]] =
         underlying.save(playerId)(playerJson)
     }
@@ -73,7 +79,7 @@ object PlayerProfileClientMemory {
       implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[PlayerProfileClientMemory[F]].getName)
 
       private val SOURCE_TRANSFERMARKT = "Transfermarkt"
-      private val table = Table[PlayerProfileTable]("PlayerProfile")
+      private val table                = Table[PlayerProfileTable]("PlayerProfile")
       private case class PlayerProfileTable(source: String, playerId: Int, json: String)
 
       override def save(playerId: PlayerId)(playerJson: Json): F[Either[GameException, Unit]] =

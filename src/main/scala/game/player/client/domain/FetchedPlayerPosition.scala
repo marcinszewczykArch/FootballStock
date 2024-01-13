@@ -1,6 +1,7 @@
 package game.player.client.domain
 
-import io.circe.{Decoder, Encoder}
+import io.circe.Decoder
+import io.circe.Encoder
 
 final case class FetchedPlayerPosition(main: Option[String], other: Option[List[String]])
 

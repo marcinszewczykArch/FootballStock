@@ -16,6 +16,7 @@
 - own instance for transfermarkt parser service - separate container
 - authentication mechanism <- sth to study, separate table in dynamo?
 - Future improvement - use MongoDb for json storage
+- add scalaFix
 
 ### further improvement frontend:
 

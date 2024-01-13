@@ -24,7 +24,8 @@ import io.circe.DecodingFailure
 import io.circe.Json
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.SelfAwareStructuredLogger
-import utils.Parser.{toBigDecimalOrZero, toInstantOrFarPast}
+import utils.Parser.toBigDecimalOrZero
+import utils.Parser.toInstantOrFarPast
 
 object PlayerMapper {
 

@@ -1,10 +1,15 @@
 package game.player.client
 
-import cats.{Applicative, MonadThrow}
+import cats.Applicative
+import cats.MonadThrow
 import cats.effect._
 import cats.syntax.all._
-import config.AppConfig.{PlayerProfileClientConfig, PlayerSearchClientConfig}
-import game.player.client.domain.{FetchedMarketValue, FetchedPlayerProfile, FetchedPlayerSimple, PlayerSearchResponse}
+import config.AppConfig.PlayerProfileClientConfig
+import config.AppConfig.PlayerSearchClientConfig
+import game.player.client.domain.FetchedMarketValue
+import game.player.client.domain.FetchedPlayerProfile
+import game.player.client.domain.FetchedPlayerSimple
+import game.player.client.domain.PlayerSearchResponse
 import game.player.service.domain.PlayerId
 import org.typelevel.log4cats.LoggerFactory
 import sttp.client3._
@@ -22,7 +27,7 @@ object PlayerSearchClient {
   def cachedInstance[F[_]: Sync: LoggerFactory](
     config: PlayerSearchClientConfig
   ): PlayerSearchClient[F] = {
-    val playersClient = PlayerSearchClient.impl[F](config)
+    val playersClient                                                       = PlayerSearchClient.impl[F](config)
     val fetchPlayerSearchCache: Cache[F, String, List[FetchedPlayerSimple]] =
       Cache.instance[F, String, List[FetchedPlayerSimple]](
         cacheName = config.cacheName
@@ -39,7 +44,7 @@ object PlayerSearchClient {
   }
 
   def impl[F[_]: Sync](config: PlayerSearchClientConfig) = new PlayerSearchClient[F] {
-    val serviceUri: Uri = config.uri
+    val serviceUri: Uri                     = config.uri
     val backend: SttpBackend[Identity, Any] = HttpClientSyncBackend()
 
     override def searchByName(playerName: String): F[List[FetchedPlayerSimple]] =

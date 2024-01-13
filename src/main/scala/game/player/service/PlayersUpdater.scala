@@ -2,9 +2,13 @@ package game.player.service
 
 import cats.Applicative
 import cats.data.EitherT
-import cats.effect.{Async, Ref}
+import cats.effect.Async
+import cats.effect.Ref
 import cats.effect.kernel.Clock
-import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxApplyOps, toFlatMapOps, toFunctorOps}
+import cats.implicits.catsSyntaxApplicativeId
+import cats.implicits.catsSyntaxApplyOps
+import cats.implicits.toFlatMapOps
+import cats.implicits.toFunctorOps
 import config.AppConfig.PlayersUpdateCriteriaConfig
 import game.events.Event.PlayersUpdateEvent
 import game.events.memory.EventMemory
@@ -12,7 +16,8 @@ import game.player.client.PlayerProfileClient
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.domain.PlayerId
 import io.circe.Json
-import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
+import org.typelevel.log4cats.LoggerFactory
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 import utils.Parser.toInstantOrFarPast
 import utils.TimeProvider
 
@@ -33,7 +38,7 @@ object PlayersUpdater {
   )(
     implicit timeProvider: TimeProvider[F]
   ) = new PlayersUpdater[F] {
-    val maxConcurrent = 8
+    val maxConcurrent                              = 8
     implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[PlayersUpdater[F]].getName)
 
     override def updateAllPlayersInMemory: F[Unit] = for {
@@ -79,8 +84,6 @@ object PlayersUpdater {
 //                                          )
 //                                        )
 //      } yield ()
-
-
 
     case class UpdateStats(failed: List[Int] = Nil, success: List[Int] = Nil)
 

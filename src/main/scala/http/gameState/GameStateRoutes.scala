@@ -29,6 +29,5 @@ class GameStateRoutes[F[_]: Async: LoggerFactory](
         )
       )
   }
-  }
 
-
+}

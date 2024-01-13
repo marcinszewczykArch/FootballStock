@@ -34,7 +34,7 @@ object Cache {
     implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[Cache[F, K, V]].getName + "." + cacheName)
 
     val underlying: ConcurrentHashMap[K, Entry[V]] = new ConcurrentHashMap()
-    val cacheRef: MapRef[F, K, Option[Entry[V]]] = MapRef.fromConcurrentHashMap[F, K, Entry[V]](underlying)
+    val cacheRef: MapRef[F, K, Option[Entry[V]]]   = MapRef.fromConcurrentHashMap[F, K, Entry[V]](underlying)
 
     new Cache[F, K, V] {
       override def getSize: Int = underlying.size()

@@ -2,7 +2,6 @@ package game.player.service.domain
 
 import java.time.Instant
 
-
 final case class PlayerProfile(
   id: PlayerId,
   url: String,

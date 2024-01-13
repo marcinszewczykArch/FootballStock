@@ -1,16 +1,26 @@
 package game.events.memory
 
 import cats.effect._
-import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxApplyOps, toFunctorOps, toTraverseOps}
+import cats.implicits.catsSyntaxApplicativeId
+import cats.implicits.catsSyntaxApplyOps
+import cats.implicits.toFunctorOps
+import cats.implicits.toTraverseOps
 import game.errors.GameException
-import game.errors.GameException.{DynamoReaderException, JsonDecodingException, JsonParsingFailure, UserNotFoundException}
+import game.errors.GameException.DynamoReaderException
+import game.errors.GameException.JsonDecodingException
+import game.errors.GameException.JsonParsingFailure
+import game.errors.GameException.UserNotFoundException
 import game.events.Event
-import game.events.Event.{BuyPlayerEvent, InitializeGameEvent, PlayersUpdateEvent, SellPlayerEvent}
-import game.gameState.User
+import game.events.Event.BuyPlayerEvent
+import game.events.Event.InitializeGameEvent
+import game.events.Event.PlayersUpdateEvent
+import game.events.Event.SellPlayerEvent
+import game.gameState.domain.User
 import io.circe.parser
 import io.circe.syntax.EncoderOps
 import org.scanamo.Scanamo
-import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
+import org.typelevel.log4cats.LoggerFactory
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 
 import java.util.UUID
 
