@@ -1,8 +1,6 @@
 package http.gameState
 
-import game.state.domain.BalancePerPlayer
-import game.state.domain.Shares
-import game.state.domain.UserBalance
+import game.state.domain.{BalancePerPlayer, Shares, User, UserBalance}
 import game.player.service.domain.PlayerId
 import game.player.service.domain.PlayerProfile
 import game.player.service.domain.PlayerSimple
@@ -112,4 +110,38 @@ object domain {
     implicit val playerStockResponseEncoder: Encoder[PlayerStockResponse] = deriveEncoder
   }
 
+  final case class BuyPlayerRequest(user: String, playerId: Int, sharesToBuy: Int)
+
+  object BuyPlayerRequest {
+    implicit val buyPlayerRequestDecoder: Decoder[BuyPlayerRequest] = deriveDecoder
+    implicit val buyPlayerRequestEncoder: Encoder[BuyPlayerRequest] = deriveEncoder
+  }
+
+  final case class BuyPlayerResponse(message: String)
+
+  object BuyPlayerResponse {
+    implicit val buyPlayerResponseDecoder: Decoder[BuyPlayerResponse] = deriveDecoder
+    implicit val buyPlayerResponseEncoder: Encoder[BuyPlayerResponse] = deriveEncoder
+  }
+
+  final case class SellPlayerRequest(user: String, playerId: Int, sharesToSell: Int)
+
+  object SellPlayerRequest {
+    implicit val sellPlayerRequestDecoder: Decoder[SellPlayerRequest] = deriveDecoder
+    implicit val sellPlayerRequestEncoder: Encoder[SellPlayerRequest] = deriveEncoder
+  }
+
+  final case class SellPlayerResponse(message: String)
+
+  object SellPlayerResponse {
+    implicit val sellPlayerResponseDecoder: Decoder[SellPlayerResponse] = deriveDecoder
+    implicit val sellPlayerResponseEncoder: Encoder[SellPlayerResponse] = deriveEncoder
+  }
+
+  final case class CreateNewUserResponse(message: String)
+
+  object CreateNewUserResponse {
+    implicit val sellPlayerResponseDecoder: Decoder[CreateNewUserResponse] = deriveDecoder
+    implicit val sellPlayerResponseEncoder: Encoder[CreateNewUserResponse] = deriveEncoder
+  }
 }

@@ -62,7 +62,7 @@ object UserGameStateMemory {
         case Left(parsingFailure) => Left[GameException, UserGameState](JsonParsingFailure(parsingFailure.getMessage()))
         case Right(json)          =>
           json.as[UserGameState] match {
-            case Left(decodingFailure) => Left[GameException, UserGameState](JsonDecodingException(decodingFailure))
+            case Left(decodingFailure) => Left[GameException, UserGameState](JsonDecodingException(decodingFailure.getMessage()))
             case Right(userGameState)  => Right[GameException, UserGameState](userGameState)
           }
       }

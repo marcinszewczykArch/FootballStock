@@ -20,12 +20,27 @@ class GameStateRoutes[F[_]: Async: LoggerFactory](
 
     val getUserGameStateServerEndpoint: ServerEndpoint[Any, F] = getUserGameState
       .endpointSecured(RoleSelection.Any(Roles.Admin, Roles.User))
-      .withServerLogicSuccess(logic.getStateByUserId)
+      .withServerLogic(logic.getStateByUserId)
+
+    val createNewUserServerEndpoint: ServerEndpoint[Any, F] = createNewUser
+      .endpointSecured(RoleSelection.Any(Roles.Admin, Roles.User))
+      .withServerLogicSuccess(logic.createNewUser)
+
+    val buyPlayerServerEndpoint: ServerEndpoint[Any, F] = buyPlayer
+      .endpointSecured(RoleSelection.Any(Roles.Admin, Roles.User))
+      .withServerLogicSuccess(logic.buyPlayer)
+
+    val sellPlayerServerEndpoint: ServerEndpoint[Any, F] = sellPlayer
+      .endpointSecured(RoleSelection.Any(Roles.Admin, Roles.User))
+      .withServerLogicSuccess(logic.sellPlayer)
 
     Http4sServerInterpreter[F]()
       .toRoutes(
         List(
-          getUserGameStateServerEndpoint
+          getUserGameStateServerEndpoint,
+          createNewUserServerEndpoint,
+          buyPlayerServerEndpoint,
+          sellPlayerServerEndpoint
         )
       )
   }

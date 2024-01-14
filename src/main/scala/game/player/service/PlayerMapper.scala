@@ -83,6 +83,6 @@ object PlayerMapper {
   }
 
   val jsonToFetchedPlayerProfile: Json => Either[GameException, FetchedPlayerProfile] =
-    _.as[FetchedPlayerProfile].left.map(decodingFailure => JsonDecodingException(decodingFailure))
+    _.as[FetchedPlayerProfile].left.map(decodingFailure => JsonDecodingException(decodingFailure.getMessage()))
 
 }

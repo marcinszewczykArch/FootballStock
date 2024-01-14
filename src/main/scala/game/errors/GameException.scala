@@ -1,55 +1,114 @@
 package game.errors
 
-import game.state.domain.User
 import game.player.service.domain.PlayerId
-import io.circe.DecodingFailure
+import game.state.domain.User
+import http.security.CirceExtraConfiguration
+import io.circe.Codec
+import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
-sealed abstract class GameException(message: String) extends Throwable(message)
+sealed trait GameException extends Throwable with Product with Serializable
 
-object GameException {
-  final case class IncorrectConsoleInputException(input: String) extends GameException(s"Incorrect input: $input.")
+object GameException extends CirceExtraConfiguration {
 
-  final case class IncorrectParsingException(input: String) extends GameException(s"Incorrect parsing input (must be a number): $input.")
+  final case class IncorrectConsoleInputException(input: String) extends GameException {
+    override def getMessage = s"Incorrect input: $input."
+  }
 
-  final case class UserNotFoundException(user: User) extends GameException(s"User with name ${user.value} not found.")
+  implicit val IncorrectConsoleInputExceptionCodec: Codec[IncorrectConsoleInputException] =
+    deriveConfiguredCodec[IncorrectConsoleInputException]
 
-  final case class NotEnoughMoneyException(available: BigDecimal, required: BigDecimal)
-    extends GameException(s"Not enough money to buy. Required: $required, but available: $available.")
+  final case class IncorrectParsingException(input: String) extends GameException {
+    override def getMessage = s"Incorrect parsing input (must be a number): $input."
+  }
 
-  final case class ValueParseException(value: Option[String], err: Throwable)
-    extends GameException(s"Not able to parse player value: $value, because of exception: $err.")
+  implicit val IncorrectParsingExceptionCodec: Codec[IncorrectParsingException] = deriveConfiguredCodec[IncorrectParsingException]
 
-  final case class SharesNumberException(newShares: Int)
-    extends GameException(
+  final case class UserNotFoundException(user: User) extends GameException {
+    override def getMessage = s"User with name ${user.value} not found."
+  }
+
+  implicit val UserNotFoundExceptionCodec: Codec[UserNotFoundException] = deriveConfiguredCodec[UserNotFoundException]
+
+  final case class NotEnoughMoneyException(available: BigDecimal, required: BigDecimal) extends GameException {
+    override def getMessage = s"Not enough money to buy. Required: $required, but available: $available."
+  }
+
+  implicit val NotEnoughMoneyExceptionCodec: Codec[NotEnoughMoneyException] = deriveConfiguredCodec[NotEnoughMoneyException]
+
+  final case class SharesNumberException(newShares: Int) extends GameException {
+    override def getMessage =
       s"Incorrect number of shares after transaction (new shares number = $newShares). Total must be between 0 and 100."
-    )
+  }
 
-  final case class PlayerMarketValueNotFoundException(playerId: PlayerId, err: String)
-    extends GameException(s"Market value for player $playerId not found. The reason is: $err")
+  implicit val SharesNumberExceptionCodec: Codec[SharesNumberException] = deriveConfiguredCodec[SharesNumberException]
 
-  final case class PlayerSearchByNameException(playerName: String, err: String)
-    extends GameException(s"Could not find player by name [$playerName]. The reason is: $err")
+  final case class PlayerMarketValueNotFoundException(playerId: PlayerId, err: String) extends GameException {
+    override def getMessage = s"Market value for player $playerId not found. The reason is: $err"
+  }
 
-  final case class PlayerProfileNotFoundException(playerId: Int, err: String)
-    extends GameException(s"Player profile for player with id [$playerId] not found. The reason is: $err")
+  implicit val PlayerMarketValueNotFoundExceptionCodec: Codec[PlayerMarketValueNotFoundException] =
+    deriveConfiguredCodec[PlayerMarketValueNotFoundException]
 
-  final case class UserAlreadyExistsException(user: User) extends GameException(s"User with name ${user.value} already exists.")
+  final case class PlayerSearchByNameException(playerName: String, err: String) extends GameException {
+    override def getMessage = s"Could not find player by name [$playerName]. The reason is: $err"
+  }
 
-  final case class PlayerJsonNotFoundInMemoryException(playerId: PlayerId)
-    extends GameException(s"Player profile JSON for player $playerId not found in memory.")
+  implicit val PlayerSearchByNameExceptionCodec: Codec[PlayerSearchByNameException] = deriveConfiguredCodec[PlayerSearchByNameException]
 
-  final case class PlayerJsonNotFoundInMemoryCacheException(playerId: PlayerId)
-    extends GameException(s"Player profile JSON for player $playerId not found in memory cache.")
+  final case class PlayerProfileNotFoundException(playerId: Int, err: String) extends GameException {
+    override def getMessage = s"Player profile for player with id [$playerId] not found. The reason is: $err"
+  }
 
-  final case class JsonDecodingException(decodingFailure: DecodingFailure) extends GameException(s"JSON decoding failure: $decodingFailure")
+  implicit val PlayerProfileNotFoundExceptionCodec: Codec[PlayerProfileNotFoundException] =
+    deriveConfiguredCodec[PlayerProfileNotFoundException]
 
-  final case class PlayerProfileClientException(cause: String)
-    extends GameException(s"Exception while invoking PlayerProfileClient. Message: $cause")
+  final case class UserAlreadyExistsException(user: User) extends GameException {
+    override def getMessage = s"User with name ${user.value} already exists."
+  }
 
-  final case class DynamoReaderException(cause: String) extends GameException(s"Exception while reading from DynamoDb. Message: $cause")
+  implicit val UserAlreadyExistsExceptionCodec: Codec[UserAlreadyExistsException] = deriveConfiguredCodec[UserAlreadyExistsException]
 
-  final case class JsonParsingFailure(cause: String) extends GameException(s"Exception while parsing json from string. Message: $cause")
+  final case class PlayerJsonNotFoundInMemoryException(playerId: PlayerId) extends GameException {
+    override def getMessage = s"Player profile JSON for player $playerId not found in memory."
+  }
 
-  final case class DynamoDbUpdateException(cause: String)
-    extends GameException(s"Exception while updating record in DynamoDb. Message: $cause")
+  implicit val PlayerJsonNotFoundInMemoryExceptionCodec: Codec[PlayerJsonNotFoundInMemoryException] =
+    deriveConfiguredCodec[PlayerJsonNotFoundInMemoryException]
+
+  final case class PlayerJsonNotFoundInMemoryCacheException(playerId: PlayerId) extends GameException {
+    override def getMessage = s"Player profile JSON for player $playerId not found in memory cache."
+  }
+
+  implicit val PlayerJsonNotFoundInMemoryCacheExceptionCodec: Codec[PlayerJsonNotFoundInMemoryCacheException] =
+    deriveConfiguredCodec[PlayerJsonNotFoundInMemoryCacheException]
+
+  final case class JsonDecodingException(cause: String) extends GameException { override def getMessage = s"JSON decoding failure: $cause" }
+  implicit val JsonDecodingExceptionCodec: Codec[JsonDecodingException] = deriveConfiguredCodec[JsonDecodingException]
+
+  final case class PlayerProfileClientException(cause: String) extends GameException {
+    override def getMessage = s"Exception while invoking PlayerProfileClient. Message: $cause"
+  }
+
+  implicit val PlayerProfileClientExceptionCodec: Codec[PlayerProfileClientException] = deriveConfiguredCodec[PlayerProfileClientException]
+
+  final case class DynamoReaderException(cause: String) extends GameException {
+    override def getMessage = s"Exception while reading from DynamoDb. Message: $cause"
+  }
+
+  implicit val DynamoReaderExceptionCodec: Codec[DynamoReaderException] = deriveConfiguredCodec[DynamoReaderException]
+
+  final case class JsonParsingFailure(cause: String) extends GameException {
+    override def getMessage = s"Exception while parsing json from string. Message: $cause"
+  }
+
+  implicit val JsonParsingFailureCodec: Codec[JsonParsingFailure] = deriveConfiguredCodec[JsonParsingFailure]
+
+  final case class DynamoDbUpdateException(cause: String) extends GameException {
+    override def getMessage = s"Exception while updating record in DynamoDb. Message: $cause"
+  }
+
+  implicit val DynamoDbUpdateExceptionCodec: Codec[DynamoDbUpdateException] = deriveConfiguredCodec[DynamoDbUpdateException]
+
+  implicit val gameExceptionCodec: Codec[GameException] = deriveConfiguredCodec[GameException]
+
 }

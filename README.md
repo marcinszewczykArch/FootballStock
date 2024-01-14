@@ -3,11 +3,11 @@
 ### further improvement backend:
 
 - readme content list and cleanup
-- add EventService and UserGameStateService
+- ~~add EventService and UserGameStateService~~
 - cleanup with decoders / encoders
 - implement more test cases
 - implement Integration Tests with local DynamoDb container (e.g. check optimistic locking conditions)
-- architectural diagram
+- ~~architectural diagram~~
 - design and add http endpoints
 - add technical endpoints to check player memory and cache
 - stream task to check all players from all user stats and send user event if price has changed

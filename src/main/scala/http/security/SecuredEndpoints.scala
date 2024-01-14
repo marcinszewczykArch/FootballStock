@@ -1,7 +1,7 @@
 package http.security
 
 import cats.Monad
-import cats.implicits.toFunctorOps
+import cats.implicits.{toBifunctorOps, toFunctorOps}
 import http.security.SecuredEndpoints.BearerToken
 import http.security.SecuredEndpoints.ServerAppEndpoint
 import sttp.tapir.EndpointInput.AuthType
@@ -11,7 +11,7 @@ import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.Endpoint
 import sttp.tapir.EndpointInput
 import sttp.tapir.PublicEndpoint
-import errors.Failure
+import errors.{BusinessFailure, Failure}
 import org.typelevel.log4cats.LoggerFactory
 
 abstract class SecuredEndpoints[F[_]: LoggerFactory: Monad](
@@ -32,6 +32,9 @@ abstract class SecuredEndpoints[F[_]: LoggerFactory: Monad](
   ) {
     private val method: String  = endpoint.method.map(_.method).getOrElse("")
     private val transactionName = s"$method ${endpoint.showPathTemplate(showQueryParam = None, includeAuth = false)}"
+
+    def withServerLogic(logic: I => F[Either[E, O]]): ServerAppEndpoint[F] =
+      serverLogicInternal(input => logic(input).map(_.leftMap[Failure[E]](BusinessFailure(_))))
 
     def withServerLogicSuccess(logic: I => F[O]): ServerAppEndpoint[F] =
       serverLogicInternal(input => logic(input).map(Right(_)))

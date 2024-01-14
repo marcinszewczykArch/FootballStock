@@ -84,7 +84,7 @@ object EventMemory {
       case Left(parsingFailure) => Left[GameException, Event](JsonParsingFailure(parsingFailure.getMessage()))
       case Right(json)          =>
         json.as[Event] match {
-          case Left(decodingFailure) => Left[GameException, Event](JsonDecodingException(decodingFailure))
+          case Left(decodingFailure) => Left[GameException, Event](JsonDecodingException(decodingFailure.getMessage()))
           case Right(event)          => Right[GameException, Event](event)
         }
     }

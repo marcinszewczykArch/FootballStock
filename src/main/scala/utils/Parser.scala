@@ -1,7 +1,5 @@
 package utils
 
-import game.errors.GameException.ValueParseException
-
 import java.time.Instant
 import scala.util.Try
 
