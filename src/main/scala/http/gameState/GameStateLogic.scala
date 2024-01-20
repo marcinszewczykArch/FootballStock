@@ -12,9 +12,9 @@ import org.typelevel.log4cats.LoggerFactory
 
 trait GameStateLogic[F[_]] {
   def getStateByUserId(userName: String): F[Either[GameException, UserGameStateResponse]]
-  def createNewUser(userName: String): F[CreateNewUserResponse]
-  def buyPlayer(request: BuyPlayerRequest): F[BuyPlayerResponse]
-  def sellPlayer(request: SellPlayerRequest): F[SellPlayerResponse]
+  def createNewUser(userName: String): F[Either[GameException, CreateNewUserResponse]]
+  def buyPlayer(request: BuyPlayerRequest): F[Either[GameException, BuyPlayerResponse]]
+  def sellPlayer(request: SellPlayerRequest): F[Either[GameException, SellPlayerResponse]]
   //getUserInfo
   //getUserPortfolio
   //getUserBalance
@@ -27,31 +27,21 @@ object GameStateLogic {
     gameEngine: GameEngine[F]
   ) = new GameStateLogic[F] {
 
-    override def getStateByUserId(userName: String): F[Either[GameException, UserGameStateResponse]] = (for {
-      userBalance <- EitherT(gameEngine.getUserBalance(User(userName)))
-      userGameStateResponse = UserGameStateResponse.fromUserBalance(userBalance)
-    } yield userGameStateResponse).value
+    override def getStateByUserId(userName: String): F[Either[GameException, UserGameStateResponse]] = gameEngine
+        .getUserBalance(User(userName))
+        .map(_.map(userBalance => UserGameStateResponse.fromUserBalance(userBalance)))
 
-    override def createNewUser(userName: String): F[CreateNewUserResponse] = gameEngine
+    override def createNewUser(userName: String): F[Either[GameException, CreateNewUserResponse]] = gameEngine
       .createUser(User(userName))
-      .map {
-        case Left(value)  => CreateNewUserResponse(value.getMessage) //todo: raise error
-        case Right(value) => CreateNewUserResponse(value.toString)
-      }
+      .map(_.map(event => CreateNewUserResponse(event.toString)))
 
-    override def buyPlayer(request: BuyPlayerRequest): F[BuyPlayerResponse] = gameEngine
+    override def buyPlayer(request: BuyPlayerRequest): F[Either[GameException, BuyPlayerResponse]] = gameEngine
       .buyPlayer(User(request.user))(PlayerId(request.playerId), request.sharesToBuy)
-      .map {
-        case Left(value)  => BuyPlayerResponse(value.getMessage) //todo: raise error
-        case Right(value) => BuyPlayerResponse(value.toString)
-      }
+      .map(_.map(event => BuyPlayerResponse(event.toString)))
 
-    override def sellPlayer(request: SellPlayerRequest): F[SellPlayerResponse] = gameEngine
+    override def sellPlayer(request: SellPlayerRequest): F[Either[GameException, SellPlayerResponse]] = gameEngine
       .sellPlayer(User(request.user))(PlayerId(request.playerId), request.sharesToSell)
-      .map {
-        case Left(value)  => SellPlayerResponse(value.getMessage) //todo: raise error
-        case Right(value) => SellPlayerResponse(value.toString)
-      }
+      .map(_.map(event => SellPlayerResponse(event.toString)))
 
   }
 

@@ -1,0 +1,29 @@
+{
+  "id" : "38256",
+  "url" : "/przemyslaw-rawa/profil/spieler/38256",
+  "name" : "Rawa",
+  "description" : "Przemyslaw Rawa ➤ former footballer from Poland ➤ Defender ➤ last club: Okecie Warszawa ➤ * Oct 4, 1986 in Warszawa, Poland",
+  "nameInHomeCountry" : "Przemysław Rawa",
+  "dateOfBirth" : "Oct 4, 1986",
+  "placeOfBirth" : {
+    "city" : "Warszawa",
+    "country" : "Poland"
+  },
+  "age" : "37",
+  "height" : "1,80m",
+  "citizenship" : [
+    "Poland"
+  ],
+  "isRetired" : true,
+  "retiredSince" : "Jan 1, 2015",
+  "position" : {
+    "main" : "Right-Back"
+  },
+  "foot" : "right",
+  "club" : {
+    "name" : "Retired",
+    "lastClubID" : "10192",
+    "lastClubName" : "Okecie Warszawa"
+  },
+  "updatedAt" : "2024-01-07T22:00:53.202060"
+}

@@ -2,17 +2,14 @@ package http.security
 
 import cats.Monad
 import cats.implicits.{toBifunctorOps, toFunctorOps}
-import http.security.SecuredEndpoints.BearerToken
-import http.security.SecuredEndpoints.ServerAppEndpoint
-import sttp.tapir.EndpointInput.AuthType
-import sttp.tapir.TapirAuth.bearer
-import sttp.tapir.server.PartialServerEndpoint
-import sttp.tapir.server.ServerEndpoint
-import sttp.tapir.Endpoint
-import sttp.tapir.EndpointInput
-import sttp.tapir.PublicEndpoint
-import errors.{BusinessFailure, Failure}
+import game.errors.GameException
+import http.security.SecuredEndpoints.{BearerToken, ServerAppEndpoint}
+import http.security.errors.{BusinessFailure, Failure}
 import org.typelevel.log4cats.LoggerFactory
+import sttp.tapir.EndpointInput.AuthType
+import sttp.tapir.{Endpoint, EndpointInput, PublicEndpoint}
+import sttp.tapir.TapirAuth.bearer
+import sttp.tapir.server.{PartialServerEndpoint, ServerEndpoint}
 
 abstract class SecuredEndpoints[F[_]: LoggerFactory: Monad](
   tokenIntrospection: TokenVerification[F]
@@ -53,6 +50,7 @@ object SecuredEndpoints {
 
   type BearerToken                                    = Secret[String]
   type AppEndpointSecret[INPUT, ERROR_OUTPUT, OUTPUT] = Endpoint[BearerToken, INPUT, ERROR_OUTPUT, OUTPUT, Any]
+  type AppEndpointSecretWithError[INPUT, OUTPUT]      = Endpoint[BearerToken, INPUT, Failure[GameException], OUTPUT, Any]
   type AppEndpoint[INPUT, ERROR_OUTPUT, OUTPUT]       = PublicEndpoint[INPUT, ERROR_OUTPUT, OUTPUT, Any]
   type ServerAppEndpoint[F[_]]                        = ServerEndpoint[Any, F]
 

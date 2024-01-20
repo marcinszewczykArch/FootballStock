@@ -2,7 +2,7 @@ package http.gameState
 
 import game.errors.GameException
 import http.gameState.domain._
-import http.security.SecuredEndpoints.{AppEndpointSecret, secretBearer}
+import http.security.SecuredEndpoints.{AppEndpointSecret, AppEndpointSecretWithError, secretBearer}
 import http.security.errors
 import http.security.errors.{BusinessFailure, Failure, authorisationErrors}
 import sttp.model.StatusCode
@@ -19,7 +19,7 @@ object GameStateEndpoints {
     createNewUser
   )
 
-  lazy val getUserGameState: AppEndpointSecret[String, Failure[GameException], UserGameStateResponse] = baseEndpoint
+  lazy val getUserGameState: AppEndpointSecretWithError[String, UserGameStateResponse] = baseEndpoint
     .get
     .in("state")
     .in(query[String]("user"))
@@ -27,18 +27,8 @@ object GameStateEndpoints {
     .description("Scan DB to find current user game state")
     .tag("GameState")
     .out(jsonBody[UserGameStateResponse])
-    .errorOut(
-      errors.errors[GameException](
-        oneOfVariantValueMatcher(
-          StatusCode.PreconditionFailed,
-          jsonBody[BusinessFailure[GameException]]
-            .description("???")
-//            .example(allocateAlternativeInventoryErrorExample)
-        ) { case BusinessFailure(_) => true }
-      )
-    )
 
-  lazy val buyPlayer: AppEndpointSecret[BuyPlayerRequest, Failure[Unit], BuyPlayerResponse] = baseEndpoint
+  lazy val buyPlayer: AppEndpointSecretWithError[BuyPlayerRequest, BuyPlayerResponse] = baseEndpoint
     .in("buy")
     .post
     .summary("Proceed with buy player stock transaction.")
@@ -46,9 +36,8 @@ object GameStateEndpoints {
     .tag("BuyStock")
     .in(jsonBody[BuyPlayerRequest])
     .out(jsonBody[BuyPlayerResponse])
-    .errorOut(authorisationErrors)
 
-  lazy val sellPlayer: AppEndpointSecret[SellPlayerRequest, Failure[Unit], SellPlayerResponse] = baseEndpoint
+  lazy val sellPlayer: AppEndpointSecretWithError[SellPlayerRequest, SellPlayerResponse] = baseEndpoint
     .in("sell")
     .post
     .summary("Proceed with sell player stock transaction.")
@@ -56,9 +45,8 @@ object GameStateEndpoints {
     .tag("SellStock")
     .in(jsonBody[SellPlayerRequest])
     .out(jsonBody[SellPlayerResponse])
-    .errorOut(authorisationErrors)
 
-  lazy val createNewUser: AppEndpointSecret[String, Failure[Unit], CreateNewUserResponse] = baseEndpoint
+  lazy val createNewUser: AppEndpointSecretWithError[String, CreateNewUserResponse] = baseEndpoint
     .in("newUser")
     .in(query[String]("user"))
     .post
@@ -66,12 +54,21 @@ object GameStateEndpoints {
     .description("User name has to be unique, case insensitive.")
     .tag("CreateNewUser")
     .out(jsonBody[CreateNewUserResponse])
-    .errorOut(authorisationErrors)
 
   val ApiVersion = "v1"
 
-  private val baseEndpoint: AppEndpointSecret[Unit, Unit, Unit] = endpoint
+  private val baseEndpoint: AppEndpointSecretWithError[Unit, Unit] = endpoint
     .in(ApiVersion)
     .securityIn(secretBearer)
+    .errorOut(
+      errors.errors[GameException](
+        oneOfVariantValueMatcher(
+          StatusCode.PreconditionFailed,
+          jsonBody[BusinessFailure[GameException]]
+            .description("???")
+          //            .example(allocateAlternativeInventoryErrorExample) //todo: add example
+        ) { case BusinessFailure(_) => true }
+      )
+    )
 
 }
