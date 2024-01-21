@@ -51,8 +51,13 @@ else
     printf "\033[0;31m$t\033[0m\n"
 fi
 
+#check created tables
+tables=$(aws dynamodb list-tables --endpoint-url http://localhost:8000)
+echo "Created tables check: $tables"
+
+
 #add some initial data to the tables (user, players, events)
-echo "uploading playerProfiles to playerProfileTable..."
+echo "uploading sample player profiles to PlayerProfile Table..."
 for file in players/*.json; do
   echo "loading player from file: $file"
 
@@ -67,16 +72,54 @@ for file in players/*.json; do
   aws dynamodb put-item --table-name PlayerProfile --item "${body}" --endpoint-url http://localhost:8000
 done
 
-
-#check created tables
-tables=$(aws dynamodb list-tables --endpoint-url http://localhost:8000)
-echo "Created tables check: $tables"
-
 #check numbers of records in PlayerProfile Table
 PlayerProfileTable=$(aws dynamodb scan --table-name PlayerProfile --endpoint-url http://localhost:8000)
 PlayerProfileTableCount=$(echo $PlayerProfileTable | jq -r '.Count')
 echo "PlayerProfile Table Count check: $PlayerProfileTableCount"
 
+echo "uploading TESTUSER to UserGameState Table..."
+body='{
+        "json": {
+            "S": "{  \"portfolio\" : {      },  \"money\" : 1000000,  \"updatedAt\" : \"2024-01-21T18:04:21.899614Z\"}"
+        },
+        "user": {
+            "S": "TESTUSER"
+        },
+        "updatedAt": {
+            "S": "2024-01-21T18:04:21.899614Z"
+        }
+      }'
+echo "${body}" | jq
+aws dynamodb put-item --table-name UserGameState --item "${body}" --endpoint-url http://localhost:8000
+
+#check numbers of records in UserGameState Table
+UserGameStateTable=$(aws dynamodb scan --table-name UserGameState --endpoint-url http://localhost:8000)
+UserGameStateTableCount=$(echo $UserGameStateTable | jq -r '.Count')
+echo "UserGameState Table Count check: $UserGameStateTableCount"
+
+echo "uploading InitializeGameEvent for TESTUSER to Event Table..."
+body='{
+          "json": {
+              "S": "{  \"InitializeGameEvent\" : {    \"value\" : 1000000,    \"user\" : {      \"value\" : \"TESTUSER\"    },    \"timestamp\" : \"2024-01-21T18:04:21.899614Z\"  }}"
+          },
+          "eventName": {
+              "S": "INITIALIZE_GAME"
+          },
+          "eventId": {
+              "S": "91c20002-f51c-41d5-8808-89809bc9a75b"
+          },
+          "user": {
+              "S": "TESTUSER"
+          }
+        }'
+echo "${body}" | jq
+aws dynamodb put-item --table-name Event --item "${body}" --endpoint-url http://localhost:8000
+
+#check numbers of records in Event Table
+EventTable=$(aws dynamodb scan --table-name Event --endpoint-url http://localhost:8000)
+EventTableCount=$(echo $EventTable | jq -r '.Count')
+echo "Event Table Count check: $EventTableCount"
+
 #kill container at the end
-docker ps
-docker kill $dockerContainer
+#docker ps
+#docker kill $dockerContainer
