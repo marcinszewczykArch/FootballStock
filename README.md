@@ -73,6 +73,12 @@
 
   ```aws dynamodb scan --table-name PlayerProfile --endpoint-url http://localhost:8000```
 
+- or you can simply run the script:
+  [dynamoDbLocal.sh](deployment/environments/local/dynamoDbLocal.sh)
+  
+  ```cd deployment/environments/local; ./dynamoDbLocal.sh```
+
+
 ### C4 diagram
 
 ```mermaid

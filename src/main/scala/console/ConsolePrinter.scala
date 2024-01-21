@@ -16,7 +16,7 @@ import scala.io.AnsiColor._
 
 trait ConsolePrinter[F[_]] {
   def readMessage[F[_]: Console: Monad]: F[InputMessage]
-  def gameLoop[F[_]: Console: Monad](playerService: PlayerService[F], gameLogic: GameEngine[F])(message: InputMessage): F[Unit]
+  def gameLoop[F[_]: Console: Monad](gameLogic: GameEngine[F])(message: InputMessage): F[Unit]
   def printStartMessage[F[_]: Applicative]: F[Unit]
 }
 
@@ -34,21 +34,21 @@ object ConsolePrinter {
       case Left(exception: GameException)    => Error(exception.getMessage)
     }
 
-    def gameLoop[F[_]: Console: Monad](playerService: PlayerService[F], gameLogic: GameEngine[F])(message: InputMessage): F[Unit] =
+    def gameLoop[F[_]: Console: Monad](gameLogic: GameEngine[F])(message: InputMessage): F[Unit] =
       message match {
         case SearchPlayerByName(input) =>
           for {
-            players <- playerService.searchByName(input)
+            players <- gameLogic.searchByName(input)
             _       <- printPlayerSearchResult[F](players)
           } yield ()
         case GetPlayerProfileById(id)  =>
           for {
-            playerProfile <- playerService.getPlayerProfileById(PlayerId(id))
+            playerProfile <- gameLogic.getPlayerProfileById(PlayerId(id))
             _             <- prettyPrintOr[F](playerProfile)("Player profile not found")
           } yield ()
         case GetPlayerValueById(id)    =>
           for {
-            playerValue <- playerService.getMarketValueByPlayerId(PlayerId(id))
+            playerValue <- gameLogic.getMarketValueByPlayerId(PlayerId(id))
             _           <- prettyPrintOr[F](playerValue)("Player value not found")
           } yield ()
 

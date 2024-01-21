@@ -1,10 +1,15 @@
 package http.gameState
 
 import game.errors.GameException
+import http.BaseEndpoint.baseEndpoint
 import http.gameState.domain._
-import http.security.SecuredEndpoints.{AppEndpointSecret, AppEndpointSecretWithError, secretBearer}
+import http.security.SecuredEndpoints.AppEndpointSecret
+import http.security.SecuredEndpoints.AppEndpointSecretWithError
+import http.security.SecuredEndpoints.secretBearer
 import http.security.errors
-import http.security.errors.{BusinessFailure, Failure, authorisationErrors}
+import http.security.errors.BusinessFailure
+import http.security.errors.Failure
+import http.security.errors.authorisationErrors
 import sttp.model.StatusCode
 import sttp.tapir._
 import sttp.tapir.generic.auto._
@@ -12,7 +17,7 @@ import sttp.tapir.json.circe._
 
 object GameStateEndpoints {
 
-  lazy val endpoints: List[Endpoint[_, _, _, _, _]] = List(
+  lazy val endpoints: List[AppEndpointSecretWithError[_, _]] = List(
     getUserGameState,
     buyPlayer,
     sellPlayer,
@@ -33,7 +38,7 @@ object GameStateEndpoints {
     .post
     .summary("Proceed with buy player stock transaction.")
     .description("You can have no more than 100 stocks of the same players.")
-    .tag("BuyStock")
+    .tag("GameState")
     .in(jsonBody[BuyPlayerRequest])
     .out(jsonBody[BuyPlayerResponse])
 
@@ -42,7 +47,7 @@ object GameStateEndpoints {
     .post
     .summary("Proceed with sell player stock transaction.")
     .description("You can have no more than 100 stocks of the same players.")
-    .tag("SellStock")
+    .tag("GameState")
     .in(jsonBody[SellPlayerRequest])
     .out(jsonBody[SellPlayerResponse])
 
@@ -52,23 +57,7 @@ object GameStateEndpoints {
     .post
     .summary("Create new game user.")
     .description("User name has to be unique, case insensitive.")
-    .tag("CreateNewUser")
+    .tag("GameState")
     .out(jsonBody[CreateNewUserResponse])
-
-  val ApiVersion = "v1"
-
-  private val baseEndpoint: AppEndpointSecretWithError[Unit, Unit] = endpoint
-    .in(ApiVersion)
-    .securityIn(secretBearer)
-    .errorOut(
-      errors.errors[GameException](
-        oneOfVariantValueMatcher(
-          StatusCode.PreconditionFailed,
-          jsonBody[BusinessFailure[GameException]]
-            .description("???")
-          //            .example(allocateAlternativeInventoryErrorExample) //todo: add example
-        ) { case BusinessFailure(_) => true }
-      )
-    )
 
 }

@@ -24,8 +24,7 @@ import game.state.domain.UserGameState
 import game.state.service.UserGameStateService
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
-import game.player.service.domain.MarketValue
-import game.player.service.domain.PlayerId
+import game.player.service.domain.{MarketValue, PlayerId, PlayerProfile, PlayerSimple}
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import utils.TimeProvider
@@ -42,6 +41,10 @@ trait GameEngine[F[_]] {
   def createUser(user: User): F[Either[GameException, InitializeGameEvent]]
 
   def getUserEvents(user: User): F[Either[GameException, List[Event]]]
+
+  def searchByName(playerName: String): F[Either[GameException, List[PlayerSimple]]]
+  def getMarketValueByPlayerId(id: PlayerId): F[Either[GameException, MarketValue]]
+  def getPlayerProfileById(id: PlayerId): F[Either[GameException, PlayerProfile]]
 
 }
 
@@ -172,6 +175,21 @@ object GameEngine {
 
       override def getAllUsersStates(
       ): F[Map[User, UserGameState]] = stateService.getAllGameStates()
+
+      override def searchByName(
+        playerName: String
+      ): F[Either[GameException, List[
+        PlayerSimple
+      ]]] = playerService.searchByName(playerName)
+
+      override def getMarketValueByPlayerId(
+        id: PlayerId
+      ): F[Either[GameException, MarketValue]] = playerService.getMarketValueByPlayerId(id)
+
+      override def getPlayerProfileById(
+        id: PlayerId
+      ): F[Either[GameException, PlayerProfile]] = playerService.getPlayerProfileById(id)
+
     }
 
 }

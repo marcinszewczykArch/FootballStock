@@ -2,6 +2,7 @@ package http
 
 import cats.effect.IO
 import http.gameState.GameStateEndpoints
+import http.player.PlayerEndpoints
 import org.http4s.HttpRoutes
 import sttp.apispec.openapi.circe.yaml.RichOpenAPI
 import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
@@ -13,7 +14,8 @@ object SwaggerRoutes {
 
   val routes: IO[HttpRoutes[IO]] = IO {
 
-    val doc = OpenAPIDocsInterpreter().toOpenAPI(GameStateEndpoints.endpoints, "FOOTBALL_STOCK", "v1")
+    val doc = OpenAPIDocsInterpreter().toOpenAPI(
+      GameStateEndpoints.endpoints :++ PlayerEndpoints.endpoints, "FOOTBALL_STOCK", "v1")
 
     Http4sServerInterpreter[IO]().toRoutes(
       SwaggerUI[IO](
