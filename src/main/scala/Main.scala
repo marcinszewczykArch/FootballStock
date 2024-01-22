@@ -17,6 +17,8 @@ import game.player.service.PlayersUpdater
 import game.state.memory.UserGameStateMemory
 import game.state.service.UserGameStateService
 import http.SwaggerRoutes
+import http.event.EventLogic
+import http.event.EventRoutes
 import http.gameState.GameStateLogic
 import http.gameState.GameStateRoutes
 import http.player.PlayerProfileLogic
@@ -66,21 +68,22 @@ object Main extends IOApp {
       playerSearchClient              = PlayerSearchClient.cachedInstance[IO](appConfig.playerSearchClient)
 
       //services
-      gameStateService = UserGameStateService.impl[IO](stateMemory)
-      eventService     = EventService.impl(eventMemory)
-      playerService    = PlayerService.impl[IO](playerProfileClientMemoryCached, playerSearchClient)
-      playersUpdater   = PlayersUpdater.impl[IO](
-                           playerProfileClient,
-                           playerProfileClientMemory,
-                           eventMemory,
-                           appConfig.playersUpdateCriteria
-                         )
-      gameEngine       = GameEngine.impl(gameStateService, eventService, playerService)
-      gameStateLogic   = GameStateLogic.impl[IO](gameEngine)
-      playerProfileLogic   = PlayerProfileLogic.impl[IO](gameEngine)
+      gameStateService   = UserGameStateService.impl[IO](stateMemory)
+      eventService       = EventService.impl(eventMemory)
+      playerService      = PlayerService.impl[IO](playerProfileClientMemoryCached, playerSearchClient)
+      playersUpdater     = PlayersUpdater.impl[IO](
+                             playerProfileClient,
+                             playerProfileClientMemory,
+                             eventMemory,
+                             appConfig.playersUpdateCriteria
+                           )
+      gameEngine         = GameEngine.impl(gameStateService, eventService, playerService)
+      gameStateLogic     = GameStateLogic.impl[IO](gameEngine)
+      playerProfileLogic = PlayerProfileLogic.impl[IO](gameEngine)
+      eventLogic         = EventLogic.impl[IO](gameEngine)
 
       //server
-      _ <- httpServerResource(appConfig, gameStateLogic, playerProfileLogic)
+      _ <- httpServerResource(appConfig, gameStateLogic, playerProfileLogic, eventLogic)
       _ <- Resource.eval(consolePrinter.printStartMessage[IO])
       _ <- Resource.eval(runGame(consolePrinter, gameEngine, playersUpdater))
     } yield ()).useForever
@@ -99,7 +102,7 @@ object Main extends IOApp {
     val updatePlayersInMemoryStream: Stream[IO, Unit] =
       fs2
         .Stream
-        .awakeEvery[IO](10.seconds) //todo: from config
+        .awakeEvery[IO](5.minutes) //todo: from config
         .evalMap(_ => playersUpdater.updateAllPlayersInMemory)
 
     Stream(gameStream, updatePlayersInMemoryStream)
@@ -129,14 +132,16 @@ object Main extends IOApp {
   def httpServerResource(
     appConfig: AppConfig,
     gameStateLogic: GameStateLogic[IO],
-    playerProfileLogic: PlayerProfileLogic[IO]
+    playerProfileLogic: PlayerProfileLogic[IO],
+    eventLogic: EventLogic[IO]
   )(
     implicit tokenVerification: TokenVerification[IO]
   ): Resource[IO, Server] = for {
     swaggerRoutes       <- Resource.eval(SwaggerRoutes.routes)
     gameStateRoutes     <- Resource.eval(new GameStateRoutes[IO](tokenVerification).routes(gameStateLogic))
     playerProfileRoutes <- Resource.eval(new PlayerProfileRoutes[IO](tokenVerification).routes(playerProfileLogic))
-    server              <- buildServer(swaggerRoutes <+> gameStateRoutes <+> playerProfileRoutes, appConfig.http)
+    eventRoutes         <- Resource.eval(new EventRoutes[IO](tokenVerification).routes(eventLogic))
+    server              <- buildServer(swaggerRoutes <+> gameStateRoutes <+> playerProfileRoutes <+> eventRoutes, appConfig.http)
   } yield server
 
   def buildServer(

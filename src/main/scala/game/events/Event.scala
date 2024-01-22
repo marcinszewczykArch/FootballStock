@@ -16,6 +16,7 @@ sealed abstract class Event(user: User, timestamp: Instant) {
 }
 
 object Event {
+  val SYSTEM_USER_NAME = "SYSTEM"
   implicit val eventDecoder: Decoder[Event] = deriveDecoder
   implicit val eventEncoder: Encoder[Event] = deriveEncoder
 
@@ -62,7 +63,7 @@ object Event {
     updateFailure: List[PlayerId],
     taskDurationSeconds: Int,
     timestamp: Instant
-  ) extends Event(User("SYSTEM"), timestamp) {
+  ) extends Event(User(SYSTEM_USER_NAME), timestamp) {
     override def getEventName: String = "PLAYERS_UPDATE"
   }
 

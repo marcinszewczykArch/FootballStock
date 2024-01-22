@@ -3,9 +3,11 @@ package game.state.service
 import cats.Applicative
 import cats.data.EitherT
 import cats.effect._
+import cats.implicits.toFunctorOps
 import game.errors.GameException
 import game.errors.GameException.SharesNumberException
 import game.errors.GameException.UserAlreadyExistsException
+import game.events.Event.SYSTEM_USER_NAME
 import game.state.domain.Shares
 import game.state.domain.User
 import game.state.domain.UserGameState
@@ -67,11 +69,11 @@ object UserGameStateService {
     ): F[Either[GameException, Unit]] = userGameStateMemory.save(user)(initialUserState)
 
     override def validateUserNotExists(user: User): F[Either[GameException, Unit]] = (for {
-      allUsersStates <- EitherT.liftF(getAllGameStates())
-      _              <- EitherT.fromEither(allUsersStates.contains(user) match {
-                          case true  => Left[GameException, Unit](UserAlreadyExistsException(user))
-                          case false => Right[GameException, Unit](())
-                        })
+      allUsers <- EitherT.liftF(getAllGameStates().map(_.keySet + User(SYSTEM_USER_NAME)))
+      _        <- EitherT.fromEither(allUsers.contains(user) match {
+                    case true  => Left[GameException, Unit](UserAlreadyExistsException(user))
+                    case false => Right[GameException, Unit](())
+                  })
     } yield ()).value
 
     override def calculateSharesAfterSell(
