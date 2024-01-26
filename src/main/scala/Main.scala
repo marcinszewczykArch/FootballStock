@@ -30,6 +30,8 @@ import org.http4s.HttpRoutes
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.Router
 import org.http4s.server.Server
+import org.http4s.server.middleware.CORS
+import org.http4s.server.middleware.CORSPolicy
 import org.scanamo.Scanamo
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
@@ -45,7 +47,11 @@ object Main extends IOApp {
   implicit val loggerFactory: LoggerFactory[IO]         = Slf4jFactory.create[IO]
   implicit val tokenVerification: TokenVerification[IO] = EloTokenVerification
   type Result[A] = Either[GameException, A] //todo: this can be used in multiple places for simplification
-  private val log = LoggerFactory.getLoggerFromClass(classOf[Main.type])
+  val corsService: CORSPolicy = CORS
+    .policy
+    .withAllowOriginAll
+
+  private val log             = LoggerFactory.getLoggerFromClass(classOf[Main.type])
 
   def run(args: List[String]): IO[ExitCode] =
     (for {
@@ -154,7 +160,11 @@ object Main extends IOApp {
                   .default[IO]
                   .withHost(httpConfig.host)
                   .withPort(httpConfig.port)
-                  .withHttpApp(Router("/" -> routes).orNotFound)
+                  .withHttpApp(
+                    corsService(
+                      Router("/" -> routes).orNotFound
+                    )
+                  )
                   .build
       _      <- Resource.eval(log.info(s"Started $BuildInfo HTTP server"))
       _      <- Resource.eval(IO.println(s"Go to http://localhost:${server.address.getPort}/swagger to open SwaggerUI"))
