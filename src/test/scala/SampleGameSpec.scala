@@ -91,6 +91,7 @@ class SampleGameSpec extends CatsEffectSuite {
       transaction1Expected = Right(
                                BuyPlayerEvent(
                                  playerId = PlayerId(38253),
+                                 playerName = "Lewandowski",
                                  shares = 2,
                                  user = testUser,
                                  value = BigDecimal(600_000),
@@ -118,6 +119,7 @@ class SampleGameSpec extends CatsEffectSuite {
       transaction2Expected = Right(
                                SellPlayerEvent(
                                  playerId = PlayerId(38253),
+                                 playerName = "Lewandowski",
                                  shares = 1,
                                  user = testUser,
                                  value = BigDecimal(300_000),

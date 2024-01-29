@@ -18,9 +18,9 @@ object domain {
 
   final case class UserGameStateResponse(
     portfolio: List[PlayerStockResponse],
-    playersCurrentValue: BigDecimal,
-    cash: BigDecimal,
-    profit: BigDecimal,
+    playersCurrentValue: String,
+    cash: String,
+    profit: String,
     revenuePercent: Int,
     updatedAt: Instant
   )
@@ -53,9 +53,9 @@ object domain {
           portfolio = portfolio.map { case (playerProfile, balancePerPlayer) =>
             PlayerStockResponse.fromDomainPortfolio(playerProfile, balancePerPlayer)
           },
-          playersCurrentValue,
-          cash,
-          profit,
+          CurrencyFormatter.toEuroString(playersCurrentValue),
+          CurrencyFormatter.toEuroString(cash),
+          CurrencyFormatter.toEuroString(profit),
           revenuePercent,
           updatedAt
         )

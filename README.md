@@ -17,6 +17,10 @@
 - authentication mechanism <- sth to study, separate table in dynamo?
 - Future improvement - use MongoDb for json storage
 - add scalaFix
+- add endpoint for see other user portfolio 
+- add logic to earn dividend when player from portfolio is playing (needed client for
+  ```https://transfermarkt-api.vercel.app/players/{playerId}/stats``` 
+ and some logic to compare stats. 1% player shares value profit for each 1h played)
 
 ### further improvement frontend:
 

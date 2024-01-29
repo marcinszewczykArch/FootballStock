@@ -9,10 +9,11 @@ import io.circe.Encoder
 
 import java.time.Instant
 
-sealed abstract class Event(user: User, timestamp: Instant, eventName: String) {
+sealed abstract class Event(user: User, timestamp: Instant, eventName: String, playerId: Option[PlayerId]) { //todo: add playerId
   def getUser: User         = user
   def getTimestamp: Instant = timestamp
   def getEventName          = eventName
+  def getPlayerId           = playerId
 }
 
 object Event {
@@ -27,7 +28,7 @@ object Event {
     value: BigDecimal,
     user: User,
     timestamp: Instant
-  ) extends Event(user, timestamp, "SELL_PLAYER")
+  ) extends Event(user, timestamp, "SELL PLAYER", Some(playerId))
 
   final case class BuyPlayerEvent(
     playerId: PlayerId,
@@ -36,13 +37,13 @@ object Event {
     value: BigDecimal,
     user: User,
     timestamp: Instant
-  ) extends Event(user, timestamp, "BUY_PLAYER")
+  ) extends Event(user, timestamp, "BUY PLAYER", Some(playerId))
 
   final case class InitializeGameEvent(
     value: BigDecimal,
     user: User,
     timestamp: Instant
-  ) extends Event(user, timestamp, "INITIALIZE_GAME")
+  ) extends Event(user, timestamp, "INITIALIZE GAME", None)
 
   final case class PlayerValueChanged( //todo: add stream to send this user event periodically
     playerId: PlayerId,
@@ -51,13 +52,13 @@ object Event {
     newValue: BigDecimal,
     user: User,
     timestamp: Instant
-  ) extends Event(user, timestamp, "PLAYER_VALUE_CHANGED")
+  ) extends Event(user, timestamp, "PLAYER VALUE CHANGED", None)
 
   final case class PlayersUpdateEvent(
     updateSuccess: List[PlayerId],
     updateFailure: List[PlayerId],
     taskDurationSeconds: Int,
     timestamp: Instant
-  ) extends Event(User(SYSTEM_USER_NAME), timestamp, "PLAYERS_UPDATE")
+  ) extends Event(User(SYSTEM_USER_NAME), timestamp, "PLAYERS UPDATE", None)
 
 }

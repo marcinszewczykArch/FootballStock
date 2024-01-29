@@ -22,11 +22,12 @@ object domain {
           eventName = event.getEventName,
           user = event.getUser.value,
           timestamp = event.getTimestamp,
+          playerId = event.getPlayerId.map(_.value).getOrElse(0),
           message = event match {
             case SellPlayerEvent(playerId, playerName, shares, value, _, _)               =>
-              s"$playerName [${playerId.value}] - $shares sold for ${CurrencyFormatter.toEuroString(value)}"
+              s"$playerName [${playerId.value}] - $shares% of shares sold for ${CurrencyFormatter.toEuroString(value)}"
             case BuyPlayerEvent(playerId, playerName, shares, value, _, _)                =>
-              s"$playerName [${playerId.value}] - $shares bought for ${CurrencyFormatter.toEuroString(value)}"
+              s"$playerName [${playerId.value}] - $shares% of shares bought for ${CurrencyFormatter.toEuroString(value)}"
             case InitializeGameEvent(_, _, _)                                             =>
               "game initialized"
             case PlayerValueChanged(playerId, playerName, previousValue, newValue, _, _)  =>
@@ -49,6 +50,7 @@ object domain {
     eventName: String,
     user: String,
     timestamp: Instant,
+    playerId: Int,
     message: String
   )
 

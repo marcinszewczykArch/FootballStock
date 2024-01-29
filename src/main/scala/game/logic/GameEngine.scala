@@ -70,11 +70,11 @@ object GameEngine {
         playerId: PlayerId,
         sharesToBuy: Int
       ): F[Either[GameException, BuyPlayerEvent]] = (for {
-        _                 <- EitherT.liftF(log.debug(s"Processing new transaction for user $user: BUY $sharesToBuy of $playerId..."))
-        now               <- EitherT.pure(timeProvider.getCurrentTimestamp)
-        userState         <- EitherT(stateService.getStateForUser(user))
-        player            <- EitherT(playerService.getPlayerProfileById(playerId))
-        newShares         <- EitherT(stateService.calculateSharesAfterBuy(userState.portfolio.get(playerId), sharesToBuy, player.marketValue))
+        _         <- EitherT.liftF(log.debug(s"Processing new transaction for user $user: BUY $sharesToBuy of $playerId..."))
+        now       <- EitherT.pure(timeProvider.getCurrentTimestamp)
+        userState <- EitherT(stateService.getStateForUser(user))
+        player    <- EitherT(playerService.getPlayerProfileById(playerId))
+        newShares <- EitherT(stateService.calculateSharesAfterBuy(userState.portfolio.get(playerId), sharesToBuy, player.marketValue))
         transactionValue = player.marketValue * sharesToBuy / 100
         _ <- EitherT(validateEnoughMoney(userState.money, transactionValue))
         event        = BuyPlayerEvent(playerId, player.name, sharesToBuy, transactionValue, user, now)
@@ -89,11 +89,11 @@ object GameEngine {
 
       override def sellPlayer(user: User)(playerId: PlayerId, sharesToSell: Int): F[Either[GameException, SellPlayerEvent]] =
         (for {
-          _                 <- EitherT.liftF(log.debug(s"Processing new transaction for user $user: SELL $sharesToSell of $playerId..."))
-          now               <- EitherT.pure(timeProvider.getCurrentTimestamp)
-          userState         <- EitherT(stateService.getStateForUser(user))
-          player            <- EitherT(playerService.getPlayerProfileById(playerId))
-          newShares         <- EitherT(stateService.calculateSharesAfterSell(userState.portfolio.get(playerId), sharesToSell))
+          _         <- EitherT.liftF(log.debug(s"Processing new transaction for user $user: SELL $sharesToSell of $playerId..."))
+          now       <- EitherT.pure(timeProvider.getCurrentTimestamp)
+          userState <- EitherT(stateService.getStateForUser(user))
+          player    <- EitherT(playerService.getPlayerProfileById(playerId))
+          newShares <- EitherT(stateService.calculateSharesAfterSell(userState.portfolio.get(playerId), sharesToSell))
           transactionValue = player.marketValue * sharesToSell / 100
           event            = SellPlayerEvent(playerId, player.name, sharesToSell, transactionValue, user, now)
           newUserState     = UserGameState(
@@ -144,7 +144,7 @@ object GameEngine {
                        .map { case playerId -> shares =>
                          for {
                            playerProfile <- EitherT(playerService.getPlayerProfileById(playerId))
-                           currentPrice  = playerProfile.marketValue
+                           currentPrice     = playerProfile.marketValue
                            sharesNumber     = shares.map(_.number).sum
                            totalBuyValue    = shares.map { case Shares(number, buyPrice, _) => number * buyPrice / 100 }.sum
                            currentValue     = (currentPrice * sharesNumber) / 100
@@ -157,7 +157,7 @@ object GameEngine {
                                                 profit = currentValue - totalBuyValue,
                                                 revenuePercent = totalBuyValue match {
                                                   case value if value == 0 => 0
-                                                  case _                   => ((currentValue - totalBuyValue) / totalBuyValue).toInt * 100
+                                                  case _                   => ((currentValue - totalBuyValue) * 100 / totalBuyValue).toInt
                                                 }
                                               )
                          } yield (playerProfile, balancePerPlayer)
