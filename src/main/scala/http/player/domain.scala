@@ -8,6 +8,7 @@ import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.generic.semiauto.deriveEncoder
+import utils.CurrencyFormatter
 
 import java.time.Instant
 import java.time.Year
@@ -38,7 +39,7 @@ object domain {
     position: String,
     club: String,
     age: String,
-    nationality: String,
+    nationalities: List[String],
     marketValue: String
   )
 
@@ -56,7 +57,7 @@ object domain {
       mainPosition = playerProfile.position.main,
       otherPositions = playerProfile.position.other,
       club = playerProfile.club,
-      marketValue = playerProfile.marketValue.toString(), //todo: add 'Euro'
+      marketValue = CurrencyFormatter.toEuroString(playerProfile.marketValue),
       updatedAt = playerProfile.updatedAt.toString
     )
 
@@ -83,8 +84,8 @@ object domain {
       position = playerSimple.position,
       club = playerSimple.club,
       age = playerSimple.age,
-      nationality = playerSimple.nationality,
-      marketValue = playerSimple.marketValue.toString() //todo: add 'Euro'
+      nationalities = playerSimple.nationalities,
+      marketValue = CurrencyFormatter.toEuroString(playerSimple.marketValue)
     )
 
     implicit val userGameStateResponseDecoder: Decoder[PlayerSimpleResponse] = deriveDecoder

@@ -30,20 +30,20 @@ import utils.Parser.toInstantOrFarPast
 object PlayerMapper {
 
   val fetchedPlayerSimpleToPlayerSimple: FetchedPlayerSimple => PlayerSimple = {
-    case FetchedPlayerSimple(id, name, position, club, age, nationality, marketValue) =>
+    case FetchedPlayerSimple(id, name, position, club, age, nationalities, marketValue) =>
       PlayerSimple(
         id = PlayerId(id.getOrElse(0)),
         name = name.getOrElse("-"),
         position = position.getOrElse("-"),
         club = club.flatMap(_.name).getOrElse("-"),
         age = age.getOrElse("-"),
-        nationality = nationality.getOrElse("-"),
+        nationalities = nationalities.getOrElse(Nil),
         marketValue = toBigDecimalOrZero(marketValue)
       )
   }
 
-  val fetchedPlayerProfileToMarketValue: FetchedPlayerProfile => MarketValue = { playerProfile =>
-    MarketValue(toBigDecimalOrZero(playerProfile.marketValue))
+  val fetchedPlayerProfileToMarketValue: FetchedPlayerProfile => BigDecimal = { playerProfile =>
+    toBigDecimalOrZero(playerProfile.marketValue)
   }
 
   val fetchedPlayerProfileToProfile: FetchedPlayerProfile => PlayerProfile = {

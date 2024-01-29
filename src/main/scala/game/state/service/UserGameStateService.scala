@@ -36,7 +36,7 @@ trait UserGameStateService[F[_]] {
   def calculateSharesAfterBuy(
     sharesInPortfolio: Option[List[Shares]],
     sharesToBuy: Int,
-    currentPlayerMarketValue: MarketValue
+    currentPlayerMarketValue: BigDecimal
   )(
     implicit timeProvider: TimeProvider[F]
   ): F[Either[GameException, List[Shares]]]
@@ -89,12 +89,12 @@ object UserGameStateService {
     override def calculateSharesAfterBuy(
       sharesInPortfolio: Option[List[Shares]],
       sharesToBuy: Int,
-      currentPlayerMarketValue: MarketValue
+      currentPlayerMarketValue: BigDecimal
     )(
       implicit timeProvider: TimeProvider[F]
     ): F[Either[GameException, List[Shares]]] = Applicative[F].pure {
       sharesInPortfolio.sum + sharesToBuy <= 100 match {
-        case true  => Right(sharesInPortfolio |+| Shares(sharesToBuy, currentPlayerMarketValue.value, timeProvider.getCurrentTimestamp))
+        case true  => Right(sharesInPortfolio |+| Shares(sharesToBuy, currentPlayerMarketValue, timeProvider.getCurrentTimestamp))
         case false => Left(SharesNumberException(sharesInPortfolio.sum + sharesToBuy))
       }
     }

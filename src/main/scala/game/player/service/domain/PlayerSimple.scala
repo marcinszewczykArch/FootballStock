@@ -6,7 +6,7 @@ final case class PlayerSimple(
   position: String,
   club: String,
   age: String,
-  nationality: String,
+  nationalities: List[String],
   marketValue: BigDecimal
 )
 

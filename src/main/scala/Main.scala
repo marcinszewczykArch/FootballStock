@@ -47,11 +47,9 @@ object Main extends IOApp {
   implicit val loggerFactory: LoggerFactory[IO]         = Slf4jFactory.create[IO]
   implicit val tokenVerification: TokenVerification[IO] = EloTokenVerification
   type Result[A] = Either[GameException, A] //todo: this can be used in multiple places for simplification
-  val corsService: CORSPolicy = CORS
-    .policy
-    .withAllowOriginAll
+  val corsService: CORSPolicy = CORS.policy.withAllowOriginAll
 
-  private val log             = LoggerFactory.getLoggerFromClass(classOf[Main.type])
+  private val log = LoggerFactory.getLoggerFromClass(classOf[Main.type])
 
   def run(args: List[String]): IO[ExitCode] =
     (for {

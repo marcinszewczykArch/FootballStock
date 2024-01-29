@@ -21,7 +21,7 @@ import org.typelevel.log4cats.SelfAwareStructuredLogger
 
 trait PlayerService[F[_]] {
   def searchByName(playerName: String): F[Either[GameException, List[PlayerSimple]]]
-  def getMarketValueByPlayerId(id: PlayerId): F[Either[GameException, MarketValue]]
+  def getMarketValueByPlayerId(id: PlayerId): F[Either[GameException, BigDecimal]]
   def getPlayerProfileById(id: PlayerId): F[Either[GameException, PlayerProfile]]
 }
 
@@ -49,8 +49,8 @@ object PlayerService {
               )
         }
 
-    override def getMarketValueByPlayerId(id: PlayerId): F[Either[GameException, MarketValue]] =
-      playerIdToJson(id).map(_.map(fetchedPlayerProfileToMarketValue))
+    override def getMarketValueByPlayerId(id: PlayerId): F[Either[GameException, BigDecimal]] =
+      getPlayerProfileById(id).map(_.map(_.marketValue))
 
     override def getPlayerProfileById(id: PlayerId): F[Either[GameException, PlayerProfile]] =
       playerIdToJson(id).map(_.map(fetchedPlayerProfileToProfile))

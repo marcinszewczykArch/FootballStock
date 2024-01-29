@@ -7,7 +7,7 @@ import game.errors.GameException
 import game.logic.GameEngine
 import game.player.service.domain.PlayerId
 import game.state.domain.User
-import http.event.domain.EventsResponse
+import http.event.domain.{EventsResponse, toEventsResponse}
 import http.gameState.domain._
 import http.player.domain.PlayerProfileResponse
 import http.player.domain.PlayerSearchResponse
@@ -26,7 +26,7 @@ object EventLogic {
 
     override def getEvents(user: String): F[Either[GameException, EventsResponse]] = gameEngine
       .getUserEvents(User(user))
-      .map(_.map(EventsResponse(_)))
+      .map(_.map(toEventsResponse))
 
   }
 

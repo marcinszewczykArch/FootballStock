@@ -9,6 +9,7 @@ import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.generic.semiauto.deriveEncoder
+import utils.CurrencyFormatter
 
 import java.time.Instant
 import java.time.Year
@@ -31,13 +32,16 @@ object domain {
     club: String,
     age: Int,
     citizenship: List[String],
-    marketValue: BigDecimal,
+    marketValue: String,
+    imageURL: String,
+    description: String,
+
     shares: Int,
-    averageBuyPrice: BigDecimal,
-    totalBuyValue: BigDecimal,
-    currentPrice: BigDecimal,
-    totalCurrentValue: BigDecimal,
-    profit: BigDecimal,
+    averageBuyPrice: String,
+    totalBuyValue: String,
+    currentPrice: String,
+    totalCurrentValue: String,
+    profit: String,
     revenuePercent: Int
   )
 
@@ -89,13 +93,15 @@ object domain {
             club = club,
             age = ageFromDateOfBirth(dateOfBirth),
             citizenship = citizenship,
-            marketValue = marketValue,
+            marketValue = CurrencyFormatter.toEuroString(marketValue),
+            imageURL = imageURL,
+            description = description,
             shares = shares,
-            averageBuyPrice = averageBuyPrice,
-            totalBuyValue = totalBuyValue,
-            currentPrice = currentPrice,
-            totalCurrentValue = totalCurrentValue,
-            profit = profit,
+            averageBuyPrice = CurrencyFormatter.toEuroString(averageBuyPrice),
+            totalBuyValue = CurrencyFormatter.toEuroString(totalBuyValue),
+            currentPrice = CurrencyFormatter.toEuroString(currentPrice),
+            totalCurrentValue = CurrencyFormatter.toEuroString(totalCurrentValue),
+            profit = CurrencyFormatter.toEuroString(profit),
             revenuePercent = revenuePercent
           )
       }

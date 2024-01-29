@@ -9,7 +9,7 @@ final case class FetchedPlayerSimple(
   position: Option[String],
   club: Option[FetchedPlayerClub],
   age: Option[String],
-  nationality: Option[String],
+  nationalities: Option[List[String]],
   marketValue: Option[String]
 )
 
@@ -18,26 +18,26 @@ object FetchedPlayerSimple {
   implicit val decoder: Decoder[FetchedPlayerSimple] =
     Decoder.forProduct7[FetchedPlayerSimple, Option[Int], Option[String], Option[String], Option[
       FetchedPlayerClub
-    ], Option[String], Option[String], Option[String]](
+    ], Option[String], Option[List[String]], Option[String]](
       "id",
       "name",
       "position",
       "club",
       "age",
-      "nationality",
+      "nationalities",
       "marketValue"
     )(FetchedPlayerSimple.apply)
 
   implicit val encoder: Encoder[FetchedPlayerSimple] =
     Encoder.forProduct7[FetchedPlayerSimple, Option[Int], Option[String], Option[String], Option[
       FetchedPlayerClub
-    ], Option[String], Option[String], Option[String]](
+    ], Option[String], Option[List[String]], Option[String]](
       "id",
       "name",
       "position",
       "club",
       "age",
-      "nationality",
+      "nationalities",
       "marketValue"
     )(Function.unlift(FetchedPlayerSimple.unapply))
 

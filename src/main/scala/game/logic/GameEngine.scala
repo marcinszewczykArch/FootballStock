@@ -24,7 +24,9 @@ import game.state.domain.UserGameState
 import game.state.service.UserGameStateService
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
-import game.player.service.domain.{MarketValue, PlayerId, PlayerProfile, PlayerSimple}
+import game.player.service.domain.PlayerId
+import game.player.service.domain.PlayerProfile
+import game.player.service.domain.PlayerSimple
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import utils.TimeProvider
@@ -43,7 +45,7 @@ trait GameEngine[F[_]] {
   def getUserEvents(user: User): F[Either[GameException, List[Event]]]
 
   def searchByName(playerName: String): F[Either[GameException, List[PlayerSimple]]]
-  def getMarketValueByPlayerId(id: PlayerId): F[Either[GameException, MarketValue]]
+  def getMarketValueByPlayerId(id: PlayerId): F[Either[GameException, BigDecimal]]
   def getPlayerProfileById(id: PlayerId): F[Either[GameException, PlayerProfile]]
 
 }
@@ -71,11 +73,11 @@ object GameEngine {
         _                 <- EitherT.liftF(log.debug(s"Processing new transaction for user $user: BUY $sharesToBuy of $playerId..."))
         now               <- EitherT.pure(timeProvider.getCurrentTimestamp)
         userState         <- EitherT(stateService.getStateForUser(user))
-        playerMarketValue <- EitherT(playerService.getMarketValueByPlayerId(playerId))
-        newShares         <- EitherT(stateService.calculateSharesAfterBuy(userState.portfolio.get(playerId), sharesToBuy, playerMarketValue))
-        transactionValue = playerMarketValue.value * sharesToBuy / 100
+        player            <- EitherT(playerService.getPlayerProfileById(playerId))
+        newShares         <- EitherT(stateService.calculateSharesAfterBuy(userState.portfolio.get(playerId), sharesToBuy, player.marketValue))
+        transactionValue = player.marketValue * sharesToBuy / 100
         _ <- EitherT(validateEnoughMoney(userState.money, transactionValue))
-        event        = BuyPlayerEvent(playerId, sharesToBuy, transactionValue, user, now)
+        event        = BuyPlayerEvent(playerId, player.name, sharesToBuy, transactionValue, user, now)
         newUserState = UserGameState(
                          portfolio = userState.portfolio + (playerId -> newShares),
                          money = userState.money - transactionValue,
@@ -90,10 +92,10 @@ object GameEngine {
           _                 <- EitherT.liftF(log.debug(s"Processing new transaction for user $user: SELL $sharesToSell of $playerId..."))
           now               <- EitherT.pure(timeProvider.getCurrentTimestamp)
           userState         <- EitherT(stateService.getStateForUser(user))
-          playerMarketValue <- EitherT(playerService.getMarketValueByPlayerId(playerId))
+          player            <- EitherT(playerService.getPlayerProfileById(playerId))
           newShares         <- EitherT(stateService.calculateSharesAfterSell(userState.portfolio.get(playerId), sharesToSell))
-          transactionValue = playerMarketValue.value * sharesToSell / 100
-          event            = SellPlayerEvent(playerId, sharesToSell, transactionValue, user, now)
+          transactionValue = player.marketValue * sharesToSell / 100
+          event            = SellPlayerEvent(playerId, player.name, sharesToSell, transactionValue, user, now)
           newUserState     = UserGameState(
                                portfolio = newShares match {
                                  case Nil => userState.portfolio - playerId
@@ -142,15 +144,15 @@ object GameEngine {
                        .map { case playerId -> shares =>
                          for {
                            playerProfile <- EitherT(playerService.getPlayerProfileById(playerId))
-                           currentPrice  <- EitherT(playerService.getMarketValueByPlayerId(playerId))
+                           currentPrice  = playerProfile.marketValue
                            sharesNumber     = shares.map(_.number).sum
                            totalBuyValue    = shares.map { case Shares(number, buyPrice, _) => number * buyPrice / 100 }.sum
-                           currentValue     = (currentPrice.value * sharesNumber) / 100
+                           currentValue     = (currentPrice * sharesNumber) / 100
                            balancePerPlayer = BalancePerPlayer(
                                                 shares = sharesNumber,
                                                 averageBuyPrice = (totalBuyValue / sharesNumber) * 100,
                                                 totalBuyValue = totalBuyValue,
-                                                currentPrice = currentPrice.value,
+                                                currentPrice = currentPrice,
                                                 totalCurrentValue = currentValue,
                                                 profit = currentValue - totalBuyValue,
                                                 revenuePercent = totalBuyValue match {
@@ -184,7 +186,7 @@ object GameEngine {
 
       override def getMarketValueByPlayerId(
         id: PlayerId
-      ): F[Either[GameException, MarketValue]] = playerService.getMarketValueByPlayerId(id)
+      ): F[Either[GameException, BigDecimal]] = playerService.getMarketValueByPlayerId(id)
 
       override def getPlayerProfileById(
         id: PlayerId
