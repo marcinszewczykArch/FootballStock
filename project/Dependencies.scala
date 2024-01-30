@@ -11,7 +11,8 @@ object Dependencies {
   )
 
   val catsEffects = Seq(
-    "org.typelevel" %% "cats-effect" % Versions.catsEffectsVersion
+    "org.typelevel" %% "cats-effect" % Versions.catsEffectsVersion,
+    "org.typelevel" %% "cats-effect-testkit" % "3.5.2" % Test,
   )
 
   val fs2 = Seq(

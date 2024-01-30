@@ -28,7 +28,7 @@ trait EventMemory[F[_]] {
 
   def sendEvent(event: Event): F[Unit]
   def getEventsForUser(user: User): F[Either[GameException, List[Event]]]
-
+//todo: get events for user and player
 }
 
 object EventMemory {
@@ -45,7 +45,7 @@ object EventMemory {
 
       private val table = Table[EventTable]("Event")
       private case class EventTable(user: String, eventId: String = UUID.randomUUID().toString, eventName: String, json: String)
-
+//todo: add playerId to Table
       override def sendEvent(event: Event): F[Unit] =
         log.debug(s"sending new event for ${event.getUser} to dynamoDb: $event") *> scanamo
           .exec(

@@ -1,19 +1,27 @@
-import cats.effect.{IO, Ref}
+package logic
+
+import cats.effect.IO
+import cats.effect.Ref
 import cats.implicits.toTraverseOps
 import config.AppConfig
 import game.events.Event
-import game.events.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
+import game.events.Event.BuyPlayerEvent
+import game.events.Event.InitializeGameEvent
+import game.events.Event.SellPlayerEvent
 import game.events.service.EventService
 import game.logic.GameEngine
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
 import game.player.service.domain.PlayerId
-import game.state.domain.{Shares, User, UserGameState}
+import game.state.domain.Shares
+import game.state.domain.User
+import game.state.domain.UserGameState
 import game.state.service.UserGameStateService
 import io.circe.Json
 import munit.CatsEffectSuite
-import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 import org.typelevel.log4cats.slf4j.Slf4jFactory
+import org.typelevel.log4cats.LoggerFactory
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 import testUtils.TestUtils
 import utils.Parser.CaseClassToString
 import utils.TimeProvider
@@ -32,9 +40,9 @@ class SampleGameSpec extends CatsEffectSuite {
     implicit timeProvider: TimeProvider[IO]
   ): IO[GameEngine[IO]] = for {
     //config
-    testRawAppConfig                        <- AppConfig.getTypesafeConfig[IO]
-    appConfig                               <- AppConfig.parseAppConfig[IO](testRawAppConfig)
-    _                                       <- log.info(s"Test config loaded: $appConfig")
+    testRawAppConfig <- AppConfig.getTypesafeConfig[IO]
+    appConfig        <- AppConfig.parseAppConfig[IO](testRawAppConfig)
+    _                <- log.info(s"Test config loaded: $appConfig")
 
     //memory, clients
     testPlayerProfileClient                 <- TestUtils.testPlayerProfileClient()

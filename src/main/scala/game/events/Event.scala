@@ -9,7 +9,7 @@ import io.circe.Encoder
 
 import java.time.Instant
 
-sealed abstract class Event(user: User, timestamp: Instant, eventName: String, playerId: Option[PlayerId]) { //todo: add playerId
+sealed abstract class Event(user: User, timestamp: Instant, eventName: String, playerId: Option[PlayerId]) {
   def getUser: User         = user
   def getTimestamp: Instant = timestamp
   def getEventName          = eventName
