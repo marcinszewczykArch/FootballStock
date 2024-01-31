@@ -15,6 +15,7 @@ import game.events.memory.EventMemory
 import game.player.client.PlayerProfileClient
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.domain.PlayerId
+import game.state.memory.UserGameStateMemory
 import io.circe.Json
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.SelfAwareStructuredLogger
@@ -23,9 +24,8 @@ import utils.TimeProvider
 
 import java.time.Instant
 
-trait PlayersUpdater[F[_]] { //todo: to PlayerService
+trait PlayersUpdater[F[_]] {
   def updateAllPlayersInMemory: F[Unit]
-  def updatePlayersInUsersPortfolios: F[List[PlayerId]] = ???
 }
 
 object PlayersUpdater {
@@ -62,28 +62,6 @@ object PlayersUpdater {
                                         )
                                       )
     } yield ()
-
-//    override def updatePlayersInUsersPortfolios: F[List[PlayerId]] = for {
-//        _                            <- log.info("Starting players profile update task for players in users portfolios...")
-//        now                          <- Applicative[F].pure(timeProvider.getCurrentTimestamp)
-//        thresholdTimestamp           <- Applicative[F].pure(now.minusSeconds(playersUpdateCriteria.notUpdatedFor.toSeconds))
-//        updateStatisticRef           <- Ref.of[F, UpdateStats](UpdateStats())
-//        (updateDuration, _)          <- Clock[F].timed(underlying(updateStatisticRef)(thresholdTimestamp))
-//        UpdateStats(failed, success) <- updateStatisticRef.get
-//        _                            <- log.info(
-//                                          s"Updated successfully: ${success.size} players," +
-//                                            s"failed to update: ${failed.size} players." +
-//                                            s"Total duration: ${updateDuration.toSeconds} seconds."
-//                                        )
-//        _                            <- eventMemory.sendEvent(
-//                                          PlayersUpdateEvent(
-//                                            updateSuccess = success.map(PlayerId(_)),
-//                                            updateFailure = failed.map(PlayerId(_)),
-//                                            taskDurationSeconds = updateDuration.toSeconds.toInt,
-//                                            timestamp = now
-//                                          )
-//                                        )
-//      } yield ()
 
     case class UpdateStats(failed: List[Int] = Nil, success: List[Int] = Nil)
 

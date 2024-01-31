@@ -1,16 +1,10 @@
 package game.player.client
 
-import cats.Applicative
-import cats.MonadThrow
+import cats.{Applicative, MonadThrow}
 import cats.effect._
 import cats.syntax.all._
-import config.AppConfig.PlayerProfileClientConfig
 import config.AppConfig.PlayerSearchClientConfig
-import game.player.client.domain.FetchedMarketValue
-import game.player.client.domain.FetchedPlayerProfile
-import game.player.client.domain.FetchedPlayerSimple
-import game.player.client.domain.PlayerSearchResponse
-import game.player.service.domain.PlayerId
+import game.player.client.domain.{FetchedPlayerSimple, PlayerSearchResponse}
 import org.typelevel.log4cats.LoggerFactory
 import sttp.client3._
 import sttp.client3.circe.asJson

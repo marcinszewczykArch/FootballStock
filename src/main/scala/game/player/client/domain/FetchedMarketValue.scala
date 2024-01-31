@@ -4,20 +4,29 @@ import io.circe.Decoder
 import io.circe.Encoder
 
 final case class FetchedMarketValue(
-  marketValue: Option[String],
-  updatedAt: Option[String]
+  age: Option[Int],
+  date: Option[String],
+  clubName: Option[String],
+  value: Option[String],
+  clubID: Option[Int]
 )
 
 object FetchedMarketValue {
 
-  implicit val decoder: Decoder[FetchedMarketValue] = Decoder.forProduct2[FetchedMarketValue, Option[String], Option[String]](
-    "marketValue",
-    "updatedAt"
+  implicit val decoder: Decoder[FetchedMarketValue] = Decoder.forProduct5[FetchedMarketValue, Option[Int], Option[String], Option[String], Option[String], Option[Int]](
+    "age",
+    "date",
+    "clubName",
+    "value",
+    "clubID"
   )(FetchedMarketValue.apply)
 
-  implicit val encoder: Encoder[FetchedMarketValue] = Encoder.forProduct2[FetchedMarketValue, Option[String], Option[String]](
-    "marketValue",
-    "updatedAt"
+  implicit val encoder: Encoder[FetchedMarketValue] = Encoder.forProduct5[FetchedMarketValue, Option[Int], Option[String], Option[String], Option[String], Option[Int]](
+    "age",
+    "date",
+    "clubName",
+    "value",
+    "clubID"
   )(Function.unlift(FetchedMarketValue.unapply))
 
 }

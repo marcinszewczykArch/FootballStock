@@ -1,31 +1,11 @@
 package game.player.service
 
-import cats.Applicative
-import cats.data.EitherT
-import cats.effect._
-import cats.implicits.catsSyntaxApplicativeError
-import cats.implicits.catsSyntaxApplyOps
-import cats.implicits.toFlatMapOps
-import cats.implicits.toFunctorOps
 import game.errors.GameException
 import game.errors.GameException.JsonDecodingException
-import game.errors.GameException.PlayerMarketValueNotFoundException
-import game.errors.GameException.PlayerProfileNotFoundException
-import game.errors.GameException.PlayerSearchByNameException
-import game.player.client.PlayerProfileClient
-import game.player.client.PlayerSearchClient
-import game.player.client.domain.FetchedMarketValue
-import game.player.client.domain.FetchedPlayerPosition
-import game.player.client.domain.FetchedPlayerProfile
-import game.player.client.domain.FetchedPlayerSimple
-import game.player.client.memory.PlayerProfileClientMemory
+import game.player.client.domain.{FetchedPlayerPosition, FetchedPlayerProfile, FetchedPlayerSimple}
 import game.player.service.domain._
-import io.circe.DecodingFailure
 import io.circe.Json
-import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.log4cats.SelfAwareStructuredLogger
-import utils.Parser.toBigDecimalOrZero
-import utils.Parser.toInstantOrFarPast
+import utils.Parser.{toBigDecimalOrZero, toInstantOrFarPast}
 
 object PlayerMapper {
 

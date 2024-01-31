@@ -14,7 +14,7 @@ final case class UserBalance(
 )
 
 final case class BalancePerPlayer(
-  shares: Int,
+  shares: Int, //todo: with history
   averageBuyPrice: BigDecimal,
   totalBuyValue: BigDecimal,
   currentPrice: BigDecimal,

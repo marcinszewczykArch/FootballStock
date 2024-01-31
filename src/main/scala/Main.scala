@@ -9,11 +9,11 @@ import game.errors.GameException
 import game.events.memory.EventMemory
 import game.events.service.EventService
 import game.logic.GameEngine
-import game.player.client.PlayerProfileClient
-import game.player.client.PlayerSearchClient
+import game.player.client.{PlayerMarketValueHistoryClient, PlayerProfileClient, PlayerSearchClient}
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
 import game.player.service.PlayersUpdater
+import game.player.service.domain.PlayerId
 import game.state.memory.UserGameStateMemory
 import game.state.service.UserGameStateService
 import http.SwaggerRoutes
@@ -85,6 +85,11 @@ object Main extends IOApp {
       gameStateLogic     = GameStateLogic.impl[IO](gameEngine)
       playerProfileLogic = PlayerProfileLogic.impl[IO](gameEngine)
       eventLogic         = EventLogic.impl[IO](gameEngine)
+
+      //todo: test
+//      playerMarketValueHistoryClient = PlayerMarketValueHistoryClient.impl[IO](appConfig.playerProfileClient)
+//      dupas <- Resource.eval(playerMarketValueHistoryClient.fetchRawMarketValueHistoryById(PlayerId(38253)))
+//      _ <- Resource.eval(IO.println("dupaHere: " + dupas))
 
       //server
       _ <- httpServerResource(appConfig, gameStateLogic, playerProfileLogic, eventLogic)
