@@ -3,19 +3,27 @@ package game.logic
 import cats.Applicative
 import cats.data.EitherT
 import cats.effect._
+import cats.implicits.catsSyntaxApplicativeId
 import cats.implicits.toTraverseOps
 import game.errors.GameException
 import game.errors.GameException.NotEnoughMoneyException
+import game.errors.GameException.PlayerMarketValueNotUpToDateException
 import game.events.Event
-import game.events.Event.{BuyPlayerEvent, InitializeGameEvent, PlayerValueChanged, SellPlayerEvent}
+import game.events.Event.BuyPlayerEvent
+import game.events.Event.InitializeGameEvent
+import game.events.Event.PlayerValueChanged
+import game.events.Event.SellPlayerEvent
 import game.events.service.EventService
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
-import game.player.service.domain.{PlayerId, PlayerProfile, PlayerSimple}
+import game.player.service.domain.PlayerId
+import game.player.service.domain.PlayerProfile
+import game.player.service.domain.PlayerSimple
 import game.state.domain
 import game.state.domain._
 import game.state.service.UserGameStateService
-import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
+import org.typelevel.log4cats.LoggerFactory
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 import utils.TimeProvider
 
 import java.time.Instant
@@ -59,11 +67,14 @@ object GameEngine {
         playerId: PlayerId,
         sharesToBuy: Int
       ): F[Either[GameException, BuyPlayerEvent]] = (for {
-        _         <- EitherT.liftF(log.debug(s"Processing new transaction for user $user: BUY $sharesToBuy of $playerId..."))
-        now       <- EitherT.pure(timeProvider.getCurrentTimestamp)
-        userState <- EitherT(stateService.getStateForUser(user))
-        player    <- EitherT(playerService.getPlayerProfileById(playerId))
-        newShares <- EitherT(stateService.calculateSharesAfterBuy(userState.portfolio.get(playerId).map(_.shares), sharesToBuy, player.marketValue))
+        _                    <- EitherT.liftF(log.debug(s"Processing new transaction for user $user: BUY $sharesToBuy of $playerId..."))
+        now                  <- EitherT.pure(timeProvider.getCurrentTimestamp)
+        userState            <- EitherT(stateService.getStateForUser(user))
+        playerDisplayedValue <- EitherT(playerService.getMarketValueByPlayerId(playerId))
+        player               <- EitherT(playerService.updateAndGetPlayerProfileById(playerId))
+        _                    <- EitherT.fromEither[F](validateDisplayedValueIsValid(playerDisplayedValue, player))
+        newShares            <-
+          EitherT(stateService.calculateSharesAfterBuy(userState.portfolio.get(playerId).map(_.shares), sharesToBuy, player.marketValue))
         transactionValue = player.marketValue * sharesToBuy / 100
         _ <- EitherT(validateEnoughMoney(userState.money, transactionValue))
         event        = BuyPlayerEvent(playerId, player.name, sharesToBuy, transactionValue, user, now)
@@ -76,13 +87,30 @@ object GameEngine {
         _ <- EitherT.liftF[F, GameException, Unit](eventService.sendEvent(event))
       } yield event).value
 
+      def validateDisplayedValueIsValid(
+        displayedPlayerValue: BigDecimal,
+        updatedPlayerProfile: PlayerProfile
+      ): Either[GameException, Unit] =
+        displayedPlayerValue equals updatedPlayerProfile.marketValue match {
+          case false  =>
+            Left[GameException, Unit](
+              PlayerMarketValueNotUpToDateException(
+                updatedPlayerProfile.id,
+                displayedPlayerValue,
+                updatedPlayerProfile.marketValue)
+            )
+          case true => Right[GameException, Unit](())
+        }
+
       override def sellPlayer(user: User)(playerId: PlayerId, sharesToSell: Int): F[Either[GameException, SellPlayerEvent]] =
         (for {
-          _         <- EitherT.liftF(log.debug(s"Processing new transaction for user $user: SELL $sharesToSell of $playerId..."))
-          now       <- EitherT.pure(timeProvider.getCurrentTimestamp)
-          userState <- EitherT(stateService.getStateForUser(user))
-          player    <- EitherT(playerService.getPlayerProfileById(playerId))
-          newShares <- EitherT(stateService.calculateSharesAfterSell(userState.portfolio.get(playerId).map(_.shares), sharesToSell))
+          _                    <- EitherT.liftF(log.debug(s"Processing new transaction for user $user: SELL $sharesToSell of $playerId..."))
+          now                  <- EitherT.pure(timeProvider.getCurrentTimestamp)
+          userState            <- EitherT(stateService.getStateForUser(user))
+          playerDisplayedValue <- EitherT(playerService.getMarketValueByPlayerId(playerId))
+          player               <- EitherT(playerService.updateAndGetPlayerProfileById(playerId))
+          _                    <- EitherT.fromEither[F](validateDisplayedValueIsValid(playerDisplayedValue, player))
+          newShares            <- EitherT(stateService.calculateSharesAfterSell(userState.portfolio.get(playerId).map(_.shares), sharesToSell))
           transactionValue = player.marketValue * sharesToSell / 100
           event            = SellPlayerEvent(playerId, player.name, sharesToSell, transactionValue, user, now)
           newUserState     = UserGameState(

@@ -74,7 +74,7 @@ object Main extends IOApp {
       //services
       gameStateService   = UserGameStateService.impl[IO](stateMemory)
       eventService       = EventService.impl(eventMemory)
-      playerService      = PlayerService.impl[IO](playerProfileClientMemoryCached, playerSearchClient)
+      playerService      = PlayerService.impl[IO](playerProfileClientMemoryCached, playerProfileClient, playerSearchClient)
       playersUpdater     = PlayersUpdater.impl[IO](
                              playerProfileClient,
                              playerProfileClientMemory,

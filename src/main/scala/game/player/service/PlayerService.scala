@@ -8,6 +8,7 @@ import cats.implicits.toFlatMapOps
 import cats.implicits.toFunctorOps
 import game.errors.GameException
 import game.errors.GameException.PlayerSearchByNameException
+import game.player.client.PlayerProfileClient
 import game.player.client.PlayerSearchClient
 import game.player.client.domain.FetchedPlayerProfile
 import game.player.client.memory.PlayerProfileClientMemory
@@ -23,12 +24,14 @@ trait PlayerService[F[_]] {
   def searchByName(playerName: String): F[Either[GameException, List[PlayerSimple]]]
   def getMarketValueByPlayerId(id: PlayerId): F[Either[GameException, BigDecimal]]
   def getPlayerProfileById(id: PlayerId): F[Either[GameException, PlayerProfile]]
+  def updateAndGetPlayerProfileById(id: PlayerId): F[Either[GameException, PlayerProfile]]
 }
 
 object PlayerService {
 
   def impl[F[_]: Sync: LoggerFactory](
     playerProfileClientMemory: PlayerProfileClientMemory[F],
+    playerProfileClient: PlayerProfileClient[F],
     playerSearchClient: PlayerSearchClient[F]
   ) = new PlayerService[F] {
     implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[PlayerService[F]].getName)
@@ -52,13 +55,20 @@ object PlayerService {
     override def getMarketValueByPlayerId(id: PlayerId): F[Either[GameException, BigDecimal]] =
       getPlayerProfileById(id).map(_.map(_.marketValue))
 
-    override def getPlayerProfileById(id: PlayerId): F[Either[GameException, PlayerProfile]] =
-      playerIdToJson(id).map(_.map(fetchedPlayerProfileToProfile))
-
-    private def playerIdToJson(id: PlayerId): F[Either[GameException, FetchedPlayerProfile]] = (for {
+    override def getPlayerProfileById(id: PlayerId): F[Either[GameException, PlayerProfile]] = (for {
       json                 <- EitherT(playerProfileClientMemory.getById(id))
       fetchedPlayerProfile <- EitherT.fromEither(jsonToFetchedPlayerProfile(json))
-    } yield fetchedPlayerProfile).value
+      playerProfile = fetchedPlayerProfileToProfile(fetchedPlayerProfile)
+    } yield playerProfile).value
+
+    override def updateAndGetPlayerProfileById(
+      id: PlayerId
+    ): F[Either[GameException, PlayerProfile]] = (for {
+      json                 <- EitherT(playerProfileClient.fetchRawPlayerProfileById(id))
+      _                    <- EitherT(playerProfileClientMemory.save(id)(json))
+      fetchedPlayerProfile <- EitherT.fromEither(jsonToFetchedPlayerProfile(json))
+      playerProfile = fetchedPlayerProfileToProfile(fetchedPlayerProfile)
+    } yield playerProfile).value
 
   }
 

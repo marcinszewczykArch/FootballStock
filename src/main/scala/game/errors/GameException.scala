@@ -5,6 +5,7 @@ import game.state.domain.User
 import http.security.CirceExtraConfiguration
 import io.circe.Codec
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
+import utils.CurrencyFormatter.toEuroString
 
 sealed trait GameException extends Throwable with Product with Serializable
 
@@ -48,6 +49,14 @@ object GameException extends CirceExtraConfiguration {
 
   implicit val PlayerMarketValueNotFoundExceptionCodec: Codec[PlayerMarketValueNotFoundException] =
     deriveConfiguredCodec[PlayerMarketValueNotFoundException]
+
+  final case class PlayerMarketValueNotUpToDateException(playerId: PlayerId, displayedValue: BigDecimal, realValue: BigDecimal) extends GameException {
+    override def getMessage = s"Displayed market value for player $playerId is not up-to-date. " +
+      s"Displayed value: ${toEuroString(displayedValue)}, updated value: ${toEuroString(realValue)}"
+  }
+
+  implicit val playerMarketValueNotUpToDateExceptionCodec: Codec[PlayerMarketValueNotUpToDateException] =
+    deriveConfiguredCodec[PlayerMarketValueNotUpToDateException]
 
   final case class PlayerSearchByNameException(playerName: String, err: String) extends GameException {
     override def getMessage = s"Could not find player by name [$playerName]. The reason is: $err"
