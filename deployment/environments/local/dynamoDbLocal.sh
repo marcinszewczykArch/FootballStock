@@ -8,24 +8,26 @@ curl http://localhost:8000 >/dev/null 2>/dev/null
 res=$?
 
 if  [ $res = "0" ]; then
-    printf "\033[0;31mPort 8000 is already allocated\033[0m\n"
-else
-    printf "\033[0;32mPort 8000 is available\033[0m\n"
-    printf "starting docker image amazon/dynamodb-local at port 8000"
-    dockerContainer=$(docker run -d -p 8000:8000 amazon/dynamodb-local -jar DynamoDBLocal.jar -inMemory -sharedDb)
+    printf "\033[0;31mPort 8000 is already allocated - try to kill amazon/dynamodb-local container!\033[0m\n"
+    docker stop $(docker ps -q --filter ancestor=amazon/dynamodb-local )
+    echo "docker container [amazon/dynamodb-local] killed with status $?"
+fi
 
+printf "\033[0;32mPort 8000 is available\033[0m\n"
+printf "starting docker image amazon/dynamodb-local at port 8000"
+dockerContainer=$(docker run -d -p 8000:8000 amazon/dynamodb-local -jar DynamoDBLocal.jar -inMemory -sharedDb)
+
+condition=$(curl http://localhost:8000 2>/dev/null)
+status=$?
+
+until [ $status = "0" ]; do
+    sleep 1
+    printf "."
     condition=$(curl http://localhost:8000 2>/dev/null)
     status=$?
-
-    until [ $status = "0" ]; do
-        sleep 1
-        printf "."
-        condition=$(curl http://localhost:8000 2>/dev/null)
-        status=$?
-    done;
-    echo
-    echo "docker container [$dockerContainer] is running"
-fi
+done;
+echo
+echo "docker container [$dockerContainer] is running"
 
 echo "creating playerProfileTable..."
 t=$(aws dynamodb create-table --cli-input-json file://tables/playerProfileTable.json --endpoint-url http://localhost:8000 2>&1)
