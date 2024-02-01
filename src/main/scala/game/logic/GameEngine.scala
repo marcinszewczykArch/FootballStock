@@ -6,30 +6,19 @@ import cats.effect._
 import cats.implicits.toTraverseOps
 import game.errors.GameException
 import game.errors.GameException.NotEnoughMoneyException
-import game.errors.GameException.SharesNumberException
-import game.errors.GameException.UserAlreadyExistsException
 import game.events.Event
-import game.events.Event.BuyPlayerEvent
-import game.events.Event.InitializeGameEvent
-import game.events.Event.SellPlayerEvent
-import game.events.memory.EventMemory
+import game.events.Event.{BuyPlayerEvent, InitializeGameEvent, PlayerValueChanged, SellPlayerEvent}
 import game.events.service.EventService
-import game.state.domain
-import game.state._
-import game.state.domain.BalancePerPlayer
-import game.state.domain.Shares
-import game.state.domain.User
-import game.state.domain.UserBalance
-import game.state.domain.UserGameState
-import game.state.service.UserGameStateService
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
-import game.player.service.domain.PlayerId
-import game.player.service.domain.PlayerProfile
-import game.player.service.domain.PlayerSimple
-import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import game.player.service.domain.{PlayerId, PlayerProfile, PlayerSimple}
+import game.state.domain
+import game.state.domain._
+import game.state.service.UserGameStateService
+import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 import utils.TimeProvider
+
+import java.time.Instant
 
 trait GameEngine[F[_]] {
 
@@ -74,12 +63,12 @@ object GameEngine {
         now       <- EitherT.pure(timeProvider.getCurrentTimestamp)
         userState <- EitherT(stateService.getStateForUser(user))
         player    <- EitherT(playerService.getPlayerProfileById(playerId))
-        newShares <- EitherT(stateService.calculateSharesAfterBuy(userState.portfolio.get(playerId), sharesToBuy, player.marketValue))
+        newShares <- EitherT(stateService.calculateSharesAfterBuy(userState.portfolio.get(playerId).map(_.shares), sharesToBuy, player.marketValue))
         transactionValue = player.marketValue * sharesToBuy / 100
         _ <- EitherT(validateEnoughMoney(userState.money, transactionValue))
         event        = BuyPlayerEvent(playerId, player.name, sharesToBuy, transactionValue, user, now)
         newUserState = UserGameState(
-                         portfolio = userState.portfolio + (playerId -> newShares),
+                         portfolio = userState.portfolio + (playerId -> StockInfo(newShares, player.marketValue)),
                          money = userState.money - transactionValue,
                          updatedAt = now
                        )
@@ -93,13 +82,13 @@ object GameEngine {
           now       <- EitherT.pure(timeProvider.getCurrentTimestamp)
           userState <- EitherT(stateService.getStateForUser(user))
           player    <- EitherT(playerService.getPlayerProfileById(playerId))
-          newShares <- EitherT(stateService.calculateSharesAfterSell(userState.portfolio.get(playerId), sharesToSell))
+          newShares <- EitherT(stateService.calculateSharesAfterSell(userState.portfolio.get(playerId).map(_.shares), sharesToSell))
           transactionValue = player.marketValue * sharesToSell / 100
           event            = SellPlayerEvent(playerId, player.name, sharesToSell, transactionValue, user, now)
           newUserState     = UserGameState(
                                portfolio = newShares match {
                                  case Nil => userState.portfolio - playerId
-                                 case _   => userState.portfolio + (playerId -> newShares)
+                                 case _   => userState.portfolio + (playerId -> StockInfo(newShares, player.marketValue))
                                },
                                money = userState.money + transactionValue,
                                updatedAt = now
@@ -127,7 +116,7 @@ object GameEngine {
         now          <- EitherT.pure(timeProvider.getCurrentTimestamp)
         _            <- EitherT(stateService.validateUserNotExists(user))
         initialCash  <- EitherT.pure(UserGameState.initialCash)
-        portfolio    <- EitherT.pure(Map.empty[PlayerId, List[Shares]])
+        portfolio    <- EitherT.pure(Map.empty[PlayerId, StockInfo])
         event        <- EitherT.pure(InitializeGameEvent(initialCash, user, now))
         initialState <- EitherT.pure(UserGameState(portfolio, initialCash, now))
         _            <- EitherT(stateService.saveGameStateFroUser(user)(initialState))
@@ -141,12 +130,12 @@ object GameEngine {
         userState <- EitherT(stateService.getStateForUser(user))
         portfolio <- userState
                        .portfolio
-                       .map { case playerId -> shares =>
+                       .map { case playerId -> stockInfo =>
                          for {
                            playerProfile <- EitherT(playerService.getPlayerProfileById(playerId))
                            currentPrice     = playerProfile.marketValue
-                           sharesNumber     = shares.map(_.number).sum
-                           totalBuyValue    = shares.map { case Shares(number, buyPrice, _) => number * buyPrice / 100 }.sum
+                           sharesNumber     = stockInfo.shares.map(_.number).sum
+                           totalBuyValue    = stockInfo.shares.map { case Shares(number, buyPrice, _) => number * buyPrice / 100 }.sum
                            currentValue     = (currentPrice * sharesNumber) / 100
                            balancePerPlayer = BalancePerPlayer(
                                                 shares = sharesNumber,

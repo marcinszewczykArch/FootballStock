@@ -12,6 +12,7 @@ final case class PlayerProfile(
   citizenship: List[String],
   isRetired: Boolean,
   position: PlayerPosition,
+  //todo add clubId: Int,
   club: String,
   marketValue: BigDecimal,
   updatedAt: Instant

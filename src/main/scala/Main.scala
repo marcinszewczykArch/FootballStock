@@ -9,11 +9,11 @@ import game.errors.GameException
 import game.events.memory.EventMemory
 import game.events.service.EventService
 import game.logic.GameEngine
-import game.player.client.{PlayerMarketValueHistoryClient, PlayerProfileClient, PlayerSearchClient}
+import game.player.client.PlayerProfileClient
+import game.player.client.PlayerSearchClient
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
 import game.player.service.PlayersUpdater
-import game.player.service.domain.PlayerId
 import game.state.memory.UserGameStateMemory
 import game.state.service.UserGameStateService
 import http.SwaggerRoutes
@@ -78,7 +78,10 @@ object Main extends IOApp {
       playersUpdater     = PlayersUpdater.impl[IO](
                              playerProfileClient,
                              playerProfileClientMemory,
-                             eventMemory,
+                             playerProfileClientMemoryCached,
+                             playerService,
+                             eventService,
+                             gameStateService,
                              appConfig.playersUpdateCriteria
                            )
       gameEngine         = GameEngine.impl(gameStateService, eventService, playerService)
@@ -111,10 +114,16 @@ object Main extends IOApp {
     val updatePlayersInMemoryStream: Stream[IO, Unit] =
       fs2
         .Stream
-        .awakeEvery[IO](5.minutes) //todo: from config
+        .awakeEvery[IO](3.minutes) //todo: from config
         .evalMap(_ => playersUpdater.updateAllPlayersInMemory)
 
-    Stream(gameStream, updatePlayersInMemoryStream)
+    val updatePlayersValueInUserStatesStream: Stream[IO, Unit] =
+      fs2
+        .Stream
+        .awakeEvery[IO](1.minutes) //todo: from config
+        .evalMap(_ => playersUpdater.updatePlayersValueInUserStates)
+
+    Stream(gameStream, updatePlayersInMemoryStream, updatePlayersValueInUserStatesStream)
       .parJoinUnbounded
       .compile
       .drain

@@ -65,8 +65,11 @@ object PlayerProfileClientMemory {
           .attempt
           .map(_.left.map(_ => PlayerJsonNotFoundInMemoryCacheException(playerId)))
       def getAll(): F[Map[PlayerId, Json]]                                           = underlying.getAll()
-      def save(playerId: PlayerId)(playerJson: Json): F[Either[GameException, Unit]] =
-        underlying.save(playerId)(playerJson)
+      def save(playerId: PlayerId)(playerJson: Json): F[Either[GameException, Unit]] = (for {
+        _ <- EitherT(underlying.save(playerId)(playerJson))
+        _ <- EitherT.liftF[F, GameException, Json](fetchRawPlayersProfileCache.update(playerId)(playerJson))
+      } yield ()).value
+
     }
   }
 

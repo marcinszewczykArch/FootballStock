@@ -1,15 +1,11 @@
 package utils
 
-import cats.Applicative
-import cats.MonadThrow
-import cats.effect.Clock
-import cats.effect.Sync
+import cats.{Applicative, MonadThrow}
+import cats.effect.{Clock, Sync}
 import cats.effect.kernel.Ref
 import cats.effect.std.MapRef
 import cats.syntax.all._
-import org.typelevel.log4cats.Logger
-import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.{Logger, LoggerFactory, SelfAwareStructuredLogger}
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.duration.FiniteDuration
@@ -18,6 +14,7 @@ trait Cache[F[_], K, V] {
   def get(key: K): F[V]
   def getBatch(keys: List[K]): F[Map[K, V]]
   def getSize: Int
+  def update(key: K)(value: V): F[V]
 }
 
 object Cache {
@@ -96,6 +93,16 @@ object Cache {
                                                         }
           } yield fromLookup ++ fromCache
       }
+
+      override def update(key: K)(value: V): F[V] = for {
+        now   <- Clock[F].monotonic
+        value <- cacheRef(key).access.flatMap { case (entry: Option[Entry[V]], setter) =>
+                   (entry match {
+                     case Some(_) => log.debug(s"Updating cache for: $key. Previous value will be replaced.")
+                     case None    => log.debug(s"Updating cache for: $key. New KV pair will be added.")
+                   }) <* setter(Some(Entry(value, now + ttl)))
+                 }.as(value)
+      } yield value
 
       private def addToCacheAndReturn(result: Map[K, V])(implicit now: FiniteDuration): F[Map[K, V]] =
         result

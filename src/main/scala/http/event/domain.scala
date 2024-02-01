@@ -34,7 +34,7 @@ object domain {
               s"$playerName [${playerId.value}] - player value changed. Previous value: ${CurrencyFormatter.toEuroString(previousValue)}, " +
                 s"new value: ${CurrencyFormatter.toEuroString(newValue)}"
             case PlayersUpdateEvent(updateSuccess, updateFailure, taskDurationSeconds, _) =>
-              s"Task Duration: $taskDurationSeconds. " +
+              s"Task Duration: $taskDurationSeconds s. " +
                 s"Players updated with success: $updateSuccess, Players not updated because of failure: $updateFailure"
           }
         )

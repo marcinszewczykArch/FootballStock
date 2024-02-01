@@ -45,14 +45,14 @@ object Event {
     timestamp: Instant
   ) extends Event(user, timestamp, "INITIALIZE GAME", None)
 
-  final case class PlayerValueChanged( //todo: add stream to send this user event periodically
+  final case class PlayerValueChanged(
     playerId: PlayerId,
     playerName: String,
     previousValue: BigDecimal,
     newValue: BigDecimal,
     user: User,
     timestamp: Instant
-  ) extends Event(user, timestamp, "PLAYER VALUE CHANGED", None)
+  ) extends Event(user, timestamp, "PLAYER VALUE CHANGED", Some(playerId))
 
   final case class PlayersUpdateEvent(
     updateSuccess: List[PlayerId],
