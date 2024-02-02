@@ -7,11 +7,20 @@ object Parser {
 
   // 2023-12-19T11:30:36.754874 <- string format
   // 2007-12-03T10:15:30.00Z.   <- required format
-  def toInstantOrFarPast(updatedAt: Option[String]): Instant =
+  def toInstantOrFarPastForUpdateAt(updatedAt: Option[String]): Instant =
     updatedAt
       .map(_.take(20).concat("00Z"))
       .map(Instant.parse)
       .getOrElse(Instant.MIN)
+
+  // "Mar 17, 2010" <- string format
+  // "MMM dd, yyyy" <- pattern
+  def toInstantOrFarPastForDate(date: Option[String]): Instant = {
+    val format = new java.text.SimpleDateFormat("MMM dd, yyyy")
+    date
+      .map(format.parse(_).toInstant)
+      .getOrElse(Instant.MIN)
+  }
 
   def toBigDecimalOrZero(value: Option[String]): BigDecimal = Try {
     val str           = value.get

@@ -106,6 +106,13 @@ object GameException extends CirceExtraConfiguration {
 
   implicit val PlayerMarketValueHistoryClientExceptionCodec: Codec[PlayerMarketValueHistoryClientException] = deriveConfiguredCodec[PlayerMarketValueHistoryClientException]
 
+  final case class PlayerMarketValueException(playerId: PlayerId, cause: String) extends GameException {
+    override def getMessage = s"Exception while getting Player Market Value for $playerId. Message: $cause"
+  }
+
+  implicit val PlayerMarketValueExceptionCodec: Codec[PlayerMarketValueException] =
+    deriveConfiguredCodec[PlayerMarketValueException]
+
 
   final case class DynamoReaderException(cause: String) extends GameException {
     override def getMessage = s"Exception while reading from DynamoDb. Message: $cause"

@@ -10,6 +10,7 @@ sealed trait InputMessage
 case class SearchPlayerByName(input: String)   extends InputMessage
 case class GetPlayerProfileById(playerId: Int) extends InputMessage
 case class GetPlayerValueById(playerId: Int)   extends InputMessage
+case class GetPlayerValueHistoryById(playerId: Int)   extends InputMessage
 
 case class CreateNewUser(user: String)                          extends InputMessage
 case class GetUserState(user: String)                           extends InputMessage
@@ -29,6 +30,8 @@ object InputMessage {
         case ("/search", input, input2, input3) => Right(SearchPlayerByName(input + input2 + input3))
         case ("/player", playerId, _, _)        => playerId.toIntOption.map(GetPlayerProfileById).toRight(IncorrectParsingException(playerId))
         case ("/value", playerId, _, _)         => playerId.toIntOption.map(GetPlayerValueById).toRight(IncorrectParsingException(playerId))
+        case ("/valueHistory", playerId, _, _)         => playerId.toIntOption.map(GetPlayerValueHistoryById).toRight(IncorrectParsingException(playerId))
+
 
         case ("/newUser", user, _, _) => Right(CreateNewUser(user))
         case ("/state", user, _, _)   => Right(GetUserState(user))

@@ -8,7 +8,7 @@ final case class FetchedMarketValue(
   date: Option[String],
   clubName: Option[String],
   value: Option[String],
-  clubID: Option[Int]
+  clubId: Option[Int]
 )
 
 object FetchedMarketValue {

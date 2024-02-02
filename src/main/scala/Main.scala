@@ -1,42 +1,32 @@
 import cats.effect._
 import cats.implicits.toSemigroupKOps
 import config.AppConfig
-import config.AppConfig.AwsConfig
-import config.AppConfig.HttpConfig
+import config.AppConfig.{AwsConfig, HttpConfig}
 import console.ConsolePrinter
 import fs2.Stream
 import game.errors.GameException
 import game.events.memory.EventMemory
 import game.events.service.EventService
 import game.logic.GameEngine
-import game.player.client.PlayerProfileClient
-import game.player.client.PlayerSearchClient
+import game.player.client.{PlayerMarketValueClient, PlayerProfileClient, PlayerSearchClient}
 import game.player.client.memory.PlayerProfileClientMemory
-import game.player.service.PlayerService
-import game.player.service.PlayersUpdater
+import game.player.service.{PlayerService, PlayersUpdater}
+import game.player.service.domain.PlayerId
 import game.state.memory.UserGameStateMemory
 import game.state.service.UserGameStateService
 import http.SwaggerRoutes
-import http.event.EventLogic
-import http.event.EventRoutes
-import http.gameState.GameStateLogic
-import http.gameState.GameStateRoutes
-import http.player.PlayerProfileLogic
-import http.player.PlayerProfileRoutes
-import http.security.EloTokenVerification
-import http.security.TokenVerification
-import org.http4s.BuildInfo
-import org.http4s.HttpRoutes
+import http.event.{EventLogic, EventRoutes}
+import http.gameState.{GameStateLogic, GameStateRoutes}
+import http.player.{PlayerProfileLogic, PlayerProfileRoutes}
+import http.security.{EloTokenVerification, TokenVerification}
+import org.http4s.{BuildInfo, HttpRoutes}
 import org.http4s.ember.server.EmberServerBuilder
-import org.http4s.server.Router
-import org.http4s.server.Server
-import org.http4s.server.middleware.CORS
-import org.http4s.server.middleware.CORSPolicy
+import org.http4s.server.{Router, Server}
+import org.http4s.server.middleware.{CORS, CORSPolicy}
 import org.scanamo.Scanamo
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient
 import utils.TimeProvider
 
@@ -70,11 +60,13 @@ object Main extends IOApp {
       playerProfileClientMemoryCached =
         PlayerProfileClientMemory.cachedInstance[IO](appConfig.playerProfileClient, playerProfileClient, playerProfileClientMemory)
       playerSearchClient              = PlayerSearchClient.cachedInstance[IO](appConfig.playerSearchClient)
+      playerMarketValueClient         = PlayerMarketValueClient.cachedInstance[IO](appConfig.playerMarketValueClient)
 
       //services
       gameStateService   = UserGameStateService.impl[IO](stateMemory)
       eventService       = EventService.impl(eventMemory)
-      playerService      = PlayerService.impl[IO](playerProfileClientMemoryCached, playerProfileClient, playerSearchClient)
+      playerService      =
+        PlayerService.impl[IO](playerProfileClientMemoryCached, playerProfileClient, playerSearchClient, playerMarketValueClient)
       playersUpdater     = PlayersUpdater.impl[IO](
                              playerProfileClient,
                              playerProfileClientMemory,
@@ -90,9 +82,8 @@ object Main extends IOApp {
       eventLogic         = EventLogic.impl[IO](gameEngine)
 
       //todo: test
-//      playerMarketValueHistoryClient = PlayerMarketValueHistoryClient.impl[IO](appConfig.playerProfileClient)
-//      dupas <- Resource.eval(playerMarketValueHistoryClient.fetchRawMarketValueHistoryById(PlayerId(38253)))
-//      _ <- Resource.eval(IO.println("dupaHere: " + dupas))
+      dupas <- Resource.eval(playerService.getMarketValueHistoryById(PlayerId(38253)))
+      _     <- Resource.eval(IO.println("dupaHere: " + dupas))
 
       //server
       _ <- httpServerResource(appConfig, gameStateLogic, playerProfileLogic, eventLogic)

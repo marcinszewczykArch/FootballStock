@@ -3,28 +3,21 @@ package game.player.service
 import cats.Applicative
 import cats.data.EitherT
 import cats.effect._
-import cats.implicits.catsSyntaxApplicativeError
-import cats.implicits.toFlatMapOps
-import cats.implicits.toFunctorOps
+import cats.implicits.{catsSyntaxApplicativeError, toFlatMapOps, toFunctorOps}
 import game.errors.GameException
-import game.errors.GameException.PlayerSearchByNameException
-import game.player.client.PlayerProfileClient
-import game.player.client.PlayerSearchClient
-import game.player.client.domain.FetchedPlayerProfile
+import game.errors.GameException.{PlayerMarketValueException, PlayerSearchByNameException}
+import game.player.client.{PlayerMarketValueClient, PlayerProfileClient, PlayerSearchClient}
 import game.player.client.memory.PlayerProfileClientMemory
-import game.player.service.PlayerMapper.fetchedPlayerProfileToMarketValue
-import game.player.service.PlayerMapper.fetchedPlayerProfileToProfile
-import game.player.service.PlayerMapper.fetchedPlayerSimpleToPlayerSimple
-import game.player.service.PlayerMapper.jsonToFetchedPlayerProfile
+import game.player.service.PlayerMapper.{fetchedMarketValueHistoryToMarketValueHistory, fetchedPlayerProfileToProfile, fetchedPlayerSimpleToPlayerSimple, jsonToFetchedPlayerProfile}
 import game.player.service.domain._
-import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 
 trait PlayerService[F[_]] {
   def searchByName(playerName: String): F[Either[GameException, List[PlayerSimple]]]
   def getMarketValueByPlayerId(id: PlayerId): F[Either[GameException, BigDecimal]]
   def getPlayerProfileById(id: PlayerId): F[Either[GameException, PlayerProfile]]
   def updateAndGetPlayerProfileById(id: PlayerId): F[Either[GameException, PlayerProfile]]
+  def getMarketValueHistoryById(id: PlayerId): F[Either[GameException, MarketValueHistory]]
 }
 
 object PlayerService {
@@ -32,7 +25,8 @@ object PlayerService {
   def impl[F[_]: Sync: LoggerFactory](
     playerProfileClientMemory: PlayerProfileClientMemory[F],
     playerProfileClient: PlayerProfileClient[F],
-    playerSearchClient: PlayerSearchClient[F]
+    playerSearchClient: PlayerSearchClient[F],
+    playerMarketValueClient: PlayerMarketValueClient[F]
   ) = new PlayerService[F] {
     implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[PlayerService[F]].getName)
 
@@ -69,6 +63,22 @@ object PlayerService {
       fetchedPlayerProfile <- EitherT.fromEither(jsonToFetchedPlayerProfile(json))
       playerProfile = fetchedPlayerProfileToProfile(fetchedPlayerProfile)
     } yield playerProfile).value
+
+    override def getMarketValueHistoryById(id: PlayerId): F[Either[GameException, MarketValueHistory]] =
+      playerMarketValueClient
+        .fetchRawMarketValueHistoryById(id)
+        .map(fetchedMarketValueHistoryToMarketValueHistory)
+        .attempt
+        .flatMap {
+          case Right(marketValueHistory) =>
+            Applicative[F].pure(Right(marketValueHistory))
+          case Left(err)                 =>
+            log
+              .error(s"Getting Player Market Value history for '$id' failed: ${err.getMessage}")
+              .as(
+                Left(PlayerMarketValueException(id, err.getMessage))
+              )
+        }
 
   }
 

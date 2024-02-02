@@ -16,9 +16,7 @@ import game.events.Event.SellPlayerEvent
 import game.events.service.EventService
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
-import game.player.service.domain.PlayerId
-import game.player.service.domain.PlayerProfile
-import game.player.service.domain.PlayerSimple
+import game.player.service.domain.{MarketValueHistory, PlayerId, PlayerProfile, PlayerSimple}
 import game.state.domain
 import game.state.domain._
 import game.state.service.UserGameStateService
@@ -43,6 +41,7 @@ trait GameEngine[F[_]] {
 
   def searchByName(playerName: String): F[Either[GameException, List[PlayerSimple]]]
   def getMarketValueByPlayerId(id: PlayerId): F[Either[GameException, BigDecimal]]
+  def getMarketValueHistoryByPlayerId(id: PlayerId): F[Either[GameException, MarketValueHistory]]
   def getPlayerProfileById(id: PlayerId): F[Either[GameException, PlayerProfile]]
 
 }
@@ -208,6 +207,10 @@ object GameEngine {
       override def getPlayerProfileById(
         id: PlayerId
       ): F[Either[GameException, PlayerProfile]] = playerService.getPlayerProfileById(id)
+
+      override def getMarketValueHistoryByPlayerId(
+        id: PlayerId
+      ): F[Either[GameException, MarketValueHistory]] = playerService.getMarketValueHistoryById(id)
 
     }
 

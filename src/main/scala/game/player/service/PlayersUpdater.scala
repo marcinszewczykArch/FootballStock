@@ -29,7 +29,7 @@ import game.state.service.UserGameStateService
 import io.circe.Json
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.SelfAwareStructuredLogger
-import utils.Parser.toInstantOrFarPast
+import utils.Parser.toInstantOrFarPastForUpdateAt
 import utils.TimeProvider
 
 import java.time.Instant
@@ -160,7 +160,7 @@ object PlayersUpdater {
       playerJson.findAllByKey("isRetired").headOption.flatMap(_.asBoolean).getOrElse(false)
 
     private def getUpdatedAt(playerJson: Json): Instant =
-      toInstantOrFarPast(playerJson.findAllByKey("updatedAt").headOption.flatMap(_.asString))
+      toInstantOrFarPastForUpdateAt(playerJson.findAllByKey("updatedAt").headOption.flatMap(_.asString))
 
     private def filteredPlayers(
       threshold: Instant

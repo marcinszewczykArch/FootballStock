@@ -1,9 +1,9 @@
 package http.player
 
-import game.player.service.domain.PlayerProfile
-import game.player.service.domain.PlayerSimple
+import game.player.service.domain.{MarketValue, MarketValueHistory, PlayerProfile, PlayerSimple}
 import game.state.domain.UserBalance
 import http.gameState.domain.UserGameStateResponse
+import http.player.domain.MarketValueResponse.fromDomainMarketValue
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -31,18 +31,6 @@ object domain {
     updatedAt: String
   )
 
-  case class PlayerSearchResponse(players: List[PlayerSimpleResponse])
-
-  case class PlayerSimpleResponse(
-    id: Int,
-    name: String,
-    position: String,
-    club: String,
-    age: String,
-    nationalities: List[String],
-    marketValue: String
-  )
-
   object PlayerProfileResponse {
 
     def fromDomainPlayerProfile(playerProfile: PlayerProfile): PlayerProfileResponse = new PlayerProfileResponse(
@@ -65,6 +53,8 @@ object domain {
     implicit val userGameStateResponseEncoder: Encoder[PlayerProfileResponse] = deriveEncoder
   }
 
+  case class PlayerSearchResponse(players: List[PlayerSimpleResponse])
+
   object PlayerSearchResponse {
 
     def fromDomainPlayerSimpleList(players: List[PlayerSimple]): PlayerSearchResponse = PlayerSearchResponse(
@@ -75,6 +65,16 @@ object domain {
     implicit val userGameStateResponseDecoder: Decoder[PlayerSearchResponse] = deriveDecoder
     implicit val userGameStateResponseEncoder: Encoder[PlayerSearchResponse] = deriveEncoder
   }
+
+  case class PlayerSimpleResponse(
+    id: Int,
+    name: String,
+    position: String,
+    club: String,
+    age: String,
+    nationalities: List[String],
+    marketValue: String
+  )
 
   object PlayerSimpleResponse {
 
@@ -91,5 +91,48 @@ object domain {
     implicit val userGameStateResponseDecoder: Decoder[PlayerSimpleResponse] = deriveDecoder
     implicit val userGameStateResponseEncoder: Encoder[PlayerSimpleResponse] = deriveEncoder
   }
+
+  case class MarketValueHistoryResponse(
+                                        id: Int,
+                                        marketValue: Int,
+                                        marketValueHistory: List[MarketValueResponse],
+                                        updatedAt: String
+                                      )
+
+  object MarketValueHistoryResponse {
+
+    def fromDomainMarketValueHistory(marketValueHistory: MarketValueHistory): MarketValueHistoryResponse = new MarketValueHistoryResponse(
+      id = marketValueHistory.id.value,
+      marketValue = marketValueHistory.marketValue.toInt,
+      marketValueHistory = marketValueHistory.marketValueHistory.map(fromDomainMarketValue),
+      updatedAt = marketValueHistory.updatedAt.toString,
+    )
+
+    implicit val marketValueHistoryResponseDecoder: Decoder[MarketValueHistoryResponse] = deriveDecoder
+    implicit val marketValueHistoryResponseEncoder: Encoder[MarketValueHistoryResponse] = deriveEncoder
+  }
+
+  case class MarketValueResponse(
+                                  age: Int,
+                                  date: Instant,
+                                  clubName: String,
+                                  value: Int,
+                                  clubId: Int
+  )
+
+  object MarketValueResponse {
+
+    def fromDomainMarketValue(marketValue: MarketValue): MarketValueResponse = new MarketValueResponse(
+      age = marketValue.age,
+      date = marketValue.date,
+      clubName = marketValue.clubName,
+      value = marketValue.value.toInt,
+      clubId = marketValue.clubId
+    )
+
+    implicit val marketValueResponseDecoder: Decoder[MarketValueResponse] = deriveDecoder
+    implicit val marketValueResponseEncoder: Encoder[MarketValueResponse] = deriveEncoder
+  }
+
 
 }

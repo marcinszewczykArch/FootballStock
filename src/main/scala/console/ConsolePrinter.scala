@@ -51,6 +51,11 @@ object ConsolePrinter {
             playerValue <- gameLogic.getMarketValueByPlayerId(PlayerId(id))
             _           <- prettyPrintOr[F](playerValue)("Player value not found")
           } yield ()
+        case GetPlayerValueHistoryById(id)    =>
+          for {
+            playerValue <- gameLogic.getMarketValueHistoryByPlayerId(PlayerId(id))
+            _           <- prettyPrintOr[F](playerValue)("Player value history not found")
+          } yield ()
 
         case CreateNewUser(userName)                =>
           for {
@@ -149,6 +154,7 @@ object ConsolePrinter {
         |"/search {player name}" - to search player
         |"/player {player id}" - to get player profile
         |"/value {player id}" - to get player value
+        |"/valueHistory {player id}" - to get player value history
         |
         |"/newUser {user name}" - to create new user
         |"/state {user name}" - to display user state

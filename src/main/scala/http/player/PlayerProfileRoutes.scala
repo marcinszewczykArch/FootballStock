@@ -2,7 +2,7 @@ package http.player
 
 import cats.Applicative
 import cats.effect.Async
-import http.player.PlayerEndpoints.{getPlayer, getPlayerSearch}
+import http.player.PlayerEndpoints.{getPlayer, getPlayerSearch, getPlayerValue}
 import http.security.{RoleSelection, Roles, SecuredEndpoints, TokenVerification}
 import org.http4s.HttpRoutes
 import org.typelevel.log4cats.LoggerFactory
@@ -23,11 +23,16 @@ class PlayerProfileRoutes[F[_]: Async: LoggerFactory](
       .endpointSecured(RoleSelection.Any(Roles.Admin, Roles.User))
       .withServerLogic(logic.getPlayerSearch)
 
+    val getPlayerMarketValueHistoryServerEndpoint: ServerEndpoint[Any, F] = getPlayerValue
+      .endpointSecured(RoleSelection.Any(Roles.Admin, Roles.User))
+      .withServerLogic(logic.getPlayerMarketValueHistory)
+
     Http4sServerInterpreter[F]()
       .toRoutes(
         List(
           getPlayerServerEndpoint,
-          getPlayerSearchServerEndpoint
+          getPlayerSearchServerEndpoint,
+          getPlayerMarketValueHistoryServerEndpoint
         )
       )
   }

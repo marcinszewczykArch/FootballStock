@@ -2,10 +2,10 @@ package game.player.service
 
 import game.errors.GameException
 import game.errors.GameException.JsonDecodingException
-import game.player.client.domain.{FetchedPlayerPosition, FetchedPlayerProfile, FetchedPlayerSimple}
+import game.player.client.domain._
 import game.player.service.domain._
 import io.circe.Json
-import utils.Parser.{toBigDecimalOrZero, toInstantOrFarPast}
+import utils.Parser.{toBigDecimalOrZero, toInstantOrFarPastForDate, toInstantOrFarPastForUpdateAt}
 
 object PlayerMapper {
 
@@ -57,12 +57,33 @@ object PlayerMapper {
           .getOrElse(PlayerPosition.empty),
         club = club.flatMap(_.name).getOrElse("-"),
         marketValue = toBigDecimalOrZero(marketValue),
-        updatedAt = toInstantOrFarPast(updatedAt)
+        updatedAt = toInstantOrFarPastForUpdateAt(updatedAt)
       )
 
   }
 
   val jsonToFetchedPlayerProfile: Json => Either[GameException, FetchedPlayerProfile] =
     _.as[FetchedPlayerProfile].left.map(decodingFailure => JsonDecodingException(decodingFailure.getMessage()))
+
+  val fetchedMarketValueHistoryToMarketValueHistory: FetchedMarketValueHistory => MarketValueHistory = {
+    case FetchedMarketValueHistory(id, marketValue, marketValueHistory, updatedAt) =>
+      MarketValueHistory(
+        id = PlayerId(id.getOrElse(0)),
+        marketValue = toBigDecimalOrZero(marketValue),
+        marketValueHistory = marketValueHistory.map(fetchedMarketValueToMarketValue),
+        updatedAt = toInstantOrFarPastForUpdateAt(updatedAt)
+      )
+  }
+
+  val fetchedMarketValueToMarketValue: FetchedMarketValue => MarketValue = {
+    case FetchedMarketValue(age, date, clubName, value, clubId) =>
+      MarketValue(
+        age = age.getOrElse(0),
+        date = toInstantOrFarPastForDate(date),
+        clubName = clubName.getOrElse("-"),
+        value = toBigDecimalOrZero(value),
+        clubId = clubId.getOrElse(0),
+      )
+  }
 
 }

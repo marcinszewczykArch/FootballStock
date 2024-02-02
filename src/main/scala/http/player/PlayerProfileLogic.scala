@@ -8,14 +8,13 @@ import game.logic.GameEngine
 import game.player.service.domain.PlayerId
 import game.state.domain.User
 import http.gameState.domain._
-import http.player.domain.PlayerProfileResponse
-import http.player.domain.PlayerSearchResponse
-import http.player.domain.PlayerSimpleResponse
+import http.player.domain.{MarketValueHistoryResponse, PlayerProfileResponse, PlayerSearchResponse, PlayerSimpleResponse}
 import org.typelevel.log4cats.LoggerFactory
 
 trait PlayerProfileLogic[F[_]] {
   def getPlayerProfile(playerId: Int): F[Either[GameException, PlayerProfileResponse]]
   def getPlayerSearch(playerName: String): F[Either[GameException, PlayerSearchResponse]]
+  def getPlayerMarketValueHistory(playerId: Int): F[Either[GameException, MarketValueHistoryResponse]]
 }
 
 object PlayerProfileLogic {
@@ -32,6 +31,12 @@ object PlayerProfileLogic {
       .searchByName(playerName)
       .map(_.map(domain.PlayerSearchResponse.fromDomainPlayerSimpleList))
 
-  }
+    override def getPlayerMarketValueHistory(
+      playerId: Int
+    ): F[Either[GameException, MarketValueHistoryResponse]] = gameEngine
+        .getMarketValueHistoryByPlayerId(PlayerId(playerId))
+        .map(_.map(domain.MarketValueHistoryResponse.fromDomainMarketValueHistory))
+
+    }
 
 }
