@@ -18,6 +18,7 @@
 
     <logger name="com.github.marcinszewczykArch" level="DEBUG"/>
 
+<!--    change level here DEBUG / INFO -->
     <root level="INFO">
         <appender-ref ref="ASYNC_CONSOLE"/>
     </root>

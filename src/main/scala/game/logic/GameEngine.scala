@@ -34,7 +34,7 @@ trait GameEngine[F[_]] {
   def getUserState(user: User): F[Either[GameException, UserGameState]]
   def getUserBalance(user: User): F[Either[GameException, UserBalance]]
 
-  def getAllUsersStates(): F[Map[User, UserGameState]]
+  def getAllUsersStates(): F[Either[GameException, Map[User, UserGameState]]]
   def createUser(user: User): F[Either[GameException, InitializeGameEvent]]
 
   def getUserEvents(user: User): F[Either[GameException, List[Event]]]
@@ -186,13 +186,13 @@ object GameEngine {
         profit              = playersCurrentValue + cash - UserGameState.initialCash
         revenuePercent      = ((profit / UserGameState.initialCash) * 100).toInt
         updatedAt           = userState.updatedAt
-      } yield domain.UserBalance(portfolio, playersCurrentValue, cash, profit, revenuePercent, updatedAt)).value
+      } yield domain.UserBalance(user, portfolio, playersCurrentValue, cash, profit, revenuePercent, updatedAt)).value
 
       override def getUserEvents(user: User): F[Either[GameException, List[Event]]] =
         eventService.getEventsForUser(user)
 
       override def getAllUsersStates(
-      ): F[Map[User, UserGameState]] = stateService.getAllGameStates()
+      ): F[Either[GameException, Map[User, UserGameState]]] = stateService.getAllGameStates()
 
       override def searchByName(
         playerName: String

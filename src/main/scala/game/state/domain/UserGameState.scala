@@ -11,6 +11,7 @@ import io.circe.KeyEncoder
 import java.time.Instant
 
 final case class UserGameState(
+  //todo: add user: User,
   portfolio: Map[PlayerId, StockInfo],
   money: BigDecimal,
   updatedAt: Instant //as versionNumber to process optimistic locking

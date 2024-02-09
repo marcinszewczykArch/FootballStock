@@ -1,16 +1,12 @@
 package console
 
-import cats.Applicative
-import cats.Monad
+import cats.{Applicative, Monad}
 import cats.effect.std.Console
 import cats.syntax.all._
 import game.errors.GameException
-import game.events.Event
-import game.state.domain.User
 import game.logic.GameEngine
-import game.player.service.PlayerService
-import game.player.service.domain.PlayerId
-import game.player.service.domain.PlayerSimple
+import game.player.service.domain.{PlayerId, PlayerSimple}
+import game.state.domain.User
 
 import scala.io.AnsiColor._
 
@@ -36,22 +32,22 @@ object ConsolePrinter {
 
     def gameLoop[F[_]: Console: Monad](gameLogic: GameEngine[F])(message: InputMessage): F[Unit] =
       message match {
-        case SearchPlayerByName(input) =>
+        case SearchPlayerByName(input)     =>
           for {
             players <- gameLogic.searchByName(input)
             _       <- printPlayerSearchResult[F](players)
           } yield ()
-        case GetPlayerProfileById(id)  =>
+        case GetPlayerProfileById(id)      =>
           for {
             playerProfile <- gameLogic.getPlayerProfileById(PlayerId(id))
             _             <- prettyPrintOr[F](playerProfile)("Player profile not found")
           } yield ()
-        case GetPlayerValueById(id)    =>
+        case GetPlayerValueById(id)        =>
           for {
             playerValue <- gameLogic.getMarketValueByPlayerId(PlayerId(id))
             _           <- prettyPrintOr[F](playerValue)("Player value not found")
           } yield ()
-        case GetPlayerValueHistoryById(id)    =>
+        case GetPlayerValueHistoryById(id) =>
           for {
             playerValue <- gameLogic.getMarketValueHistoryByPlayerId(PlayerId(id))
             _           <- prettyPrintOr[F](playerValue)("Player value history not found")
@@ -70,12 +66,7 @@ object ConsolePrinter {
         case GetAllUsersStates()                    =>
           for {
             allUsersStates <- gameLogic.getAllUsersStates()
-            _              <- allUsersStates
-                                .map { case (user, state) =>
-                                  prettyPrintOr[F]((user -> state).asRight)("Could not get all users states")
-                                }
-                                .toList
-                                .sequence
+            _              <- prettyPrintOr[F](allUsersStates)("Could not get all users states")
           } yield ()
         case GetUserBalance(userName)               =>
           for {

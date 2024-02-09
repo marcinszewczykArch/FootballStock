@@ -17,10 +17,11 @@ import java.time.Year
 object domain {
 
   final case class UserGameStateResponse(
+    user: String,
     portfolio: List[PlayerStockResponse],
-    playersCurrentValue: String,
-    cash: String,
-    profit: String,
+    playersCurrentValue: Int,
+    cash: Int,
+    profit: Int,
     revenuePercent: Int,
     updatedAt: Instant
   )
@@ -48,14 +49,15 @@ object domain {
   object UserGameStateResponse {
 
     def fromUserBalance(userBalance: UserBalance): UserGameStateResponse = userBalance match {
-      case UserBalance(portfolio, playersCurrentValue, cash, profit, revenuePercent, updatedAt) =>
+      case UserBalance(user, portfolio, playersCurrentValue, cash, profit, revenuePercent, updatedAt) =>
         new UserGameStateResponse(
+          user = user.value,
           portfolio = portfolio.map { case (playerProfile, balancePerPlayer) =>
             PlayerStockResponse.fromDomainPortfolio(playerProfile, balancePerPlayer)
           },
-          CurrencyFormatter.toEuroString(playersCurrentValue),
-          CurrencyFormatter.toEuroString(cash),
-          CurrencyFormatter.toEuroString(profit),
+          playersCurrentValue.toInt,
+          cash.toInt,
+          profit.toInt,
           revenuePercent,
           updatedAt
         )

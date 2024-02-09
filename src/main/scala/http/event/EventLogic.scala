@@ -1,21 +1,15 @@
 package http.event
 
-import cats.data.EitherT
 import cats.effect.Sync
 import cats.implicits.toFunctorOps
-import game.errors.GameException
 import game.logic.GameEngine
-import game.player.service.domain.PlayerId
 import game.state.domain.User
+import http.GameExceptionResponse
 import http.event.domain.{EventsResponse, toEventsResponse}
-import http.gameState.domain._
-import http.player.domain.PlayerProfileResponse
-import http.player.domain.PlayerSearchResponse
-import http.player.domain.PlayerSimpleResponse
 import org.typelevel.log4cats.LoggerFactory
 
 trait EventLogic[F[_]] {
-  def getEvents(user: String): F[Either[GameException, EventsResponse]]
+  def getEvents(user: String): F[Either[GameExceptionResponse, EventsResponse]]
 }
 
 object EventLogic {
@@ -24,9 +18,13 @@ object EventLogic {
     gameEngine: GameEngine[F]
   ) = new EventLogic[F] {
 
-    override def getEvents(user: String): F[Either[GameException, EventsResponse]] = gameEngine
+    override def getEvents(user: String): F[Either[GameExceptionResponse, EventsResponse]] = gameEngine
       .getUserEvents(User(user))
-      .map(_.map(toEventsResponse))
+      .map(
+        _.map(toEventsResponse)
+          .left
+          .map(ge => GameExceptionResponse(ge.getMessage))
+      )
 
   }
 

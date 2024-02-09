@@ -92,7 +92,9 @@ object TestUtils {
           case None            => Left(UserNotFoundException(user))
         })
 
-      def getAll(): IO[Map[User, UserGameState]] = ref.get
+      def getAll(): IO[Either[GameException, Map[User, UserGameState]]] = ref
+        .get
+        .map(Right[GameException, Map[User, UserGameState]])
 
     }
   )

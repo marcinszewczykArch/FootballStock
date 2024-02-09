@@ -5,16 +5,11 @@ import cats.data.EitherT
 import cats.effect._
 import cats.implicits.toFunctorOps
 import game.errors.GameException
-import game.errors.GameException.SharesNumberException
-import game.errors.GameException.UserAlreadyExistsException
+import game.errors.GameException.{SharesNumberException, UserAlreadyExistsException}
 import game.events.Event.SYSTEM_USER_NAME
-import game.state.domain.Shares
-import game.state.domain.User
-import game.state.domain.UserGameState
+import game.state.domain.{Shares, User, UserGameState}
 import game.state.memory.UserGameStateMemory
-import game.player.service.domain._
-import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 import utils.TimeProvider
 
 import java.time.Instant
@@ -22,7 +17,7 @@ import java.time.Instant
 trait UserGameStateService[F[_]] {
 
   def getStateForUser(user: User): F[Either[GameException, UserGameState]]
-  def getAllGameStates(): F[Map[User, UserGameState]]
+  def getAllGameStates(): F[Either[GameException, Map[User, UserGameState]]]
   def updateGameStateFroUser(user: User)(newUserState: UserGameState)(versionNumber: Instant): F[Either[GameException, Unit]]
   def saveGameStateFroUser(user: User)(initialUserState: UserGameState): F[Either[GameException, Unit]]
 
@@ -52,7 +47,7 @@ object UserGameStateService {
       user: User
     ): F[Either[GameException, UserGameState]] = userGameStateMemory.getByUser(user)
 
-    override def getAllGameStates(): F[Map[User, UserGameState]] = userGameStateMemory.getAll()
+    override def getAllGameStates(): F[Either[GameException, Map[User, UserGameState]]] = userGameStateMemory.getAll()
 
     override def updateGameStateFroUser(
       user: User
@@ -69,7 +64,7 @@ object UserGameStateService {
     ): F[Either[GameException, Unit]] = userGameStateMemory.save(user)(initialUserState)
 
     override def validateUserNotExists(user: User): F[Either[GameException, Unit]] = (for {
-      allUsers <- EitherT.liftF(getAllGameStates().map(_.keySet + User(SYSTEM_USER_NAME)))
+      allUsers <- EitherT(getAllGameStates().map(_.map(_.keySet + User(SYSTEM_USER_NAME))))
       _        <- EitherT.fromEither(allUsers.contains(user) match {
                     case true  => Left[GameException, Unit](UserAlreadyExistsException(user))
                     case false => Right[GameException, Unit](())

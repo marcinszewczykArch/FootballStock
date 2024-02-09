@@ -1,32 +1,45 @@
 import cats.effect._
+import cats.implicits.catsSyntaxApplicativeId
+import cats.implicits.catsSyntaxApplyOps
 import cats.implicits.toSemigroupKOps
 import config.AppConfig
-import config.AppConfig.{AwsConfig, HttpConfig}
+import config.AppConfig.AwsConfig
+import config.AppConfig.HttpConfig
 import console.ConsolePrinter
 import fs2.Stream
 import game.errors.GameException
 import game.events.memory.EventMemory
 import game.events.service.EventService
 import game.logic.GameEngine
-import game.player.client.{PlayerMarketValueClient, PlayerProfileClient, PlayerSearchClient}
+import game.player.client.PlayerMarketValueClient
+import game.player.client.PlayerProfileClient
+import game.player.client.PlayerSearchClient
 import game.player.client.memory.PlayerProfileClientMemory
-import game.player.service.{PlayerService, PlayersUpdater}
-import game.player.service.domain.PlayerId
+import game.player.service.PlayerService
+import game.player.service.PlayersUpdater
 import game.state.memory.UserGameStateMemory
 import game.state.service.UserGameStateService
 import http.SwaggerRoutes
-import http.event.{EventLogic, EventRoutes}
-import http.gameState.{GameStateLogic, GameStateRoutes}
-import http.player.{PlayerProfileLogic, PlayerProfileRoutes}
-import http.security.{EloTokenVerification, TokenVerification}
-import org.http4s.{BuildInfo, HttpRoutes}
+import http.event.EventLogic
+import http.event.EventRoutes
+import http.gameState.GameStateLogic
+import http.gameState.GameStateRoutes
+import http.player.PlayerProfileLogic
+import http.player.PlayerProfileRoutes
+import http.security.EloTokenVerification
+import http.security.TokenVerification
+import org.http4s.BuildInfo
+import org.http4s.HttpRoutes
 import org.http4s.ember.server.EmberServerBuilder
-import org.http4s.server.{Router, Server}
-import org.http4s.server.middleware.{CORS, CORSPolicy}
+import org.http4s.server.Router
+import org.http4s.server.Server
+import org.http4s.server.middleware.CORS
+import org.http4s.server.middleware.CORSPolicy
 import org.scanamo.Scanamo
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
-import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient
 import utils.TimeProvider
 
@@ -82,8 +95,8 @@ object Main extends IOApp {
       eventLogic         = EventLogic.impl[IO](gameEngine)
 
       //todo: test
-      dupas <- Resource.eval(playerService.getMarketValueHistoryById(PlayerId(38253)))
-      _     <- Resource.eval(IO.println("dupaHere: " + dupas))
+//      dupas <- Resource.eval(playerService.getMarketValueHistoryById(PlayerId(38253)))
+//      _     <- Resource.eval(IO.println("dupaHere: " + dupas))
 
       //server
       _ <- httpServerResource(appConfig, gameStateLogic, playerProfileLogic, eventLogic)
@@ -100,19 +113,27 @@ object Main extends IOApp {
       fs2
         .Stream
         .repeatEval(consolePrinter.readMessage[IO])
-        .evalMap(consolePrinter.gameLoop(gameLogic))
+        .evalMap(consolePrinter.gameLoop(gameLogic)(_)
+          .handleErrorWith(err => log.error(err)(s"Game Stream failed. error: ${err.getMessage}"))
+    )
 
     val updatePlayersInMemoryStream: Stream[IO, Unit] =
       fs2
         .Stream
-        .awakeEvery[IO](3.minutes) //todo: from config
-        .evalMap(_ => playersUpdater.updateAllPlayersInMemory)
+        .awakeEvery[IO](10.minutes) //todo: from config
+        .evalMap(_ => playersUpdater.updateAllPlayersInMemory
+          .handleErrorWith(err => log.error(err)(s"UpdatePlayersInMemory task failed. error: ${err.getMessage}"))
+        )
 
     val updatePlayersValueInUserStatesStream: Stream[IO, Unit] =
       fs2
         .Stream
-        .awakeEvery[IO](1.minutes) //todo: from config
-        .evalMap(_ => playersUpdater.updatePlayersValueInUserStates)
+        .awakeEvery[IO](2.minutes) //todo: from config
+        .evalMap(_ => playersUpdater.updatePlayersValueInUserStates
+          .handleErrorWith(err =>
+            log.error(err)(s"UpdatePlayersValueInUserStates task failed. error: ${err.getMessage}")
+          )
+        )
 
     Stream(gameStream, updatePlayersInMemoryStream, updatePlayersValueInUserStatesStream)
       .parJoinUnbounded

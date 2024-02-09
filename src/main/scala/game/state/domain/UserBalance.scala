@@ -5,6 +5,7 @@ import game.player.service.domain.PlayerProfile
 import java.time.Instant
 
 final case class UserBalance(
+  user: User,
   portfolio: List[(PlayerProfile, BalancePerPlayer)],
   playersCurrentValue: BigDecimal,
   cash: BigDecimal,

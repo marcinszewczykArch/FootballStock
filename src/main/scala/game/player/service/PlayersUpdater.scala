@@ -81,7 +81,7 @@ object PlayersUpdater {
     override def updatePlayersValueInUserStates: F[Unit] = (for { //todo: test for this
       _                  <- EitherT.liftF[F, GameException, Unit](log.info("Starting players value update task for players in User Game States..."))
       now                = timeProvider.getCurrentTimestamp
-      allStates          <- EitherT.liftF[F, GameException, Map[User, UserGameState]](userGameStateService.getAllGameStates())
+      allStates          <- EitherT(userGameStateService.getAllGameStates())
       updateStatisticRef <- EitherT.liftF(Ref.of[F, UpdateStats](UpdateStats()))
       playerIdsToUpdate = getAllPlayersFromUserStates(allStates).toList
       (updateDuration, _)          <- EitherT.liftF(Clock[F].timed(updatePlayersUnderlying(updateStatisticRef)(playerIdsToUpdate)))
@@ -142,7 +142,7 @@ object PlayersUpdater {
                                         }.map(_.flatten)
       _                            <- EitherT.liftF[F, GameException, Unit](log.info(s"Sending ${events.size} PlayerValueChanged events"))
       _                            <- EitherT.liftF[F, GameException, List[Unit]](events.map(eventService.sendEvent).sequence)
-    } yield ()).valueOrF(err => log.error(err)(s"updatePlayersValueInUserStates task failed. error: ${err.getMessage}"))
+    } yield ()).rethrowT
 
     case class UpdateStats(failed: List[Int] = Nil, success: List[Int] = Nil)
 

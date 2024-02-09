@@ -2,28 +2,22 @@ package game.state.memory
 
 import cats.Applicative
 import cats.effect._
-import cats.implicits.catsSyntaxApplicativeId
-import cats.implicits.catsSyntaxApplyOps
+import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxApplyOps}
 import cats.syntax.all._
 import game.errors.GameException
-import game.errors.GameException.DynamoDbUpdateException
-import game.errors.GameException.DynamoReaderException
-import game.errors.GameException.JsonDecodingException
-import game.errors.GameException.JsonParsingFailure
-import game.state.domain.User
-import game.state.domain.UserGameState
+import game.errors.GameException.{DynamoDbUpdateException, DynamoReaderException, JsonDecodingException, JsonParsingFailure}
+import game.state.domain.{User, UserGameState}
 import io.circe.parser
 import io.circe.syntax.EncoderOps
 import org.scanamo.Scanamo
-import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 
 import java.time.Instant
 
 trait UserGameStateMemory[F[_]] {
 
   def getByUser(user: User): F[Either[GameException, UserGameState]]
-  def getAll(): F[Map[User, UserGameState]]
+  def getAll(): F[Either[GameException, Map[User, UserGameState]]]
   def update(user: User)(newUserState: UserGameState)(versionNumber: Instant): F[Either[GameException, Unit]]
   def save(user: User)(initialUserState: UserGameState): F[Either[GameException, Unit]]
 
@@ -67,17 +61,30 @@ object UserGameStateMemory {
           }
       }
 
-    override def getAll(): F[Map[User, UserGameState]] =
-      log.debug(s"getting all user states from dynamoDb") *> scanamo
-        .exec(table.scan())
-        .sequence
-        .getOrElse(Nil)
-        .mapFilter { record =>
-          val user          = User(record.user)
-          val userGameState = toUserState(record.json).toOption
-          userGameState.map(user -> _)
-        }
-        .toMap
+    override def getAll(): F[Either[GameException, Map[User, UserGameState]]]         =
+      log.debug(s"getting all user states from dynamoDb") *>
+//        (scanamo.exec(table.scan())
+//          .sequence match {
+//          case Left(err)      => Left[GameException, Map[User, UserGameState]](DynamoReaderException(err.toString))
+//          case Right(records) => Right[GameException, Map[User, UserGameState]](records.mapFilter { record =>
+//              val user          = User(record.user)
+//              val userGameState = toUserState(record.json).toOption
+//              userGameState.map(user -> _)
+//            }.toMap)
+//        }).pure
+      scanamo.exec(for {
+          scan <- table.scan()
+          res = scan.sequence match {
+                  case Left(err)      => Left[GameException, Map[User, UserGameState]](DynamoReaderException(err.toString))
+                  case Right(records) =>
+                    Right[GameException, Map[User, UserGameState]](records.mapFilter { record =>
+                      val user          = User(record.user)
+                      val userGameState = toUserState(record.json).toOption
+                      userGameState.map(user -> _)
+                    }.toMap)
+                }
+
+        } yield res)
         .pure
 
     override def save(user: User)(newUserState: UserGameState): F[Either[GameException, Unit]] =

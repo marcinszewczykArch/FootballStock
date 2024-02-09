@@ -3,6 +3,7 @@ package http.security
 import cats.Monad
 import cats.implicits.{toBifunctorOps, toFunctorOps}
 import game.errors.GameException
+import http.GameExceptionResponse
 import http.security.SecuredEndpoints.{BearerToken, ServerAppEndpoint}
 import http.security.errors.{BusinessFailure, Failure}
 import org.typelevel.log4cats.LoggerFactory
@@ -50,7 +51,7 @@ object SecuredEndpoints {
 
   type BearerToken                                    = Secret[String]
   type AppEndpointSecret[INPUT, ERROR_OUTPUT, OUTPUT] = Endpoint[BearerToken, INPUT, ERROR_OUTPUT, OUTPUT, Any]
-  type AppEndpointSecretWithError[INPUT, OUTPUT]      = Endpoint[BearerToken, INPUT, Failure[GameException], OUTPUT, Any]
+  type AppEndpointSecretWithError[INPUT, OUTPUT]      = Endpoint[BearerToken, INPUT, Failure[GameExceptionResponse], OUTPUT, Any]
   type AppEndpoint[INPUT, ERROR_OUTPUT, OUTPUT]       = PublicEndpoint[INPUT, ERROR_OUTPUT, OUTPUT, Any]
   type ServerAppEndpoint[F[_]]                        = ServerEndpoint[Any, F]
 

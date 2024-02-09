@@ -31,7 +31,7 @@ object GameException extends CirceExtraConfiguration {
   implicit val UserNotFoundExceptionCodec: Codec[UserNotFoundException] = deriveConfiguredCodec[UserNotFoundException]
 
   final case class NotEnoughMoneyException(available: BigDecimal, required: BigDecimal) extends GameException {
-    override def getMessage = s"Not enough money to buy. Required: $required, but available: $available."
+    override def getMessage = s"Not enough money to buy. Required: ${toEuroString(required)}, but available: ${toEuroString(available)}."
   }
 
   implicit val NotEnoughMoneyExceptionCodec: Codec[NotEnoughMoneyException] = deriveConfiguredCodec[NotEnoughMoneyException]
