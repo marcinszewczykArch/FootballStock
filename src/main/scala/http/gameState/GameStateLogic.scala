@@ -35,9 +35,13 @@ object GameStateLogic {
           .map(ge => GameExceptionResponse(ge.getMessage))
       )
 
-    override def getAllStates(): F[Either[GameExceptionResponse, List[
-      UserGameStateResponse
-    ]]] = ???
+    override def getAllStates(): F[Either[GameExceptionResponse, List[UserGameStateResponse]]] = gameEngine
+      .getAllUsersBalances()
+      .map(
+          _.map(userBalances => userBalances.map(UserGameStateResponse.fromUserBalance))
+            .left
+            .map(ge => GameExceptionResponse(ge.getMessage))
+        )
 
     override def createNewUser(userName: String): F[Either[GameExceptionResponse, CreateNewUserResponse]] = gameEngine
       .createUser(User(userName))

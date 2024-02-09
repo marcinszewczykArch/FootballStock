@@ -19,6 +19,7 @@ object GameStateEndpoints {
 
   lazy val endpoints: List[AppEndpointSecretWithError[_, _]] = List(
     getUserGameState,
+    getAllGameState,
     buyPlayer,
     sellPlayer,
     createNewUser
@@ -32,6 +33,14 @@ object GameStateEndpoints {
     .description("Scan DB to find current user game state")
     .tag("GameState")
     .out(jsonBody[UserGameStateResponse])
+
+  lazy val getAllGameState: AppEndpointSecretWithError[_, List[UserGameStateResponse]] = baseEndpoint
+    .get
+    .in("state"/"all")
+    .summary("Get all users game state")
+    .description("Scan DB to fetch all users game state")
+    .tag("GameState")
+    .out(jsonBody[List[UserGameStateResponse]])
 
   lazy val buyPlayer: AppEndpointSecretWithError[BuyPlayerRequest, BuyPlayerResponse] = baseEndpoint
     .in("buy")

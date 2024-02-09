@@ -22,6 +22,10 @@ class GameStateRoutes[F[_]: Async: LoggerFactory](
       .endpointSecured(RoleSelection.Any(Roles.Admin, Roles.User))
       .withServerLogic(logic.getStateByUserId)
 
+    val getAllGameStateServerEndpoint: ServerEndpoint[Any, F] = getAllGameState
+      .endpointSecured(RoleSelection.Any(Roles.Admin, Roles.User))
+      .withServerLogic(_ => logic.getAllStates())
+
     val createNewUserServerEndpoint: ServerEndpoint[Any, F] = createNewUser
       .endpointSecured(RoleSelection.Any(Roles.Admin, Roles.User))
       .withServerLogic(logic.createNewUser)
@@ -38,6 +42,7 @@ class GameStateRoutes[F[_]: Async: LoggerFactory](
       .toRoutes(
         List(
           getUserGameStateServerEndpoint,
+          getAllGameStateServerEndpoint,
           createNewUserServerEndpoint,
           buyPlayerServerEndpoint,
           sellPlayerServerEndpoint

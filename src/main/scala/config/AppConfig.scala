@@ -7,7 +7,13 @@ import com.comcast.ip4s.Host
 import com.comcast.ip4s.Port
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import config.AppConfig.{AwsConfig, HttpConfig, PlayerMarketValueClientConfig, PlayerProfileClientConfig, PlayerSearchClientConfig, PlayersUpdateCriteriaConfig}
+import config.AppConfig.AwsConfig
+import config.AppConfig.HttpConfig
+import config.AppConfig.PlayerMarketValueClientConfig
+import config.AppConfig.PlayerProfileClientConfig
+import config.AppConfig.PlayerSearchClientConfig
+import config.AppConfig.PlayersUpdateCriteriaConfig
+import config.AppConfig.UpdaterTaskConfig
 import pureconfig._
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
@@ -25,7 +31,8 @@ final case class AppConfig(
   playerProfileClient: PlayerProfileClientConfig,
   playerSearchClient: PlayerSearchClientConfig,
   playersUpdateCriteria: PlayersUpdateCriteriaConfig,
-  playerMarketValueClient: PlayerMarketValueClientConfig
+  playerMarketValueClient: PlayerMarketValueClientConfig,
+  updaterTask: UpdaterTaskConfig
 )
 
 object AppConfig {
@@ -77,6 +84,11 @@ object AppConfig {
     cacheTtl: FiniteDuration,
     failedCacheTtl: FiniteDuration,
     cacheName: String
+  )
+
+  final case class UpdaterTaskConfig(
+    playersProfileUpdateEvery: FiniteDuration,
+    playersValueUpdateEvery: FiniteDuration
   )
 
   case class PlayersUpdateCriteriaConfig(notUpdatedFor: FiniteDuration)

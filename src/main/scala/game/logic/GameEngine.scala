@@ -3,28 +3,19 @@ package game.logic
 import cats.Applicative
 import cats.data.EitherT
 import cats.effect._
-import cats.implicits.catsSyntaxApplicativeId
 import cats.implicits.toTraverseOps
 import game.errors.GameException
-import game.errors.GameException.NotEnoughMoneyException
-import game.errors.GameException.PlayerMarketValueNotUpToDateException
+import game.errors.GameException.{NotEnoughMoneyException, PlayerMarketValueNotUpToDateException}
 import game.events.Event
-import game.events.Event.BuyPlayerEvent
-import game.events.Event.InitializeGameEvent
-import game.events.Event.PlayerValueChanged
-import game.events.Event.SellPlayerEvent
+import game.events.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
 import game.events.service.EventService
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
 import game.player.service.domain.{MarketValueHistory, PlayerId, PlayerProfile, PlayerSimple}
-import game.state.domain
 import game.state.domain._
 import game.state.service.UserGameStateService
-import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 import utils.TimeProvider
-
-import java.time.Instant
 
 trait GameEngine[F[_]] {
 
@@ -35,6 +26,8 @@ trait GameEngine[F[_]] {
   def getUserBalance(user: User): F[Either[GameException, UserBalance]]
 
   def getAllUsersStates(): F[Either[GameException, Map[User, UserGameState]]]
+  def getAllUsersBalances(): F[Either[GameException, List[UserBalance]]]
+
   def createUser(user: User): F[Either[GameException, InitializeGameEvent]]
 
   def getUserEvents(user: User): F[Either[GameException, List[Event]]]
@@ -91,14 +84,11 @@ object GameEngine {
         updatedPlayerProfile: PlayerProfile
       ): Either[GameException, Unit] =
         displayedPlayerValue equals updatedPlayerProfile.marketValue match {
-          case false  =>
+          case false =>
             Left[GameException, Unit](
-              PlayerMarketValueNotUpToDateException(
-                updatedPlayerProfile.id,
-                displayedPlayerValue,
-                updatedPlayerProfile.marketValue)
+              PlayerMarketValueNotUpToDateException(updatedPlayerProfile.id, displayedPlayerValue, updatedPlayerProfile.marketValue)
             )
-          case true => Right[GameException, Unit](())
+          case true  => Right[GameException, Unit](())
         }
 
       override def sellPlayer(user: User)(playerId: PlayerId, sharesToSell: Int): F[Either[GameException, SellPlayerEvent]] =
@@ -155,44 +145,21 @@ object GameEngine {
       ): F[Either[GameException, UserBalance]] = (for {
         _         <- EitherT.liftF(log.debug(s"Checking balance for user: $user..."))
         userState <- EitherT(stateService.getStateForUser(user))
-        portfolio <- userState
-                       .portfolio
-                       .map { case playerId -> stockInfo =>
-                         for {
-                           playerProfile <- EitherT(playerService.getPlayerProfileById(playerId))
-                           currentPrice     = playerProfile.marketValue
-                           sharesNumber     = stockInfo.shares.map(_.number).sum
-                           totalBuyValue    = stockInfo.shares.map { case Shares(number, buyPrice, _) => number * buyPrice / 100 }.sum
-                           currentValue     = (currentPrice * sharesNumber) / 100
-                           balancePerPlayer = BalancePerPlayer(
-                                                shares = sharesNumber,
-                                                averageBuyPrice = (totalBuyValue / sharesNumber) * 100,
-                                                totalBuyValue = totalBuyValue,
-                                                currentPrice = currentPrice,
-                                                totalCurrentValue = currentValue,
-                                                profit = currentValue - totalBuyValue,
-                                                revenuePercent = totalBuyValue match {
-                                                  case value if value == 0 => 0
-                                                  case _                   => ((currentValue - totalBuyValue) * 100 / totalBuyValue).toInt
-                                                }
-                                              )
-                         } yield (playerProfile, balancePerPlayer)
-                       }
-                       .toList
-                       .sequence
-
-        playersCurrentValue = portfolio.map(_._2.totalCurrentValue).sum
-        cash                = userState.money
-        profit              = playersCurrentValue + cash - UserGameState.initialCash
-        revenuePercent      = ((profit / UserGameState.initialCash) * 100).toInt
-        updatedAt           = userState.updatedAt
-      } yield domain.UserBalance(user, portfolio, playersCurrentValue, cash, profit, revenuePercent, updatedAt)).value
+        balance   <- EitherT(UserBalance.fromUserState(playerService)(userState)(user))
+      } yield balance).value
 
       override def getUserEvents(user: User): F[Either[GameException, List[Event]]] =
         eventService.getEventsForUser(user)
 
       override def getAllUsersStates(
       ): F[Either[GameException, Map[User, UserGameState]]] = stateService.getAllGameStates()
+
+      override def getAllUsersBalances(
+      ): F[Either[GameException, List[UserBalance]]] = (for {
+        _           <- EitherT.liftF(log.debug(s"Checking balance for all users..."))
+        allStates   <- EitherT(stateService.getAllGameStates())
+        allBalances <- allStates.toList.map { case (user -> state) => EitherT(UserBalance.fromUserState(playerService)(state)(user)) }.sequence
+      } yield allBalances).value
 
       override def searchByName(
         playerName: String

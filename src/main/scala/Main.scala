@@ -1,10 +1,9 @@
 import cats.effect._
-import cats.implicits.catsSyntaxApplicativeId
-import cats.implicits.catsSyntaxApplyOps
 import cats.implicits.toSemigroupKOps
 import config.AppConfig
 import config.AppConfig.AwsConfig
 import config.AppConfig.HttpConfig
+import config.AppConfig.UpdaterTaskConfig
 import console.ConsolePrinter
 import fs2.Stream
 import game.errors.GameException
@@ -94,45 +93,46 @@ object Main extends IOApp {
       playerProfileLogic = PlayerProfileLogic.impl[IO](gameEngine)
       eventLogic         = EventLogic.impl[IO](gameEngine)
 
-      //todo: test
-//      dupas <- Resource.eval(playerService.getMarketValueHistoryById(PlayerId(38253)))
-//      _     <- Resource.eval(IO.println("dupaHere: " + dupas))
-
       //server
       _ <- httpServerResource(appConfig, gameStateLogic, playerProfileLogic, eventLogic)
       _ <- Resource.eval(consolePrinter.printStartMessage[IO])
-      _ <- Resource.eval(runGame(consolePrinter, gameEngine, playersUpdater))
+      _ <- Resource.eval(runGame(consolePrinter, gameEngine, playersUpdater, appConfig.updaterTask))
     } yield ()).useForever
 
   private def runGame(
     consolePrinter: ConsolePrinter[IO],
     gameLogic: GameEngine[IO],
-    playersUpdater: PlayersUpdater[IO]
+    playersUpdater: PlayersUpdater[IO],
+    updaterTask: UpdaterTaskConfig
   ): IO[ExitCode] = {
     val gameStream: Stream[IO, Unit] =
       fs2
         .Stream
         .repeatEval(consolePrinter.readMessage[IO])
-        .evalMap(consolePrinter.gameLoop(gameLogic)(_)
-          .handleErrorWith(err => log.error(err)(s"Game Stream failed. error: ${err.getMessage}"))
-    )
+        .evalMap(
+          consolePrinter
+            .gameLoop(gameLogic)(_)
+            .handleErrorWith(err => log.error(err)(s"Game Stream failed. error: ${err.getMessage}"))
+        )
 
     val updatePlayersInMemoryStream: Stream[IO, Unit] =
       fs2
         .Stream
-        .awakeEvery[IO](10.minutes) //todo: from config
-        .evalMap(_ => playersUpdater.updateAllPlayersInMemory
-          .handleErrorWith(err => log.error(err)(s"UpdatePlayersInMemory task failed. error: ${err.getMessage}"))
+        .awakeEvery[IO](updaterTask.playersProfileUpdateEvery)
+        .evalMap(_ =>
+          playersUpdater
+            .updateAllPlayersInMemory
+            .handleErrorWith(err => log.error(err)(s"UpdatePlayersInMemory task failed. error: ${err.getMessage}"))
         )
 
     val updatePlayersValueInUserStatesStream: Stream[IO, Unit] =
       fs2
         .Stream
-        .awakeEvery[IO](2.minutes) //todo: from config
-        .evalMap(_ => playersUpdater.updatePlayersValueInUserStates
-          .handleErrorWith(err =>
-            log.error(err)(s"UpdatePlayersValueInUserStates task failed. error: ${err.getMessage}")
-          )
+        .awakeEvery[IO](updaterTask.playersValueUpdateEvery)
+        .evalMap(_ =>
+          playersUpdater
+            .updatePlayersValueInUserStates
+            .handleErrorWith(err => log.error(err)(s"UpdatePlayersValueInUserStates task failed. error: ${err.getMessage}"))
         )
 
     Stream(gameStream, updatePlayersInMemoryStream, updatePlayersValueInUserStatesStream)
