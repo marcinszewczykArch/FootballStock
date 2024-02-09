@@ -11,7 +11,6 @@ import io.circe.generic.semiauto.deriveEncoder
 import utils.CurrencyFormatter
 
 import java.time.Instant
-import java.time.Year
 
 object domain {
 
@@ -26,6 +25,7 @@ object domain {
     isRetired: Boolean,
     mainPosition: String,
     otherPositions: List[String],
+    clubId: Int,
     club: String,
     marketValue: String,
     updatedAt: String
@@ -44,6 +44,7 @@ object domain {
       isRetired = playerProfile.isRetired,
       mainPosition = playerProfile.position.main,
       otherPositions = playerProfile.position.other,
+      clubId = playerProfile.clubId,
       club = playerProfile.club,
       marketValue = CurrencyFormatter.toEuroString(playerProfile.marketValue),
       updatedAt = playerProfile.updatedAt.toString

@@ -30,6 +30,7 @@ object domain {
     id: Int,
     name: String,
     position: List[String],
+    clubId: Int,
     club: String,
     age: Int,
     citizenship: List[String],
@@ -82,6 +83,7 @@ object domain {
                 citizenship,
                 isRetired,
                 position,
+                clubId,
                 club,
                 marketValue,
                 updatedAt
@@ -92,6 +94,7 @@ object domain {
             id = id.value,
             name = name,
             position = position.main +: position.other,
+            clubId = clubId,
             club = club,
             age = ageFromDateOfBirth(dateOfBirth),
             citizenship = citizenship,

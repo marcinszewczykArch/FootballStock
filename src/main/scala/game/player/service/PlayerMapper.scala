@@ -55,6 +55,7 @@ object PlayerMapper {
             PlayerPosition(main.getOrElse("-"), others.getOrElse(Nil))
           }
           .getOrElse(PlayerPosition.empty),
+        clubId = club.flatMap(_.id).getOrElse(0),
         club = club.flatMap(_.name).getOrElse("-"),
         marketValue = toBigDecimalOrZero(marketValue),
         updatedAt = toInstantOrFarPastForUpdateAt(updatedAt)
