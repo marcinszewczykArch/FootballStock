@@ -19,6 +19,7 @@ import game.player.service.PlayersUpdater
 import game.state.memory.UserGameStateMemory
 import game.state.service.UserGameStateService
 import http.SwaggerRoutes
+import http.club.{ClubLogic, ClubRoutes}
 import http.event.EventLogic
 import http.event.EventRoutes
 import http.gameState.GameStateLogic
@@ -92,9 +93,10 @@ object Main extends IOApp {
       gameStateLogic     = GameStateLogic.impl[IO](gameEngine)
       playerProfileLogic = PlayerProfileLogic.impl[IO](gameEngine)
       eventLogic         = EventLogic.impl[IO](gameEngine)
+      clubLogic          = ClubLogic.impl[IO](gameEngine)
 
       //server
-      _ <- httpServerResource(appConfig, gameStateLogic, playerProfileLogic, eventLogic)
+      _ <- httpServerResource(appConfig, gameStateLogic, playerProfileLogic, eventLogic, clubLogic)
       _ <- Resource.eval(consolePrinter.printStartMessage[IO])
       _ <- Resource.eval(runGame(consolePrinter, gameEngine, playersUpdater, appConfig.updaterTask))
     } yield ()).useForever
@@ -163,7 +165,8 @@ object Main extends IOApp {
     appConfig: AppConfig,
     gameStateLogic: GameStateLogic[IO],
     playerProfileLogic: PlayerProfileLogic[IO],
-    eventLogic: EventLogic[IO]
+    eventLogic: EventLogic[IO],
+    clubLogic: ClubLogic[IO],
   )(
     implicit tokenVerification: TokenVerification[IO]
   ): Resource[IO, Server] = for {
@@ -171,6 +174,7 @@ object Main extends IOApp {
     gameStateRoutes     <- Resource.eval(new GameStateRoutes[IO](tokenVerification).routes(gameStateLogic))
     playerProfileRoutes <- Resource.eval(new PlayerProfileRoutes[IO](tokenVerification).routes(playerProfileLogic))
     eventRoutes         <- Resource.eval(new EventRoutes[IO](tokenVerification).routes(eventLogic))
+    clubRoutes          <- Resource.eval(new ClubRoutes[IO](tokenVerification).routes(clubLogic))
     server              <- buildServer(swaggerRoutes <+> gameStateRoutes <+> playerProfileRoutes <+> eventRoutes, appConfig.http)
   } yield server
 

@@ -7,13 +7,7 @@ import com.comcast.ip4s.Host
 import com.comcast.ip4s.Port
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import config.AppConfig.AwsConfig
-import config.AppConfig.HttpConfig
-import config.AppConfig.PlayerMarketValueClientConfig
-import config.AppConfig.PlayerProfileClientConfig
-import config.AppConfig.PlayerSearchClientConfig
-import config.AppConfig.PlayersUpdateCriteriaConfig
-import config.AppConfig.UpdaterTaskConfig
+import config.AppConfig.{AwsConfig, ClubPlayersClientConfig, ClubProfileClientConfig, ClubSearchClientConfig, HttpConfig, PlayerMarketValueClientConfig, PlayerProfileClientConfig, PlayerSearchClientConfig, PlayersUpdateCriteriaConfig, UpdaterTaskConfig}
 import pureconfig._
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
@@ -32,6 +26,9 @@ final case class AppConfig(
   playerSearchClient: PlayerSearchClientConfig,
   playersUpdateCriteria: PlayersUpdateCriteriaConfig,
   playerMarketValueClient: PlayerMarketValueClientConfig,
+  clubProfileClient: ClubProfileClientConfig,
+  clubPlayersClient: ClubPlayersClientConfig,
+  clubSearchClient: ClubSearchClientConfig,
   updaterTask: UpdaterTaskConfig
 )
 
@@ -80,6 +77,27 @@ object AppConfig {
   )
 
   final case class PlayerMarketValueClientConfig(
+    uri: Uri,
+    cacheTtl: FiniteDuration,
+    failedCacheTtl: FiniteDuration,
+    cacheName: String
+  )
+
+  final case class ClubProfileClientConfig(
+    uri: Uri,
+    cacheTtl: FiniteDuration,
+    failedCacheTtl: FiniteDuration,
+    cacheName: String
+  )
+
+  final case class ClubPlayersClientConfig(
+    uri: Uri,
+    cacheTtl: FiniteDuration,
+    failedCacheTtl: FiniteDuration,
+    cacheName: String
+  )
+
+  final case class ClubSearchClientConfig(
     uri: Uri,
     cacheTtl: FiniteDuration,
     failedCacheTtl: FiniteDuration,
