@@ -53,8 +53,16 @@ else
     printf "\033[0;31m$t\033[0m\n"
 fi
 
-echo "creating clubTable..."
+echo "creating clubProfileTable..."
 t=$(aws dynamodb create-table --cli-input-json file://tables/clubProfileTable.json --endpoint-url http://localhost:8000 2>&1)
+if  [ $? = "0" ]; then
+    printf "\033[0;32mdone!\033[0m\n"
+else
+    printf "\033[0;31m$t\033[0m\n"
+fi
+
+echo "creating clubPlayersTable..."
+t=$(aws dynamodb create-table --cli-input-json file://tables/clubPlayersTable.json --endpoint-url http://localhost:8000 2>&1)
 if  [ $? = "0" ]; then
     printf "\033[0;32mdone!\033[0m\n"
 else

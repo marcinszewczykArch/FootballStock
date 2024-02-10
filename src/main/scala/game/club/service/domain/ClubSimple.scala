@@ -2,7 +2,11 @@ package game.club.service.domain
 
 final case class ClubSimple(
   id: ClubId,
-  name: String
+  url: String,
+  name: String,
+  country: String,
+  squad: Int,
+  marketValue: String
 )
 
 object ClubSimple {}

@@ -1,72 +1,94 @@
 package game.club.service
 
-import game.club.client.domain.FetchedClub
-import game.club.client.domain.FetchedClubSimple
-import game.club.service.domain.{ClubProfile, ClubSimple}
+import game.club.client.domain.{FetchedClubLeague, FetchedClubProfile, FetchedClubSimple, FetchedClubSquad}
+import game.club.service.domain._
 import game.errors.GameException
 import game.errors.GameException.JsonDecodingException
-import game.player.client.domain._
-import game.player.service.domain._
 import io.circe.Json
-import utils.Parser.toBigDecimalOrZero
-import utils.Parser.toInstantOrFarPastForDate
-import utils.Parser.toInstantOrFarPastForUpdateAt
+import utils.Parser.{toBigDecimalOrZero, toInstantOrFarPastForUpdateAt}
 
 object ClubMapper {
 
-  val fetchedClubSimpleToClubSimple: FetchedClubSimple => ClubSimple = ???
-//  {
-//    case FetchedPlayerSimple(id, name, position, club, age, nationalities, marketValue) =>
-//      PlayerSimple(
-//        id = PlayerId(id.getOrElse(0)),
-//        name = name.getOrElse("-"),
-//        position = position.getOrElse("-"),
-//        club = club.flatMap(_.name).getOrElse("-"),
-//        age = age.getOrElse("-"),
-//        nationalities = nationalities.getOrElse(Nil),
-//        marketValue = toBigDecimalOrZero(marketValue)
-//      )
-//  }
+  val fetchedClubSimpleToClubSimple: FetchedClubSimple => ClubSimple = {
+    case FetchedClubSimple(id, url, name, country, squad, marketValue) =>
+      ClubSimple(
+        id = ClubId(id.getOrElse(0)),
+        url = url.getOrElse("-"),
+        name = name.getOrElse("-"),
+        country = country.getOrElse("-"),
+        squad = squad.getOrElse(0),
+        marketValue = marketValue.getOrElse("-")
+      )
 
-  val fetchedClubToClub: FetchedClub => ClubProfile = ???
-//  {
-//    case FetchedPlayerProfile(
-//          id,
-//          url,
-//          name,
-//          description,
-//          imageURL,
-//          dateOfBirth,
-//          citizenship,
-//          isRetired,
-//          position,
-//          club,
-//          marketValue,
-//          updatedAt
-//        ) =>
-//      PlayerProfile(
-//        id = PlayerId(id.flatMap(_.toIntOption).getOrElse(0)),
-//        url = url.getOrElse("-"),
-//        name = name.getOrElse("-"),
-//        description = description.getOrElse("-"),
-//        imageURL = imageURL.getOrElse("-"),
-//        dateOfBirth = dateOfBirth.getOrElse("-"),
-//        citizenship = citizenship.getOrElse(Nil).toList,
-//        isRetired = isRetired.getOrElse(true),
-//        position = position
-//          .map { case FetchedPlayerPosition(main, others) =>
-//            PlayerPosition(main.getOrElse("-"), others.getOrElse(Nil))
-//          }
-//          .getOrElse(PlayerPosition.empty),
-//        clubId = club.flatMap(_.id).getOrElse(0),
-//        club = club.flatMap(_.name).getOrElse("-"),
-//        marketValue = toBigDecimalOrZero(marketValue),
-//        updatedAt = toInstantOrFarPastForUpdateAt(updatedAt)
-//      )
-//
-//  }
+  }
 
-  val jsonToFetchedClub: Json => Either[GameException, FetchedClub] =
-    _.as[FetchedClub].left.map(decodingFailure => JsonDecodingException(decodingFailure.getMessage()))
+  val fetchedClubToClub: FetchedClubProfile => ClubProfile = {
+    case FetchedClubProfile(
+          id,
+          url,
+          name,
+          officialName,
+          image,
+          website,
+          foundedOn,
+          stadiumName,
+          stadiumSeats,
+          currentMarketValue,
+          squad,
+          league,
+          updatedAt
+        ) =>
+      ClubProfile(
+        id = ClubId(id.getOrElse(0)),
+        url = url.getOrElse("-"),
+        name = name.getOrElse("-"),
+        officialName = officialName.getOrElse("-"),
+        image = image.getOrElse("-"),
+        website = website.getOrElse("-"),
+        foundedOn = foundedOn.getOrElse("-"),
+        stadiumName = stadiumName.getOrElse("-"),
+        stadiumSeats = stadiumSeats.getOrElse("-"),
+        currentMarketValue = toBigDecimalOrZero(currentMarketValue),
+        squad = squad.map(fetchedClubSquadToClubSquad).getOrElse(ClubSquad.empty),
+        league = league.map(fetchedClubLeagueToClubLeague).getOrElse(ClubLeague.empty),
+        updatedAt = toInstantOrFarPastForUpdateAt(updatedAt)
+      )
+
+  }
+
+  val fetchedClubSquadToClubSquad: FetchedClubSquad => ClubSquad = {
+    case FetchedClubSquad(
+          size,
+          averageAge,
+          foreigners,
+          nationalTeamPlayers
+        ) =>
+      ClubSquad(
+        size = size.getOrElse(0),
+        averageAge = averageAge.getOrElse(0),
+        foreigners = foreigners.getOrElse(0),
+        nationalTeamPlayers = nationalTeamPlayers.getOrElse(0)
+      )
+  }
+
+  val fetchedClubLeagueToClubLeague: FetchedClubLeague => ClubLeague = {
+    case FetchedClubLeague(
+          id,
+          name,
+          countryID,
+          countryName,
+          tier
+        ) =>
+      ClubLeague(
+        id = id.getOrElse("-"),
+        name = name.getOrElse("-"),
+        countryID = countryID.getOrElse(0),
+        countryName = countryName.getOrElse("-"),
+        tier = tier.getOrElse("-")
+      )
+  }
+
+  val jsonToFetchedClubProfile: Json => Either[GameException, FetchedClubProfile] =
+    _.as[FetchedClubProfile].left.map(decodingFailure => JsonDecodingException(decodingFailure.getMessage()))
 
 }

@@ -1,0 +1,15 @@
+{
+  "TableName": "ClubPlayers",
+  "KeySchema": [
+    { "AttributeName": "source", "KeyType": "HASH" },
+    { "AttributeName": "clubId", "KeyType": "RANGE" }
+  ],
+  "AttributeDefinitions": [
+    { "AttributeName": "source", "AttributeType": "S" },
+    { "AttributeName": "clubId", "AttributeType": "N" }
+  ],
+  "ProvisionedThroughput": {
+    "ReadCapacityUnits": 5,
+    "WriteCapacityUnits": 5
+  }
+}
