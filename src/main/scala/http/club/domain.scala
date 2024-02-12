@@ -107,7 +107,7 @@ object domain {
       joined = clubPlayer.joined,
       signedFrom = clubPlayer.signedFrom,
       contract = clubPlayer.contract,
-      marketValue = clubPlayer.marketValue
+      marketValue = CurrencyFormatter.toEuroString(clubPlayer.marketValue)
     )
 
     implicit val clubPlayerResponseResponseDecoder: Decoder[ClubPlayerResponse] = deriveDecoder

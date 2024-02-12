@@ -34,7 +34,7 @@ object ConsolePrinter {
       message match {
         case SearchPlayerByName(input)     =>
           for {
-            players <- gameLogic.searchByName(input)
+            players <- gameLogic.searchPlayerByName(input)
             _       <- printPlayerSearchResult[F](players)
           } yield ()
         case GetPlayerProfileById(id)      =>

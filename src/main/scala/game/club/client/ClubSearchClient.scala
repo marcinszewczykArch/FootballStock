@@ -5,10 +5,11 @@ import cats.effect._
 import cats.syntax.all._
 import config.AppConfig.ClubSearchClientConfig
 import game.club.client.domain.{ClubSearchResponse, FetchedClubSimple}
-import game.player.client.domain.FetchedPlayerSimple
+import org.typelevel.log4cats.LoggerFactory
 import sttp.client3._
 import sttp.client3.circe.asJson
 import sttp.model.Uri
+import utils.Cache
 
 //https://github.com/felipeall/transfermarkt-api
 trait ClubSearchClient[F[_]] {
@@ -16,6 +17,25 @@ trait ClubSearchClient[F[_]] {
 }
 
 object ClubSearchClient {
+
+  def cachedInstance[F[_]: Sync: LoggerFactory](
+    config: ClubSearchClientConfig
+  ): ClubSearchClient[F] = {
+    val clubSearchClient                                                = ClubSearchClient.impl[F](config)
+    val fetchClubSearchCache: Cache[F, String, List[FetchedClubSimple]] =
+      Cache.instance[F, String, List[FetchedClubSimple]](
+        cacheName = config.cacheName
+      )(
+        lookup = clubSearchClient.searchByName
+      )(
+        ttl = config.cacheTtl,
+        failedFetchTtl = config.failedCacheTtl
+      )
+
+    new ClubSearchClient[F] {
+      override def searchByName(playerName: String): F[List[FetchedClubSimple]] = fetchClubSearchCache.get(playerName)
+    }
+  }
 
   def impl[F[_]: Sync](config: ClubSearchClientConfig) = new ClubSearchClient[F] {
     val serviceUri: Uri                     = config.uri
@@ -32,7 +52,7 @@ object ClubSearchClient {
                  .map(_.body)
                  .map(_.result) match {
                  case Right(fetchedClubsSimple) => Applicative[F].pure(fetchedClubsSimple)
-                 case Left(cause)                 => MonadThrow[F].raiseError[List[FetchedClubSimple]](ClubSearchClientException(cause))
+                 case Left(cause)               => MonadThrow[F].raiseError[List[FetchedClubSimple]](ClubSearchClientException(cause))
                }
       } yield res
 

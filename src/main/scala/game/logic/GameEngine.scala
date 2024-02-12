@@ -4,6 +4,8 @@ import cats.Applicative
 import cats.data.EitherT
 import cats.effect._
 import cats.implicits.toTraverseOps
+import game.club.service.ClubService
+import game.club.service.domain.{ClubId, ClubPlayers, ClubProfile, ClubSimple}
 import game.errors.GameException
 import game.errors.GameException.{NotEnoughMoneyException, PlayerMarketValueNotUpToDateException}
 import game.events.Event
@@ -32,10 +34,14 @@ trait GameEngine[F[_]] {
 
   def getUserEvents(user: User): F[Either[GameException, List[Event]]]
 
-  def searchByName(playerName: String): F[Either[GameException, List[PlayerSimple]]]
+  def searchPlayerByName(playerName: String): F[Either[GameException, List[PlayerSimple]]]
   def getMarketValueByPlayerId(id: PlayerId): F[Either[GameException, BigDecimal]]
   def getMarketValueHistoryByPlayerId(id: PlayerId): F[Either[GameException, MarketValueHistory]]
   def getPlayerProfileById(id: PlayerId): F[Either[GameException, PlayerProfile]]
+
+  def searchClubByName(clubName: String): F[Either[GameException, List[ClubSimple]]]
+  def getClubProfileById(id: ClubId): F[Either[GameException, ClubProfile]]
+  def getClubPlayersById(id: ClubId): F[Either[GameException, ClubPlayers]]
 
 }
 
@@ -44,7 +50,8 @@ object GameEngine {
   def impl[F[_]: LoggerFactory](
     stateService: UserGameStateService[F],
     eventService: EventService[F],
-    playerService: PlayerService[F]
+    playerService: PlayerService[F],
+    clubService: ClubService[F]
   )(
     implicit F: Sync[F],
     timeProvider: TimeProvider[F]
@@ -161,7 +168,7 @@ object GameEngine {
         allBalances <- allStates.toList.map { case (user -> state) => EitherT(UserBalance.fromUserState(playerService)(state)(user)) }.sequence
       } yield allBalances).value
 
-      override def searchByName(
+      override def searchPlayerByName(
         playerName: String
       ): F[Either[GameException, List[
         PlayerSimple
@@ -178,6 +185,20 @@ object GameEngine {
       override def getMarketValueHistoryByPlayerId(
         id: PlayerId
       ): F[Either[GameException, MarketValueHistory]] = playerService.getMarketValueHistoryById(id)
+
+      override def searchClubByName(
+        clubName: String
+      ): F[Either[GameException, List[
+        ClubSimple
+      ]]] = clubService.searchByName(clubName)
+
+      override def getClubProfileById(
+        id: ClubId
+      ): F[Either[GameException, ClubProfile]] = clubService.getClubProfileById(id)
+
+      override def getClubPlayersById(
+        id: ClubId
+      ): F[Either[GameException, ClubPlayers]] = clubService.getClubPlayersById(id)
 
     }
 

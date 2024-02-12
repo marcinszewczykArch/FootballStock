@@ -1,49 +1,42 @@
 import cats.effect._
 import cats.implicits.toSemigroupKOps
 import config.AppConfig
-import config.AppConfig.AwsConfig
-import config.AppConfig.HttpConfig
-import config.AppConfig.UpdaterTaskConfig
+import config.AppConfig._
 import console.ConsolePrinter
 import fs2.Stream
+import game.club.client.{ClubPlayersClient, ClubProfileClient, ClubSearchClient}
+import game.club.client.memory.{ClubPlayersClientMemory, ClubProfileClientMemory}
+import game.club.service.ClubService
+import game.club.service.domain.ClubId
 import game.errors.GameException
 import game.events.memory.EventMemory
 import game.events.service.EventService
 import game.logic.GameEngine
-import game.player.client.PlayerMarketValueClient
-import game.player.client.PlayerProfileClient
-import game.player.client.PlayerSearchClient
+import game.player.client.{PlayerMarketValueClient, PlayerProfileClient, PlayerSearchClient}
 import game.player.client.memory.PlayerProfileClientMemory
-import game.player.service.PlayerService
-import game.player.service.PlayersUpdater
+import game.player.service.{PlayerService, PlayersUpdater}
 import game.state.memory.UserGameStateMemory
 import game.state.service.UserGameStateService
 import http.SwaggerRoutes
 import http.club.{ClubLogic, ClubRoutes}
-import http.event.EventLogic
-import http.event.EventRoutes
-import http.gameState.GameStateLogic
-import http.gameState.GameStateRoutes
-import http.player.PlayerProfileLogic
-import http.player.PlayerProfileRoutes
-import http.security.EloTokenVerification
-import http.security.TokenVerification
-import org.http4s.BuildInfo
-import org.http4s.HttpRoutes
+import http.event.{EventLogic, EventRoutes}
+import http.gameState.{GameStateLogic, GameStateRoutes}
+import http.player.{PlayerProfileLogic, PlayerProfileRoutes}
+import http.security.{EloTokenVerification, TokenVerification}
+import org.http4s.{BuildInfo, HttpRoutes}
 import org.http4s.ember.server.EmberServerBuilder
-import org.http4s.server.Router
-import org.http4s.server.Server
-import org.http4s.server.middleware.CORS
-import org.http4s.server.middleware.CORSPolicy
+import org.http4s.server.{Router, Server}
+import org.http4s.server.middleware.{CORS, CORSPolicy}
 import org.scanamo.Scanamo
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient
+import sttp.client3.UriContext
 import utils.TimeProvider
 
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 object Main extends IOApp {
   implicit val timeProvider: TimeProvider[IO]           = TimeProvider.impl[IO]
@@ -66,34 +59,60 @@ object Main extends IOApp {
       //memory, clients
       scanamo                         = Scanamo(dynamoDbClient)
       consolePrinter                  = ConsolePrinter.impl[IO]
+      //state
       stateMemory                     = UserGameStateMemory.impl[IO](scanamo)
+      //event
       eventMemory                     = EventMemory.impl[IO](scanamo)
+      //players
       playerProfileClientMemory       = PlayerProfileClientMemory.impl[IO](scanamo)
       playerProfileClient             = PlayerProfileClient.impl[IO](appConfig.playerProfileClient)
       playerProfileClientMemoryCached =
         PlayerProfileClientMemory.cachedInstance[IO](appConfig.playerProfileClient, playerProfileClient, playerProfileClientMemory)
       playerSearchClient              = PlayerSearchClient.cachedInstance[IO](appConfig.playerSearchClient)
       playerMarketValueClient         = PlayerMarketValueClient.cachedInstance[IO](appConfig.playerMarketValueClient)
+      //clubs
+//      clubProfileClientMemory         = ClubProfileClientMemory.impl[IO](scanamo)
+//      clubProfileClient               = ClubProfileClient.impl[IO](appConfig.clubProfileClient)
+//      clubProfileClientMemoryCached =
+//        ClubProfileClientMemory.cachedInstance[IO](appConfig.clubProfileClient, ClubProfileClient.impl[IO](appConfig.clubProfileClient), ClubProfileClientMemory.impl[IO](scanamo))
+//      clubPlayersClientMemory         = ClubPlayersClientMemory.impl[IO](scanamo)
+//      clubPlayersClient             = ClubPlayersClient.impl[IO](appConfig.clubPlayersClient)
+//      clubPlayersClientMemoryCached =
+//        ClubPlayersClientMemory.cachedInstance[IO](appConfig.clubPlayersClient, ClubPlayersClient.impl[IO](appConfig.clubPlayersClient), ClubPlayersClientMemory.impl[IO](scanamo))
+//      clubSearchClient                = ClubSearchClient.cachedInstance[IO]()
 
       //services
-      gameStateService   = UserGameStateService.impl[IO](stateMemory)
-      eventService       = EventService.impl(eventMemory)
-      playerService      =
+      gameStateService = UserGameStateService.impl[IO](stateMemory)
+      eventService     = EventService.impl(eventMemory)
+      playerService    =
         PlayerService.impl[IO](playerProfileClientMemoryCached, playerProfileClient, playerSearchClient, playerMarketValueClient)
-      playersUpdater     = PlayersUpdater.impl[IO](
-                             playerProfileClient,
-                             playerProfileClientMemory,
-                             playerProfileClientMemoryCached,
-                             playerService,
-                             eventService,
-                             gameStateService,
-                             appConfig.playersUpdateCriteria
-                           )
-      gameEngine         = GameEngine.impl(gameStateService, eventService, playerService)
+      playersUpdater   = PlayersUpdater.impl[IO](
+                           playerProfileClient,
+                           playerProfileClientMemory,
+                           playerProfileClientMemoryCached,
+                           playerService,
+                           eventService,
+                           gameStateService,
+                           appConfig.playersUpdateCriteria
+                         )
+      clubService      =
+        ClubService.impl[IO](        ClubProfileClientMemory.cachedInstance[IO](appConfig.clubProfileClient, ClubProfileClient.impl[IO](appConfig.clubProfileClient), ClubProfileClientMemory.impl[IO](scanamo))
+          ,         ClubPlayersClientMemory.cachedInstance[IO](appConfig.clubPlayersClient, ClubPlayersClient.impl[IO](appConfig.clubPlayersClient), ClubPlayersClientMemory.impl[IO](scanamo))
+          , ClubSearchClient.cachedInstance[IO](appConfig.clubSearchClient))
+
+      gameEngine         = GameEngine.impl(gameStateService, eventService, playerService, clubService)
       gameStateLogic     = GameStateLogic.impl[IO](gameEngine)
       playerProfileLogic = PlayerProfileLogic.impl[IO](gameEngine)
       eventLogic         = EventLogic.impl[IO](gameEngine)
       clubLogic          = ClubLogic.impl[IO](gameEngine)
+
+      //todo: test
+      legia <- Resource.eval(gameEngine.searchClubByName("legia"))
+      _ <- Resource.eval(IO.println(legia))
+      clubProfile <- Resource.eval(gameEngine.getClubPlayersById(ClubId(422)))
+      _ <- Resource.eval(IO.println(clubProfile))
+      clubPlayers <- Resource.eval(gameEngine.getClubProfileById(ClubId(422)))
+      _ <- Resource.eval(IO.println(clubPlayers))
 
       //server
       _ <- httpServerResource(appConfig, gameStateLogic, playerProfileLogic, eventLogic, clubLogic)
@@ -166,7 +185,7 @@ object Main extends IOApp {
     gameStateLogic: GameStateLogic[IO],
     playerProfileLogic: PlayerProfileLogic[IO],
     eventLogic: EventLogic[IO],
-    clubLogic: ClubLogic[IO],
+    clubLogic: ClubLogic[IO]
   )(
     implicit tokenVerification: TokenVerification[IO]
   ): Resource[IO, Server] = for {

@@ -3,50 +3,112 @@ package game.club.client.memory
 import cats.Applicative
 import cats.data.EitherT
 import cats.effect._
-import cats.implicits.catsSyntaxApplyOps
-import cats.implicits.toFlatMapOps
-import cats.implicits.toFunctorOps
+import cats.implicits.{catsSyntaxApplyOps, toFlatMapOps, toFunctorOps}
 import cats.syntax.all._
-import config.AppConfig.PlayerProfileClientConfig
+import config.AppConfig.ClubProfileClientConfig
+import game.club.client.ClubProfileClient
 import game.club.service.domain.ClubId
 import game.errors.GameException
-import game.errors.GameException.DynamoReaderException
-import game.errors.GameException.JsonParsingFailure
-import game.errors.GameException.PlayerJsonNotFoundInMemoryCacheException
-import game.player.client.PlayerProfileClient
-import game.player.service.domain.PlayerId
-import io.circe.Json
-import io.circe.parser
+import game.errors.GameException.{ClubProfileJsonNotFoundInMemoryCacheException, DynamoReaderException, JsonParsingFailure}
+import io.circe.{Json, parser}
 import org.scanamo.Scanamo
-import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 import utils.Cache
 
 trait ClubProfileClientMemory[F[_]] {
 
   def getById(clubId: ClubId): F[Either[GameException, Json]]
-  def getAll(): F[Map[ClubId, Json]]
   def save(clubId: ClubId)(clubJson: Json): F[Either[GameException, Unit]]
 
 }
 
 object ClubProfileClientMemory {
 
-//  def impl[F[_]: Sync: LoggerFactory](scanamo: Scanamo): ClubClientMemory[F] =
-//    new ClubClientMemory[F] {
-//      import org.scanamo._
-//      import org.scanamo.generic.auto._
-//      import org.scanamo.syntax._
-//
-//      implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[ClubClientMemory[F]].getName)
-//
-//      private val SOURCE_TRANSFERMARKT = "Transfermarkt"
-//      private val table                = Table[PlayerProfileTable]("Club")
-//      private case class PlayerProfileTable(source: String, playerId: Int, json: String)
-//
-//      override def getById(clubId: Any): F[Either[GameException, Json]]              = ???
-//      override def getAll(): F[Map[Any, Json]]                                       = ???
-//      override def save(clubId: Any)(clubJson: Json): F[Either[GameException, Unit]] = ???
-//    }
+  def cachedInstance[F[_]: Sync: LoggerFactory](
+    config: ClubProfileClientConfig,
+    clubProfileClient: ClubProfileClient[F],
+    underlying: ClubProfileClientMemory[F]
+  ): ClubProfileClientMemory[F] = {
+    implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[ClubProfileClientMemory[F]].getName)
+
+    val fetchRawClubProfileCache: Cache[F, ClubId, Json] =
+      Cache.instance[F, ClubId, Json](
+        cacheName = config.cacheName
+      )(
+        lookup = clubId =>
+          log.debug(s"club players for $clubId not found in cache. Checking memory...") *>
+            underlying.getById(clubId).flatMap {
+              case Right(json) => Applicative[F].pure(json)
+              case Left(err)   =>
+                (for {
+                  _    <- EitherT.liftF(log.debug(s"${err.getMessage} Calling http client..."))
+                  json <- EitherT(clubProfileClient.fetchRawClubProfileById(clubId))
+                  _    <- EitherT(underlying.save(clubId)(json))
+                } yield json).rethrowT
+            }
+      )(
+        ttl = config.cacheTtl,
+        failedFetchTtl = config.failedCacheTtl
+      )
+
+    new ClubProfileClientMemory[F] {
+      def getById(clubId: ClubId): F[Either[GameException, Json]]              =
+        fetchRawClubProfileCache
+          .get(clubId)
+          .attempt
+          .map(_.left.map(_ => ClubProfileJsonNotFoundInMemoryCacheException(clubId)))
+      def save(clubId: ClubId)(clubJson: Json): F[Either[GameException, Unit]] = (for {
+        _ <- EitherT(underlying.save(clubId)(clubJson))
+        _ <- EitherT.liftF[F, GameException, Json](fetchRawClubProfileCache.update(clubId)(clubJson))
+      } yield ()).value
+
+    }
+  }
+
+  def impl[F[_]: Sync: LoggerFactory](scanamo: Scanamo): ClubProfileClientMemory[F] =
+    new ClubProfileClientMemory[F] {
+      import org.scanamo._
+      import org.scanamo.generic.auto._
+      import org.scanamo.syntax._
+
+      implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[ClubProfileClientMemory[F]].getName)
+
+      private val SOURCE_TRANSFERMARKT = "Transfermarkt"
+      private val table                = Table[ClubProfileTable]("ClubProfile")
+      private case class ClubProfileTable(source: String, clubId: Int, json: String)
+
+      override def getById(clubId: ClubId): F[Either[GameException, Json]] =
+        log.debug(s"getting club profile json $clubId from dynamoDb") *> (scanamo
+          .exec(table.get("source" === SOURCE_TRANSFERMARKT and "clubId" === clubId.value.toLong))
+          .map(_.left.map(err => DynamoReaderException(err.toString))) match {
+          case Some(value) =>
+            value
+              .map(_.json)
+              .flatMap(str =>
+                parser.parse(str) match {
+                  case Left(parsingFailure) => Left[GameException, Json](JsonParsingFailure(parsingFailure.getMessage()))
+                  case Right(json)          => Right[GameException, Json](json)
+                }
+              )
+              .pure
+
+          case None => Applicative[F].pure(Left[GameException, Json](DynamoReaderException(s"Result for $clubId not found in memory.")))
+        })
+
+      override def save(clubId: ClubId)(clubJson: Json): F[Either[GameException, Unit]] =
+        log.debug(s"saving club profile for $clubId to dynamoDb") *> scanamo
+          .exec(
+            table.put(
+              ClubProfileTable(
+                source = SOURCE_TRANSFERMARKT,
+                clubId = clubId.value,
+                json = clubJson.toString()
+              )
+            )
+          )
+          .asRight[GameException]
+          .pure
+
+    }
 
 }

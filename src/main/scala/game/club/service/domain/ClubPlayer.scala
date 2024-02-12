@@ -15,7 +15,7 @@ final case class ClubPlayer(
   joined: String,
   signedFrom: String,
   contract: String,
-  marketValue: String
+  marketValue: BigDecimal
 )
 
 object ClubPlayer {

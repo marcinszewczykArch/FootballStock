@@ -29,7 +29,7 @@ object PlayerProfileLogic {
       )
 
     override def getPlayerSearch(playerName: String): F[Either[GameExceptionResponse, PlayerSearchResponse]] = gameEngine
-      .searchByName(playerName)
+      .searchPlayerByName(playerName)
       .map(
         _.map(domain.PlayerSearchResponse.fromDomainPlayerSimpleList)
           .left
