@@ -31,7 +31,7 @@ object Main extends IOApp {
   implicit val timeProvider: TimeProvider[IO]           = TimeProvider.impl[IO]
   implicit val loggerFactory: LoggerFactory[IO]         = Slf4jFactory.create[IO]
   implicit val tokenVerification: TokenVerification[IO] = EloTokenVerification
-  val corsService: CORSPolicy = CORS.policy.withAllowOriginAll
+  private val corsService: CORSPolicy = CORS.policy.withAllowOriginAll
 
   private val log = LoggerFactory.getLoggerFromClass(classOf[Main.type])
 
@@ -145,7 +145,7 @@ object Main extends IOApp {
     playerProfileRoutes <- Resource.eval(new PlayerProfileRoutes[IO](tokenVerification).routes(playerProfileLogic))
     eventRoutes         <- Resource.eval(new EventRoutes[IO](tokenVerification).routes(eventLogic))
     clubRoutes          <- Resource.eval(new ClubRoutes[IO](tokenVerification).routes(clubLogic))
-    server              <- buildServer(swaggerRoutes <+> gameStateRoutes <+> playerProfileRoutes <+> eventRoutes, appConfig.http)
+    server              <- buildServer(swaggerRoutes <+> gameStateRoutes <+> playerProfileRoutes <+> eventRoutes <+> clubRoutes, appConfig.http)
   } yield server
 
   def buildServer(

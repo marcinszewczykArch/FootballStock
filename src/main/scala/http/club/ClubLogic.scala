@@ -3,6 +3,7 @@ package http.club
 import cats.effect.Sync
 import cats.implicits.toFunctorOps
 import game.GameEngine
+import game.club.service.domain.ClubId
 import game.player.service.domain.PlayerId
 import http.GameExceptionResponse
 import http.club.domain.{ClubPlayersResponse, ClubProfileResponse, ClubSearchResponse}
@@ -21,32 +22,29 @@ object ClubLogic {
     gameEngine: GameEngine[F]
   ) = new ClubLogic[F] {
 
-    override def getClubProfile(clubId: Int): F[Either[GameExceptionResponse, ClubProfileResponse]] = ???
-//      gameEngine
-//      .getPlayerProfileById(PlayerId(playerId))
-//      .map(
-//        _.map(domain.PlayerProfileResponse.fromDomainPlayerProfile)
-//          .left
-//          .map(ge => GameExceptionResponse(ge.getMessage))
-//      )
+    override def getClubProfile(clubId: Int): F[Either[GameExceptionResponse, ClubProfileResponse]] = gameEngine
+      .getClubProfileById(ClubId(clubId))
+      .map(
+        _.map(domain.ClubProfileResponse.fromDomainClubProfile)
+          .left
+          .map(ge => GameExceptionResponse(ge.getMessage))
+      )
 
-    override def getClubSearch(playerName: String): F[Either[GameExceptionResponse, ClubSearchResponse]] = ???
-//      gameEngine
-//      .searchByName(playerName)
-//      .map(
-//        _.map(domain.PlayerSearchResponse.fromDomainPlayerSimpleList)
-//          .left
-//          .map(ge => GameExceptionResponse(ge.getMessage))
-//      )
+    override def getClubSearch(clubName: String): F[Either[GameExceptionResponse, ClubSearchResponse]] = gameEngine
+      .searchClubByName(clubName)
+      .map(
+        _.map(domain.ClubSearchResponse.fromDomainClubSimpleList)
+          .left
+          .map(ge => GameExceptionResponse(ge.getMessage))
+      )
 
-    override def getClubPlayers(playerId: Int): F[Either[GameExceptionResponse, ClubPlayersResponse]] = ???
-//      gameEngine
-//      .getMarketValueHistoryByPlayerId(PlayerId(playerId))
-//      .map(
-//        _.map(domain.MarketValueHistoryResponse.fromDomainMarketValueHistory)
-//          .left
-//          .map(ge => GameExceptionResponse(ge.getMessage))
-//      )
+    override def getClubPlayers(clubId: Int): F[Either[GameExceptionResponse, ClubPlayersResponse]] = gameEngine
+      .getClubPlayersById(ClubId(clubId))
+      .map(
+        _.map(domain.ClubPlayersResponse.fromDomainClubPlayers)
+          .left
+          .map(ge => GameExceptionResponse(ge.getMessage))
+      )
 
   }
 

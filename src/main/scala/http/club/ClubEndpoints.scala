@@ -30,7 +30,7 @@ object ClubEndpoints {
     .in("clubSearch")
     .in(query[String]("clubName"))
     .summary("Search clubs by given name")
-    .description("Request Transfermatrk api to search player by given name")
+    .description("Request Transfermatrk api to search club by given name")
     .tag("Club")
     .out(jsonBody[ClubSearchResponse])
 
@@ -39,7 +39,7 @@ object ClubEndpoints {
     .in("clubPlayers")
     .in(query[Int]("clubId"))
     .summary("Get club players by id")
-    .description("Request Transfermatrk api to search player market value history")
+    .description("Request Transfermatrk api to search club players")
     .tag("Club")
     .out(jsonBody[ClubPlayersResponse])
 

@@ -1,15 +1,10 @@
 package http.club
 
-import game.club.service.domain.{ClubPlayer, ClubProfile, ClubSimple}
-import game.player.service.domain.MarketValue
-import game.player.service.domain.MarketValueHistory
-import game.player.service.domain.PlayerProfile
-import game.player.service.domain.PlayerSimple
-import http.player.domain.MarketValueResponse.fromDomainMarketValue
-import io.circe.Decoder
-import io.circe.Encoder
-import io.circe.generic.semiauto.deriveDecoder
-import io.circe.generic.semiauto.deriveEncoder
+import game.club.service.domain._
+import http.club.domain.ClubLeagueResponse.leagueToLeagueResponse
+import http.club.domain.ClubSquadResponse.squadToSquadResponse
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import utils.CurrencyFormatter
 
 import java.time.Instant
@@ -18,63 +13,51 @@ object domain {
 
   final case class ClubProfileResponse(
     id: Int,
-    name: String
+    url: String,
+    name: String,
+    officialName: String,
+    image: String,
+    website: String,
+    foundedOn: String,
+    stadiumName: String,
+    stadiumSeats: Int,
+    currentMarketValue: String,
+    squad: ClubSquadResponse,
+    league: ClubLeagueResponse,
+    updatedAt: Instant
   )
 
-  object ClubProfileResponse {
+  final case class ClubSquadResponse(
+    size: Int,
+    averageAge: Double,
+    foreigners: Int,
+    nationalTeamPlayers: Int
+  )
 
-    def fromDomainClubProfile(clubProfile: ClubProfile): ClubProfileResponse = new ClubProfileResponse(
-      id = clubProfile.id.value,
-      name = clubProfile.name
-    )
-
-    implicit val clubProfileResponseDecoder: Decoder[ClubProfileResponse] = deriveDecoder
-    implicit val clubProfileResponseEncoder: Encoder[ClubProfileResponse] = deriveEncoder
-  }
+  final case class ClubLeagueResponse(
+    id: String,
+    name: String,
+    countryID: Int,
+    countryName: String,
+    tier: String
+  )
 
   final case class ClubSearchResponse(clubs: List[ClubSimpleResponse])
 
-  object ClubSearchResponse {
-
-    def fromDomainClubSimpleList(clubs: List[ClubSimple]): ClubSearchResponse = ClubSearchResponse(
-      clubs
-        .map(ClubSimpleResponse.fromDomainClubSimple)
-    )
-
-    implicit val clubSearchResponseDecoder: Decoder[ClubSearchResponse] = deriveDecoder
-    implicit val clubSearchResponseEncoder: Encoder[ClubSearchResponse] = deriveEncoder
-  }
-
   final case class ClubSimpleResponse(
     id: Int,
-    name: String
+    url: String,
+    name: String,
+    country: String,
+    squad: Int,
+    marketValue: String
   )
-
-  object ClubSimpleResponse {
-
-    def fromDomainClubSimple(clubSimple: ClubSimple): ClubSimpleResponse = new ClubSimpleResponse(
-      id = clubSimple.id.value,
-      name = clubSimple.name
-    )
-
-    implicit val clubSimpleResponseResponseDecoder: Decoder[ClubSimpleResponse] = deriveDecoder
-    implicit val clubSimpleResponseResponseEncoder: Encoder[ClubSimpleResponse] = deriveEncoder
-  }
 
   final case class ClubPlayersResponse(
-    players: List[ClubPlayerResponse]
+    id: Int,
+    players: List[ClubPlayerResponse],
+    updatedAt: Instant
   )
-
-  object ClubPlayersResponse {
-
-    def fromDomainClubPlayerList(clubs: List[ClubPlayer]): ClubPlayersResponse = ClubPlayersResponse(
-      clubs
-        .map(ClubPlayerResponse.fromDomainClubPlayer)
-    )
-
-    implicit val clubPlayersResponseResponseDecoder: Decoder[ClubPlayersResponse] = deriveDecoder
-    implicit val clubPlayersResponseResponseEncoder: Encoder[ClubPlayersResponse] = deriveEncoder
-  }
 
   final case class ClubPlayerResponse(
     id: Int,
@@ -91,6 +74,66 @@ object domain {
     contract: String,
     marketValue: String
   )
+
+  object ClubProfileResponse {
+
+    def fromDomainClubProfile(clubProfile: ClubProfile): ClubProfileResponse = new ClubProfileResponse(
+      id = clubProfile.id.value,
+      url = clubProfile.url,
+      name = clubProfile.name,
+      officialName = clubProfile.officialName,
+      image = clubProfile.image,
+      website = clubProfile.website,
+      foundedOn = clubProfile.foundedOn,
+      stadiumName = clubProfile.stadiumName,
+      stadiumSeats = clubProfile.stadiumSeats,
+      currentMarketValue = CurrencyFormatter.toEuroString(clubProfile.currentMarketValue),
+      squad = squadToSquadResponse(clubProfile.squad),
+      league = leagueToLeagueResponse(clubProfile.league),
+      updatedAt = clubProfile.updatedAt
+    )
+
+    implicit val clubProfileResponseDecoder: Decoder[ClubProfileResponse] = deriveDecoder
+    implicit val clubProfileResponseEncoder: Encoder[ClubProfileResponse] = deriveEncoder
+  }
+
+  object ClubSearchResponse {
+
+    def fromDomainClubSimpleList(clubs: List[ClubSimple]): ClubSearchResponse = ClubSearchResponse(
+      clubs
+        .map(ClubSimpleResponse.fromDomainClubSimple)
+    )
+
+    implicit val clubSearchResponseDecoder: Decoder[ClubSearchResponse] = deriveDecoder
+    implicit val clubSearchResponseEncoder: Encoder[ClubSearchResponse] = deriveEncoder
+  }
+
+  object ClubSimpleResponse {
+
+    def fromDomainClubSimple(clubSimple: ClubSimple): ClubSimpleResponse = new ClubSimpleResponse(
+      id = clubSimple.id.value,
+      url = clubSimple.url,
+      name = clubSimple.name,
+      country = clubSimple.country,
+      squad = clubSimple.squad,
+      marketValue = clubSimple.marketValue
+    )
+
+    implicit val clubSimpleResponseResponseDecoder: Decoder[ClubSimpleResponse] = deriveDecoder
+    implicit val clubSimpleResponseResponseEncoder: Encoder[ClubSimpleResponse] = deriveEncoder
+  }
+
+  object ClubPlayersResponse {
+
+    def fromDomainClubPlayers(clubPlayers: ClubPlayers): ClubPlayersResponse = ClubPlayersResponse(
+      id = clubPlayers.id.value,
+      players = clubPlayers.players.map(ClubPlayerResponse.fromDomainClubPlayer),
+      updatedAt = clubPlayers.updatedAt
+    )
+
+    implicit val clubPlayersResponseResponseDecoder: Decoder[ClubPlayersResponse] = deriveDecoder
+    implicit val clubPlayersResponseResponseEncoder: Encoder[ClubPlayersResponse] = deriveEncoder
+  }
 
   object ClubPlayerResponse {
 
@@ -112,6 +155,35 @@ object domain {
 
     implicit val clubPlayerResponseResponseDecoder: Decoder[ClubPlayerResponse] = deriveDecoder
     implicit val clubPlayerResponseResponseEncoder: Encoder[ClubPlayerResponse] = deriveEncoder
+  }
+
+  object ClubSquadResponse {
+
+    def squadToSquadResponse(clubSquad: ClubSquad): ClubSquadResponse = new ClubSquadResponse(
+      size = clubSquad.size,
+      averageAge = clubSquad.averageAge,
+      foreigners = clubSquad.foreigners,
+      nationalTeamPlayers = clubSquad.nationalTeamPlayers
+    )
+
+    implicit val clubSquadResponseDecoder: Decoder[ClubSquadResponse] = deriveDecoder
+    implicit val clubSquadResponseEncoder: Encoder[ClubSquadResponse] = deriveEncoder
+
+  }
+
+  object ClubLeagueResponse {
+
+    def leagueToLeagueResponse(clubLeague: ClubLeague): ClubLeagueResponse = new ClubLeagueResponse(
+      id = clubLeague.id,
+      name = clubLeague.name,
+      countryID = clubLeague.countryID,
+      countryName = clubLeague.countryName,
+      tier = clubLeague.tier
+    )
+
+    implicit val clubLeagueResponseDecoder: Decoder[ClubLeagueResponse] = deriveDecoder
+    implicit val clubLeagueResponseEncoder: Encoder[ClubLeagueResponse] = deriveEncoder
+
   }
 
 }
