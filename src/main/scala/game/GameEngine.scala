@@ -21,27 +21,27 @@ import utils.Type.ErrorOr
 
 trait GameEngine[F[_]] {
 
-  def buyPlayer(user: User)(playerId: PlayerId, sharesToBuy: Int): F[Either[GameException, BuyPlayerEvent]]
-  def sellPlayer(user: User)(playerId: PlayerId, sharesToSell: Int): F[Either[GameException, SellPlayerEvent]]
+  def buyPlayer(user: User)(playerId: PlayerId, sharesToBuy: Int): F[ErrorOr[BuyPlayerEvent]]
+  def sellPlayer(user: User)(playerId: PlayerId, sharesToSell: Int): F[ErrorOr[SellPlayerEvent]]
 
-  def getUserState(user: User): F[Either[GameException, UserGameState]]
-  def getUserBalance(user: User): F[Either[GameException, UserBalance]]
+  def getUserState(user: User): F[ErrorOr[UserGameState]]
+  def getUserBalance(user: User): F[ErrorOr[UserBalance]]
 
-  def getAllUsersStates(): F[Either[GameException, Map[User, UserGameState]]]
-  def getAllUsersBalances(): F[Either[GameException, List[UserBalance]]]
+  def getAllUsersStates(): F[ErrorOr[Map[User, UserGameState]]]
+  def getAllUsersBalances(): F[ErrorOr[List[UserBalance]]]
 
-  def createUser(user: User): F[Either[GameException, InitializeGameEvent]]
+  def createUser(user: User): F[ErrorOr[InitializeGameEvent]]
 
-  def getUserEvents(user: User): F[Either[GameException, List[Event]]]
+  def getUserEvents(user: User): F[ErrorOr[List[Event]]]
 
   def searchPlayerByName(playerName: String): F[ErrorOr[List[PlayerSimple]]]
-  def getMarketValueByPlayerId(id: PlayerId): F[Either[GameException, BigDecimal]]
-  def getMarketValueHistoryByPlayerId(id: PlayerId): F[Either[GameException, MarketValueHistory]]
-  def getPlayerProfileById(id: PlayerId): F[Either[GameException, PlayerProfile]]
+  def getMarketValueByPlayerId(id: PlayerId): F[ErrorOr[BigDecimal]]
+  def getMarketValueHistoryByPlayerId(id: PlayerId): F[ErrorOr[MarketValueHistory]]
+  def getPlayerProfileById(id: PlayerId): F[ErrorOr[PlayerProfile]]
 
-  def searchClubByName(clubName: String): F[Either[GameException, List[ClubSimple]]]
-  def getClubProfileById(id: ClubId): F[Either[GameException, ClubProfile]]
-  def getClubPlayersById(id: ClubId): F[Either[GameException, ClubPlayers]]
+  def searchClubByName(clubName: String): F[ErrorOr[List[ClubSimple]]]
+  def getClubProfileById(id: ClubId): F[ErrorOr[ClubProfile]]
+  def getClubPlayersById(id: ClubId): F[ErrorOr[ClubPlayers]]
 
 }
 
@@ -65,7 +65,7 @@ object GameEngine {
       )(
         playerId: PlayerId,
         sharesToBuy: Int
-      ): F[Either[GameException, BuyPlayerEvent]] = (for {
+      ): F[ErrorOr[BuyPlayerEvent]] = (for {
         _                    <- EitherT.liftF(log.debug(s"Processing new transaction for user $user: BUY $sharesToBuy of $playerId..."))
         now                  <- EitherT.pure(timeProvider.getCurrentTimestamp)
         userState            <- EitherT(stateService.getStateForUser(user))
@@ -89,7 +89,7 @@ object GameEngine {
       def validateDisplayedValueIsValid(
         displayedPlayerValue: BigDecimal,
         updatedPlayerProfile: PlayerProfile
-      ): Either[GameException, Unit] =
+      ): ErrorOr[Unit] =
         displayedPlayerValue equals updatedPlayerProfile.marketValue match {
           case false =>
             Left[GameException, Unit](
@@ -98,7 +98,7 @@ object GameEngine {
           case true  => Right[GameException, Unit](())
         }
 
-      override def sellPlayer(user: User)(playerId: PlayerId, sharesToSell: Int): F[Either[GameException, SellPlayerEvent]] =
+      override def sellPlayer(user: User)(playerId: PlayerId, sharesToSell: Int): F[ErrorOr[SellPlayerEvent]] =
         (for {
           _                    <- EitherT.liftF(log.debug(s"Processing new transaction for user $user: SELL $sharesToSell of $playerId..."))
           now                  <- EitherT.pure(timeProvider.getCurrentTimestamp)
@@ -121,7 +121,7 @@ object GameEngine {
           _ <- EitherT.liftF[F, GameException, Unit](eventService.sendEvent(event))
         } yield event).value
 
-      private def validateEnoughMoney(available: BigDecimal, required: BigDecimal): F[Either[GameException, Unit]] =
+      private def validateEnoughMoney(available: BigDecimal, required: BigDecimal): F[ErrorOr[Unit]] =
         Applicative[F].pure(
           available >= required match {
             case true  => Right(())
@@ -131,11 +131,11 @@ object GameEngine {
 
       override def getUserState(
         user: User
-      ): F[Either[GameException, UserGameState]] = stateService.getStateForUser(user)
+      ): F[ErrorOr[UserGameState]] = stateService.getStateForUser(user)
 
       override def createUser(
         user: User
-      ): F[Either[GameException, InitializeGameEvent]] = (for {
+      ): F[ErrorOr[InitializeGameEvent]] = (for {
         _            <- EitherT.liftF(log.info(s"Start creating new USER $user..."))
         now          <- EitherT.pure(timeProvider.getCurrentTimestamp)
         _            <- EitherT(stateService.validateUserNotExists(user))
@@ -149,20 +149,20 @@ object GameEngine {
 
       override def getUserBalance(
         user: User
-      ): F[Either[GameException, UserBalance]] = (for {
+      ): F[ErrorOr[UserBalance]] = (for {
         _         <- EitherT.liftF(log.debug(s"Checking balance for user: $user..."))
         userState <- EitherT(stateService.getStateForUser(user))
         balance   <- EitherT(UserBalance.fromUserState(playerService)(userState)(user))
       } yield balance).value
 
-      override def getUserEvents(user: User): F[Either[GameException, List[Event]]] =
+      override def getUserEvents(user: User): F[ErrorOr[List[Event]]] =
         eventService.getEventsForUser(user)
 
       override def getAllUsersStates(
-      ): F[Either[GameException, Map[User, UserGameState]]] = stateService.getAllGameStates()
+      ): F[ErrorOr[Map[User, UserGameState]]] = stateService.getAllGameStates()
 
       override def getAllUsersBalances(
-      ): F[Either[GameException, List[UserBalance]]] = (for {
+      ): F[ErrorOr[List[UserBalance]]] = (for {
         _           <- EitherT.liftF(log.debug(s"Checking balance for all users..."))
         allStates   <- EitherT(stateService.getAllGameStates())
         allBalances <- allStates.toList.map { case (user -> state) => EitherT(UserBalance.fromUserState(playerService)(state)(user)) }.sequence
@@ -170,35 +170,35 @@ object GameEngine {
 
       override def searchPlayerByName(
         playerName: String
-      ): F[Either[GameException, List[
+      ): F[ErrorOr[List[
         PlayerSimple
       ]]] = playerService.searchByName(playerName)
 
       override def getMarketValueByPlayerId(
         id: PlayerId
-      ): F[Either[GameException, BigDecimal]] = playerService.getMarketValueByPlayerId(id)
+      ): F[ErrorOr[BigDecimal]] = playerService.getMarketValueByPlayerId(id)
 
       override def getPlayerProfileById(
         id: PlayerId
-      ): F[Either[GameException, PlayerProfile]] = playerService.getPlayerProfileById(id)
+      ): F[ErrorOr[PlayerProfile]] = playerService.getPlayerProfileById(id)
 
       override def getMarketValueHistoryByPlayerId(
         id: PlayerId
-      ): F[Either[GameException, MarketValueHistory]] = playerService.getMarketValueHistoryById(id)
+      ): F[ErrorOr[MarketValueHistory]] = playerService.getMarketValueHistoryById(id)
 
       override def searchClubByName(
         clubName: String
-      ): F[Either[GameException, List[
+      ): F[ErrorOr[List[
         ClubSimple
       ]]] = clubService.searchByName(clubName)
 
       override def getClubProfileById(
         id: ClubId
-      ): F[Either[GameException, ClubProfile]] = clubService.getClubProfileById(id)
+      ): F[ErrorOr[ClubProfile]] = clubService.getClubProfileById(id)
 
       override def getClubPlayersById(
         id: ClubId
-      ): F[Either[GameException, ClubPlayers]] = clubService.getClubPlayersById(id)
+      ): F[ErrorOr[ClubPlayers]] = clubService.getClubPlayersById(id)
 
     }
 

@@ -6,6 +6,7 @@ import cats.syntax.all._
 import game.{GameEngine, GameException}
 import game.player.service.domain.{PlayerId, PlayerSimple}
 import game.state.domain.User
+import utils.Type.ErrorOr
 
 import scala.io.AnsiColor._
 
@@ -101,7 +102,7 @@ object ConsolePrinter {
 
   }
 
-  private def printPlayerSearchResult[F[_]: Applicative](maybePlayers: Either[GameException, List[PlayerSimple]]): F[Unit] =
+  private def printPlayerSearchResult[F[_]: Applicative](maybePlayers: ErrorOr[List[PlayerSimple]]): F[Unit] =
     maybePlayers match {
       case Left(err)      => Applicative[F].pure(println(s"Search failed. Reason: $err"))
       case Right(players) =>
@@ -121,7 +122,7 @@ object ConsolePrinter {
         }
     }
 
-  private def prettyPrintOr[F[_]: Applicative](maybeObject: Either[GameException, Object])(errorMessage: String = ""): F[Unit] =
+  private def prettyPrintOr[F[_]: Applicative](maybeObject: ErrorOr[Object])(errorMessage: String = ""): F[Unit] =
     maybeObject match {
       case Left(err)  => Applicative[F].pure(println(s"$errorMessage. Reason: $err"))
       case Right(obj) =>

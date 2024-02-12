@@ -6,6 +6,7 @@ import game.player.client.domain._
 import game.player.service.domain._
 import io.circe.Json
 import utils.Parser.{toBigDecimalOrZero, toInstantOrFarPastForDate, toInstantOrFarPastForUpdateAt}
+import utils.Type.ErrorOr
 
 object PlayerMapper {
 
@@ -63,7 +64,7 @@ object PlayerMapper {
 
   }
 
-  val jsonToFetchedPlayerProfile: Json => Either[GameException, FetchedPlayerProfile] =
+  val jsonToFetchedPlayerProfile: Json => ErrorOr[FetchedPlayerProfile] =
     _.as[FetchedPlayerProfile].left.map(decodingFailure => JsonDecodingException(decodingFailure.getMessage()))
 
   val fetchedMarketValueHistoryToMarketValueHistory: FetchedMarketValueHistory => MarketValueHistory = {

@@ -6,11 +6,12 @@ import game.event.Event
 import game.event.memory.EventMemory
 import game.state.domain.User
 import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
+import utils.Type.ErrorOr
 
 trait EventService[F[_]] {
 
   def sendEvent(event: Event): F[Unit]
-  def getEventsForUser(user: User): F[Either[GameException, List[Event]]]
+  def getEventsForUser(user: User): F[ErrorOr[List[Event]]]
 
 }
 
@@ -23,7 +24,7 @@ object EventService {
 
     override def getEventsForUser(
       user: User
-    ): F[Either[GameException, List[Event]]] = eventMemory.getEventsForUser(user)
+    ): F[ErrorOr[List[Event]]] = eventMemory.getEventsForUser(user)
 
   }
 

@@ -6,6 +6,7 @@ import cats.effect.Sync
 import game.GameException
 import game.player.service.PlayerService
 import game.player.service.domain.PlayerProfile
+import utils.Type.ErrorOr
 
 import java.time.Instant
 
@@ -32,7 +33,7 @@ final case class BalancePerPlayer(
 object UserBalance {
   import cats.implicits.toTraverseOps
 
-  def fromUserState[F[_]: Sync](playerService: PlayerService[F])(userState: UserGameState)(user: User): F[Either[GameException, UserBalance]] = (for {
+  def fromUserState[F[_]: Sync](playerService: PlayerService[F])(userState: UserGameState)(user: User): F[ErrorOr[UserBalance]] = (for {
     portfolio <- userState
                    .portfolio
                    .map { case playerId -> stockInfo =>

@@ -11,13 +11,14 @@ import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerMapper.{fetchedMarketValueHistoryToMarketValueHistory, fetchedPlayerProfileToProfile, fetchedPlayerSimpleToPlayerSimple, jsonToFetchedPlayerProfile}
 import game.player.service.domain._
 import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
+import utils.Type.ErrorOr
 
 trait PlayerService[F[_]] {
-  def searchByName(playerName: String): F[Either[GameException, List[PlayerSimple]]]
-  def getMarketValueByPlayerId(id: PlayerId): F[Either[GameException, BigDecimal]]
-  def getPlayerProfileById(id: PlayerId): F[Either[GameException, PlayerProfile]]
-  def updateAndGetPlayerProfileById(id: PlayerId): F[Either[GameException, PlayerProfile]]
-  def getMarketValueHistoryById(id: PlayerId): F[Either[GameException, MarketValueHistory]]
+  def searchByName(playerName: String): F[ErrorOr[List[PlayerSimple]]]
+  def getMarketValueByPlayerId(id: PlayerId): F[ErrorOr[BigDecimal]]
+  def getPlayerProfileById(id: PlayerId): F[ErrorOr[PlayerProfile]]
+  def updateAndGetPlayerProfileById(id: PlayerId): F[ErrorOr[PlayerProfile]]
+  def getMarketValueHistoryById(id: PlayerId): F[ErrorOr[MarketValueHistory]]
 }
 
 object PlayerService {
@@ -30,7 +31,7 @@ object PlayerService {
   ) = new PlayerService[F] {
     implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[PlayerService[F]].getName)
 
-    override def searchByName(playerName: String): F[Either[GameException, List[PlayerSimple]]] =
+    override def searchByName(playerName: String): F[ErrorOr[List[PlayerSimple]]] =
       playerSearchClient
         .searchByName(playerName)
         .map(_.map(fetchedPlayerSimpleToPlayerSimple))
@@ -46,10 +47,10 @@ object PlayerService {
               )
         }
 
-    override def getMarketValueByPlayerId(id: PlayerId): F[Either[GameException, BigDecimal]] =
+    override def getMarketValueByPlayerId(id: PlayerId): F[ErrorOr[BigDecimal]] =
       getPlayerProfileById(id).map(_.map(_.marketValue))
 
-    override def getPlayerProfileById(id: PlayerId): F[Either[GameException, PlayerProfile]] = (for {
+    override def getPlayerProfileById(id: PlayerId): F[ErrorOr[PlayerProfile]] = (for {
       json                 <- EitherT(playerProfileClientMemory.getById(id))
       fetchedPlayerProfile <- EitherT.fromEither(jsonToFetchedPlayerProfile(json))
       playerProfile = fetchedPlayerProfileToProfile(fetchedPlayerProfile)
@@ -57,14 +58,14 @@ object PlayerService {
 
     override def updateAndGetPlayerProfileById(
       id: PlayerId
-    ): F[Either[GameException, PlayerProfile]] = (for {
+    ): F[ErrorOr[PlayerProfile]] = (for {
       json                 <- EitherT(playerProfileClient.fetchRawPlayerProfileById(id))
       _                    <- EitherT(playerProfileClientMemory.save(id)(json))
       fetchedPlayerProfile <- EitherT.fromEither(jsonToFetchedPlayerProfile(json))
       playerProfile = fetchedPlayerProfileToProfile(fetchedPlayerProfile)
     } yield playerProfile).value
 
-    override def getMarketValueHistoryById(id: PlayerId): F[Either[GameException, MarketValueHistory]] =
+    override def getMarketValueHistoryById(id: PlayerId): F[ErrorOr[MarketValueHistory]] =
       playerMarketValueClient
         .fetchRawMarketValueHistoryById(id)
         .map(fetchedMarketValueHistoryToMarketValueHistory)

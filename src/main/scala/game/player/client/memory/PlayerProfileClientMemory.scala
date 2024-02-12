@@ -20,12 +20,13 @@ import org.scanamo.Scanamo
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import utils.Cache
+import utils.Type.ErrorOr
 
 trait PlayerProfileClientMemory[F[_]] {
 
-  def getById(playerId: PlayerId): F[Either[GameException, Json]]
+  def getById(playerId: PlayerId): F[ErrorOr[Json]]
   def getAll(): F[Map[PlayerId, Json]]
-  def save(playerId: PlayerId)(playerJson: Json): F[Either[GameException, Unit]]
+  def save(playerId: PlayerId)(playerJson: Json): F[ErrorOr[Unit]]
 
 }
 
@@ -59,13 +60,13 @@ object PlayerProfileClientMemory {
       )
 
     new PlayerProfileClientMemory[F] {
-      def getById(playerId: PlayerId): F[Either[GameException, Json]]                =
+      def getById(playerId: PlayerId): F[ErrorOr[Json]]                =
         fetchRawPlayersProfileCache
           .get(playerId)
           .attempt
           .map(_.left.map(_ => PlayerJsonNotFoundInMemoryCacheException(playerId)))
       def getAll(): F[Map[PlayerId, Json]]                                           = underlying.getAll()
-      def save(playerId: PlayerId)(playerJson: Json): F[Either[GameException, Unit]] = (for {
+      def save(playerId: PlayerId)(playerJson: Json): F[ErrorOr[Unit]] = (for {
         _ <- EitherT(underlying.save(playerId)(playerJson))
         _ <- EitherT.liftF[F, GameException, Json](fetchRawPlayersProfileCache.update(playerId)(playerJson))
       } yield ()).value
@@ -85,7 +86,7 @@ object PlayerProfileClientMemory {
       private val table                = Table[PlayerProfileTable]("PlayerProfile")
       private case class PlayerProfileTable(source: String, playerId: Int, json: String)
 
-      override def save(playerId: PlayerId)(playerJson: Json): F[Either[GameException, Unit]] =
+      override def save(playerId: PlayerId)(playerJson: Json): F[ErrorOr[Unit]] =
         log.debug(s"saving player $playerId to dynamoDb") *> scanamo
           .exec(
             table.put(
@@ -101,7 +102,7 @@ object PlayerProfileClientMemory {
 
       override def getById(
         playerId: PlayerId
-      ): F[Either[GameException, Json]] =
+      ): F[ErrorOr[Json]] =
         log.debug(s"getting player profile json $playerId from dynamoDb") *> (scanamo
           .exec(table.get("source" === SOURCE_TRANSFERMARKT and "playerId" === playerId.value.toLong))
           .map(_.left.map(err => DynamoReaderException(err.toString))) match {

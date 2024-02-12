@@ -11,15 +11,16 @@ import io.circe.parser
 import io.circe.syntax.EncoderOps
 import org.scanamo.Scanamo
 import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
+import utils.Type.ErrorOr
 
 import java.time.Instant
 
 trait UserGameStateMemory[F[_]] {
 
-  def getByUser(user: User): F[Either[GameException, UserGameState]]
-  def getAll(): F[Either[GameException, Map[User, UserGameState]]]
-  def update(user: User)(newUserState: UserGameState)(versionNumber: Instant): F[Either[GameException, Unit]]
-  def save(user: User)(initialUserState: UserGameState): F[Either[GameException, Unit]]
+  def getByUser(user: User): F[ErrorOr[UserGameState]]
+  def getAll(): F[ErrorOr[Map[User, UserGameState]]]
+  def update(user: User)(newUserState: UserGameState)(versionNumber: Instant): F[ErrorOr[Unit]]
+  def save(user: User)(initialUserState: UserGameState): F[ErrorOr[Unit]]
 
 }
 
@@ -37,7 +38,7 @@ object UserGameStateMemory {
     private val table = Table[UserGameStateTable]("UserGameState")
     private case class UserGameStateTable(user: String, json: String, updatedAt: String)
 
-    override def getByUser(user: User): F[Either[GameException, UserGameState]] =
+    override def getByUser(user: User): F[ErrorOr[UserGameState]] =
       log.debug(s"getting user state for $user from dynamoDb") *> (scanamo
         .exec(table.get("user" === user.value))
         .map(_.left.map(err => DynamoReaderException(err.toString))) match {
@@ -51,7 +52,7 @@ object UserGameStateMemory {
           Applicative[F].pure(Left[GameException, UserGameState](DynamoReaderException(s"Result for $user not found in memory.")))
       })
 
-    private def toUserState(jsonString: String): Either[GameException, UserGameState] =
+    private def toUserState(jsonString: String): ErrorOr[UserGameState] =
       parser.parse(jsonString) match {
         case Left(parsingFailure) => Left[GameException, UserGameState](JsonParsingFailure(parsingFailure.getMessage()))
         case Right(json)          =>
@@ -61,7 +62,7 @@ object UserGameStateMemory {
           }
       }
 
-    override def getAll(): F[Either[GameException, Map[User, UserGameState]]]         =
+    override def getAll(): F[ErrorOr[Map[User, UserGameState]]]         =
       log.debug(s"getting all user states from dynamoDb") *>
 //        (scanamo.exec(table.scan())
 //          .sequence match {
@@ -87,7 +88,7 @@ object UserGameStateMemory {
         } yield res)
         .pure
 
-    override def save(user: User)(newUserState: UserGameState): F[Either[GameException, Unit]] =
+    override def save(user: User)(newUserState: UserGameState): F[ErrorOr[Unit]] =
       log.debug(s"saving new user game state for $user to dynamoDb") *> scanamo
         .exec(
           table.put(
@@ -101,7 +102,7 @@ object UserGameStateMemory {
         .asRight[GameException]
         .pure
 
-    override def update(user: User)(newUserState: UserGameState)(versionNumber: Instant): F[Either[GameException, Unit]] =
+    override def update(user: User)(newUserState: UserGameState)(versionNumber: Instant): F[ErrorOr[Unit]] =
       log.debug(s"updating user game state for $user to dynamoDb") *>
         scanamo
           .exec(

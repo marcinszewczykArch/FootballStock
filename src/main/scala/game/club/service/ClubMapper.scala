@@ -7,6 +7,7 @@ import GameException.JsonDecodingException
 import game.player.service.domain.PlayerId
 import io.circe.Json
 import utils.Parser.{toBigDecimalOrZero, toInstantOrFarPastForUpdateAt}
+import utils.Type.ErrorOr
 
 object ClubMapper {
 
@@ -135,10 +136,10 @@ object ClubMapper {
       )
   }
 
-  val jsonToFetchedClubProfile: Json => Either[GameException, FetchedClubProfile] =
+  val jsonToFetchedClubProfile: Json => ErrorOr[FetchedClubProfile] =
     _.as[FetchedClubProfile].left.map(decodingFailure => JsonDecodingException(decodingFailure.getMessage()))
 
-  val jsonToFetchedClubPlayers: Json => Either[GameException, FetchedClubPlayers] =
+  val jsonToFetchedClubPlayers: Json => ErrorOr[FetchedClubPlayers] =
     _.as[FetchedClubPlayers].left.map(decodingFailure => JsonDecodingException(decodingFailure.getMessage()))
 
 }

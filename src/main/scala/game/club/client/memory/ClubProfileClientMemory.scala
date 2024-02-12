@@ -14,11 +14,12 @@ import io.circe.{Json, parser}
 import org.scanamo.Scanamo
 import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 import utils.Cache
+import utils.Type.ErrorOr
 
 trait ClubProfileClientMemory[F[_]] {
 
-  def getById(clubId: ClubId): F[Either[GameException, Json]]
-  def save(clubId: ClubId)(clubJson: Json): F[Either[GameException, Unit]]
+  def getById(clubId: ClubId): F[ErrorOr[Json]]
+  def save(clubId: ClubId)(clubJson: Json): F[ErrorOr[Unit]]
 
 }
 
@@ -52,12 +53,12 @@ object ClubProfileClientMemory {
       )
 
     new ClubProfileClientMemory[F] {
-      def getById(clubId: ClubId): F[Either[GameException, Json]]              =
+      def getById(clubId: ClubId): F[ErrorOr[Json]]              =
         fetchRawClubProfileCache
           .get(clubId)
           .attempt
           .map(_.left.map(_ => ClubProfileJsonNotFoundInMemoryCacheException(clubId)))
-      def save(clubId: ClubId)(clubJson: Json): F[Either[GameException, Unit]] = (for {
+      def save(clubId: ClubId)(clubJson: Json): F[ErrorOr[Unit]] = (for {
         _ <- EitherT(underlying.save(clubId)(clubJson))
         _ <- EitherT.liftF[F, GameException, Json](fetchRawClubProfileCache.update(clubId)(clubJson))
       } yield ()).value
@@ -77,7 +78,7 @@ object ClubProfileClientMemory {
       private val table                = Table[ClubProfileTable]("ClubProfile")
       private case class ClubProfileTable(source: String, clubId: Int, json: String)
 
-      override def getById(clubId: ClubId): F[Either[GameException, Json]] =
+      override def getById(clubId: ClubId): F[ErrorOr[Json]] =
         log.debug(s"getting club profile json $clubId from dynamoDb") *> (scanamo
           .exec(table.get("source" === SOURCE_TRANSFERMARKT and "clubId" === clubId.value.toLong))
           .map(_.left.map(err => DynamoReaderException(err.toString))) match {
@@ -95,7 +96,7 @@ object ClubProfileClientMemory {
           case None => Applicative[F].pure(Left[GameException, Json](DynamoReaderException(s"Result for $clubId not found in memory.")))
         })
 
-      override def save(clubId: ClubId)(clubJson: Json): F[Either[GameException, Unit]] =
+      override def save(clubId: ClubId)(clubJson: Json): F[ErrorOr[Unit]] =
         log.debug(s"saving club profile for $clubId to dynamoDb") *> scanamo
           .exec(
             table.put(

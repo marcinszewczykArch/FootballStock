@@ -4,6 +4,7 @@ import cats.Applicative
 import game.GameException
 import GameException.IncorrectConsoleInputException
 import GameException.IncorrectParsingException
+import utils.Type.ErrorOr
 
 sealed trait InputMessage
 
@@ -24,7 +25,7 @@ case class Error(message: String) extends InputMessage
 
 object InputMessage {
 
-  def parse[F[_]: Applicative](inputText: String): F[Either[GameException, InputMessage]] =
+  def parse[F[_]: Applicative](inputText: String): F[ErrorOr[InputMessage]] =
     Applicative[F].pure {
       splitWords(inputText) match {
         case ("/search", input, input2, input3) => Right(SearchPlayerByName(input + input2 + input3))

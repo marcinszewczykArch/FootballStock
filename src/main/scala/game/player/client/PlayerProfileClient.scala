@@ -9,10 +9,11 @@ import game.player.service.domain.PlayerId
 import io.circe.{Json, parser}
 import sttp.client3._
 import sttp.model.Uri
+import utils.Type.ErrorOr
 
 //https://github.com/felipeall/transfermarkt-api
 trait PlayerProfileClient[F[_]] {
-  def fetchRawPlayerProfileById(id: PlayerId): F[Either[GameException, Json]]
+  def fetchRawPlayerProfileById(id: PlayerId): F[ErrorOr[Json]]
 }
 
 object PlayerProfileClient {
@@ -21,7 +22,7 @@ object PlayerProfileClient {
     val serviceUri: Uri                     = config.uri
     val backend: SttpBackend[Identity, Any] = HttpClientSyncBackend()
 
-    override def fetchRawPlayerProfileById(id: PlayerId): F[Either[GameException, Json]] = Applicative[F].pure(for {
+    override def fetchRawPlayerProfileById(id: PlayerId): F[ErrorOr[Json]] = Applicative[F].pure(for {
       jsonRes <- backend.send {
                    basicRequest
                      .get(serviceUri.addPath("players", id.value.toString, "profile"))

@@ -57,11 +57,11 @@ object TestUtils {
   ): IO[PlayerProfileClientMemory[IO]] = IO.pure(
     new PlayerProfileClientMemory[IO] {
 
-      override def save(playerId: PlayerId)(playerJson: Json): IO[Either[GameException, Unit]] = (for {
+      override def save(playerId: PlayerId)(playerJson: Json): IO[ErrorOr[Unit]] = (for {
         json <- EitherT.right[GameException](ref.update(_ + (playerId -> playerJson)))
       } yield json).value
 
-      override def getById(playerId: PlayerId): IO[Either[GameException, Json]] = ref
+      override def getById(playerId: PlayerId): IO[ErrorOr[Json]] = ref
         .get
         .map(_.get(playerId) match {
           case Some(playerJson) => Right(playerJson)
@@ -78,21 +78,21 @@ object TestUtils {
   ): IO[UserGameStateMemory[IO]] = IO.pure(
     new UserGameStateMemory[IO] {
 
-      def save(user: User)(newUserState: UserGameState): IO[Either[GameException, Unit]] = (for {
+      def save(user: User)(newUserState: UserGameState): IO[ErrorOr[Unit]] = (for {
         _ <- EitherT.right[GameException](ref.update(_ + (user -> newUserState)))
       } yield ()).value
 
-      def update(user: User)(newUserState: UserGameState)(versionNumber: Instant): IO[Either[GameException, Unit]] =
+      def update(user: User)(newUserState: UserGameState)(versionNumber: Instant): IO[ErrorOr[Unit]] =
         save(user)(newUserState)
 
-      def getByUser(user: User): IO[Either[GameException, UserGameState]] = ref
+      def getByUser(user: User): IO[ErrorOr[UserGameState]] = ref
         .get
         .map(_.get(user) match {
           case Some(userStats) => Right(userStats)
           case None            => Left(UserNotFoundException(user))
         })
 
-      def getAll(): IO[Either[GameException, Map[User, UserGameState]]] = ref
+      def getAll(): IO[ErrorOr[Map[User, UserGameState]]] = ref
         .get
         .map(Right[GameException, Map[User, UserGameState]])
 
@@ -103,7 +103,7 @@ object TestUtils {
     new EventMemory[IO] {
       override def sendEvent(event: Event): IO[Unit] = ref.update(_ :+ event)
 
-      override def getEventsForUser(user: User): IO[Either[GameException, List[Event]]] = ref
+      override def getEventsForUser(user: User): IO[ErrorOr[List[Event]]] = ref
         .get
         .map(_.filter(_.getUser == user) match {
           case Nil                     => Left(UserNotFoundException(user))

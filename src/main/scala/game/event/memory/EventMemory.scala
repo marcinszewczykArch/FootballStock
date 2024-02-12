@@ -21,13 +21,14 @@ import io.circe.syntax.EncoderOps
 import org.scanamo.Scanamo
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.SelfAwareStructuredLogger
+import utils.Type.ErrorOr
 
 import java.util.UUID
 
 trait EventMemory[F[_]] {
 
   def sendEvent(event: Event): F[Unit]
-  def getEventsForUser(user: User): F[Either[GameException, List[Event]]]
+  def getEventsForUser(user: User): F[ErrorOr[List[Event]]]
 //todo: get events for user and player
 }
 
@@ -59,7 +60,7 @@ object EventMemory {
           )
           .pure
 
-      override def getEventsForUser(user: User): F[Either[GameException, List[Event]]] =
+      override def getEventsForUser(user: User): F[ErrorOr[List[Event]]] =
         log.debug(s"getting events for $user from dynamoDb") *>
           (scanamo
             .exec(table.query("user" === user.value))
@@ -79,7 +80,7 @@ object EventMemory {
 
     }
 
-  private def toEvent(eventName: String, jsonString: String): Either[GameException, Event] =
+  private def toEvent(eventName: String, jsonString: String): ErrorOr[Event] =
     parser.parse(jsonString) match {
       case Left(parsingFailure) => Left[GameException, Event](JsonParsingFailure(parsingFailure.getMessage()))
       case Right(json)          =>
