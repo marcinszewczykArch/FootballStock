@@ -1,22 +1,14 @@
+import application.{ClubModule, EventModule, PlayerModule, StateModule}
 import cats.effect._
 import cats.implicits.toSemigroupKOps
 import config.AppConfig
 import config.AppConfig._
 import console.ConsolePrinter
 import fs2.Stream
-import game.club.client.{ClubPlayersClient, ClubProfileClient, ClubSearchClient}
-import game.club.client.memory.{ClubPlayersClientMemory, ClubProfileClientMemory}
-import game.club.service.ClubService
 import game.club.service.domain.ClubId
 import game.errors.GameException
-import game.events.memory.EventMemory
-import game.events.service.EventService
 import game.logic.GameEngine
-import game.player.client.{PlayerMarketValueClient, PlayerProfileClient, PlayerSearchClient}
-import game.player.client.memory.PlayerProfileClientMemory
-import game.player.service.{PlayerService, PlayersUpdater}
-import game.state.memory.UserGameStateMemory
-import game.state.service.UserGameStateService
+import game.player.service.PlayersUpdater
 import http.SwaggerRoutes
 import http.club.{ClubLogic, ClubRoutes}
 import http.event.{EventLogic, EventRoutes}
@@ -31,12 +23,8 @@ import org.scanamo.Scanamo
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
-import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient
-import sttp.client3.UriContext
 import utils.TimeProvider
-
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 object Main extends IOApp {
   implicit val timeProvider: TimeProvider[IO]           = TimeProvider.impl[IO]
@@ -49,73 +37,35 @@ object Main extends IOApp {
 
   def run(args: List[String]): IO[ExitCode] =
     (for {
-      //config
+      //config and resources
       _              <- Resource.eval(log.info("starting..."))
       rawAppConfig   <- Resource.eval(AppConfig.getTypesafeConfig[IO])
       appConfig      <- Resource.eval(AppConfig.parseAppConfig[IO](rawAppConfig))
       _              <- Resource.eval(log.info(s"config loaded: $appConfig"))
       dynamoDbClient <- Resource.eval(buildDynamoDbClient(appConfig.aws))
+      scanamo        = Scanamo(dynamoDbClient)
+      consolePrinter = ConsolePrinter.impl[IO]
 
-      //memory, clients
-      scanamo                         = Scanamo(dynamoDbClient)
-      consolePrinter                  = ConsolePrinter.impl[IO]
-      //state
-      stateMemory                     = UserGameStateMemory.impl[IO](scanamo)
-      //event
-      eventMemory                     = EventMemory.impl[IO](scanamo)
-      //players
-      playerProfileClientMemory       = PlayerProfileClientMemory.impl[IO](scanamo)
-      playerProfileClient             = PlayerProfileClient.impl[IO](appConfig.playerProfileClient)
-      playerProfileClientMemoryCached =
-        PlayerProfileClientMemory.cachedInstance[IO](appConfig.playerProfileClient, playerProfileClient, playerProfileClientMemory)
-      playerSearchClient              = PlayerSearchClient.cachedInstance[IO](appConfig.playerSearchClient)
-      playerMarketValueClient         = PlayerMarketValueClient.cachedInstance[IO](appConfig.playerMarketValueClient)
-      //clubs
-//      clubProfileClientMemory         = ClubProfileClientMemory.impl[IO](scanamo)
-//      clubProfileClient               = ClubProfileClient.impl[IO](appConfig.clubProfileClient)
-//      clubProfileClientMemoryCached =
-//        ClubProfileClientMemory.cachedInstance[IO](appConfig.clubProfileClient, ClubProfileClient.impl[IO](appConfig.clubProfileClient), ClubProfileClientMemory.impl[IO](scanamo))
-//      clubPlayersClientMemory         = ClubPlayersClientMemory.impl[IO](scanamo)
-//      clubPlayersClient             = ClubPlayersClient.impl[IO](appConfig.clubPlayersClient)
-//      clubPlayersClientMemoryCached =
-//        ClubPlayersClientMemory.cachedInstance[IO](appConfig.clubPlayersClient, ClubPlayersClient.impl[IO](appConfig.clubPlayersClient), ClubPlayersClientMemory.impl[IO](scanamo))
-//      clubSearchClient                = ClubSearchClient.cachedInstance[IO]()
+      //modules
+      playerModule = PlayerModule.impl[IO](scanamo, appConfig)
+      clubModule   = ClubModule.impl[IO](scanamo, appConfig)
+      stateModule  = StateModule.impl[IO](scanamo)
+      eventModule  = EventModule.impl[IO](scanamo)
 
-      //services
-      gameStateService = UserGameStateService.impl[IO](stateMemory)
-      eventService     = EventService.impl(eventMemory)
-      playerService    =
-        PlayerService.impl[IO](playerProfileClientMemoryCached, playerProfileClient, playerSearchClient, playerMarketValueClient)
-      playersUpdater   = PlayersUpdater.impl[IO](
-                           playerProfileClient,
-                           playerProfileClientMemory,
-                           playerProfileClientMemoryCached,
-                           playerService,
-                           eventService,
-                           gameStateService,
-                           appConfig.playersUpdateCriteria
-                         )
-      clubService      =
-        ClubService.impl[IO](        ClubProfileClientMemory.cachedInstance[IO](appConfig.clubProfileClient, ClubProfileClient.impl[IO](appConfig.clubProfileClient), ClubProfileClientMemory.impl[IO](scanamo))
-          ,         ClubPlayersClientMemory.cachedInstance[IO](appConfig.clubPlayersClient, ClubPlayersClient.impl[IO](appConfig.clubPlayersClient), ClubPlayersClientMemory.impl[IO](scanamo))
-          , ClubSearchClient.cachedInstance[IO](appConfig.clubSearchClient))
+      playersUpdater = PlayersUpdater.impl[IO](
+                         playerModule.playerProfileClient,
+                         playerModule.playerProfileClientMemory,
+                         playerModule.playerProfileClientMemoryCached,
+                         playerModule.service,
+                         eventModule.service,
+                         stateModule.service,
+                         appConfig.playersUpdateCriteria
+                       )
 
-      gameEngine         = GameEngine.impl(gameStateService, eventService, playerService, clubService)
-      gameStateLogic     = GameStateLogic.impl[IO](gameEngine)
-      playerProfileLogic = PlayerProfileLogic.impl[IO](gameEngine)
-      eventLogic         = EventLogic.impl[IO](gameEngine)
-      clubLogic          = ClubLogic.impl[IO](gameEngine)
-
-      //todo: test
-      legia <- Resource.eval(gameEngine.searchClubByName("legia"))
-      _ <- Resource.eval(IO.println(legia))
-      clubProfile <- Resource.eval(gameEngine.getClubPlayersById(ClubId(422)))
-      _ <- Resource.eval(IO.println(clubProfile))
-      clubPlayers <- Resource.eval(gameEngine.getClubProfileById(ClubId(422)))
-      _ <- Resource.eval(IO.println(clubPlayers))
+      gameEngine = GameEngine.impl(stateModule.service, eventModule.service, playerModule.service, clubModule.service)
 
       //server
-      _ <- httpServerResource(appConfig, gameStateLogic, playerProfileLogic, eventLogic, clubLogic)
+      _ <- httpServerResource(appConfig, gameEngine)
       _ <- Resource.eval(consolePrinter.printStartMessage[IO])
       _ <- Resource.eval(runGame(consolePrinter, gameEngine, playersUpdater, appConfig.updaterTask))
     } yield ()).useForever
@@ -182,14 +132,15 @@ object Main extends IOApp {
 
   def httpServerResource(
     appConfig: AppConfig,
-    gameStateLogic: GameStateLogic[IO],
-    playerProfileLogic: PlayerProfileLogic[IO],
-    eventLogic: EventLogic[IO],
-    clubLogic: ClubLogic[IO]
+    gameEngine: GameEngine[IO]
   )(
     implicit tokenVerification: TokenVerification[IO]
   ): Resource[IO, Server] = for {
-    swaggerRoutes       <- Resource.eval(SwaggerRoutes.routes)
+    swaggerRoutes <- Resource.eval(SwaggerRoutes.routes)
+    gameStateLogic     = GameStateLogic.impl[IO](gameEngine)
+    playerProfileLogic = PlayerProfileLogic.impl[IO](gameEngine)
+    eventLogic         = EventLogic.impl[IO](gameEngine)
+    clubLogic          = ClubLogic.impl[IO](gameEngine)
     gameStateRoutes     <- Resource.eval(new GameStateRoutes[IO](tokenVerification).routes(gameStateLogic))
     playerProfileRoutes <- Resource.eval(new PlayerProfileRoutes[IO](tokenVerification).routes(playerProfileLogic))
     eventRoutes         <- Resource.eval(new EventRoutes[IO](tokenVerification).routes(eventLogic))
