@@ -4,8 +4,8 @@ import cats.Applicative
 import cats.effect._
 import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxApplyOps}
 import cats.syntax.all._
-import game.errors.GameException
-import game.errors.GameException.{DynamoDbUpdateException, DynamoReaderException, JsonDecodingException, JsonParsingFailure}
+import game.GameException
+import GameException.{DynamoDbUpdateException, DynamoReaderException, JsonDecodingException, JsonParsingFailure}
 import game.state.domain.{User, UserGameState}
 import io.circe.parser
 import io.circe.syntax.EncoderOps

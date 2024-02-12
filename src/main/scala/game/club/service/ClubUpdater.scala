@@ -13,11 +13,11 @@ import cats.implicits.toFunctorFilterOps
 import cats.implicits.toFunctorOps
 import cats.implicits.toTraverseOps
 import config.AppConfig.PlayersUpdateCriteriaConfig
-import game.errors.GameException
-import game.events.Event
-import game.events.Event.PlayerValueChanged
-import game.events.Event.PlayersUpdateEvent
-import game.events.service.EventService
+import game.GameException
+import game.event.Event
+import game.event.Event.PlayerValueChanged
+import game.event.Event.PlayersUpdateEvent
+import game.event.service.EventService
 import game.player.client.PlayerProfileClient
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.domain.PlayerId

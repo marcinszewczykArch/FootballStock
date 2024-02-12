@@ -1,10 +1,8 @@
-package application
+package game.event
 
 import cats.effect._
-import game.events.memory.EventMemory
-import game.events.service.EventService
-import game.state.memory.UserGameStateMemory
-import game.state.service.UserGameStateService
+import game.event.memory.EventMemory
+import game.event.service.EventService
 import org.scanamo.Scanamo
 import org.typelevel.log4cats.LoggerFactory
 

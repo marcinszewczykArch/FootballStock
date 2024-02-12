@@ -4,8 +4,8 @@ import cats.Applicative
 import cats.data.EitherT
 import cats.effect._
 import cats.implicits.{catsSyntaxApplicativeError, toFlatMapOps, toFunctorOps}
-import game.errors.GameException
-import game.errors.GameException.{PlayerMarketValueException, PlayerSearchByNameException}
+import game.GameException
+import GameException.{PlayerMarketValueException, PlayerSearchByNameException}
 import game.player.client.{PlayerMarketValueClient, PlayerProfileClient, PlayerSearchClient}
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerMapper.{fetchedMarketValueHistoryToMarketValueHistory, fetchedPlayerProfileToProfile, fetchedPlayerSimpleToPlayerSimple, jsonToFetchedPlayerProfile}

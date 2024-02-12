@@ -1,6 +1,6 @@
 package http.event
 
-import game.events.Event
+import game.event.Event
 import http.BaseEndpoint.baseEndpoint
 import http.event.domain.EventsResponse
 import http.player.domain.{PlayerProfileResponse, PlayerSearchResponse}

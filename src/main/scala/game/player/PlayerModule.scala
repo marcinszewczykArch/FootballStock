@@ -1,9 +1,9 @@
-package application
+package game.player
 
 import cats.effect._
 import config.AppConfig
-import game.player.client.{PlayerMarketValueClient, PlayerProfileClient, PlayerSearchClient}
 import game.player.client.memory.PlayerProfileClientMemory
+import game.player.client.{PlayerMarketValueClient, PlayerProfileClient, PlayerSearchClient}
 import game.player.service.PlayerService
 import org.scanamo.Scanamo
 import org.typelevel.log4cats.LoggerFactory

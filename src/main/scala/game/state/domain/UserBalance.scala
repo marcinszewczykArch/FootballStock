@@ -3,7 +3,7 @@ package game.state.domain
 import cats.Applicative
 import cats.data.EitherT
 import cats.effect.Sync
-import game.errors.GameException
+import game.GameException
 import game.player.service.PlayerService
 import game.player.service.domain.PlayerProfile
 

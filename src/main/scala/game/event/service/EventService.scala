@@ -1,9 +1,9 @@
-package game.events.service
+package game.event.service
 
 import cats.effect._
-import game.errors.GameException
-import game.events.Event
-import game.events.memory.EventMemory
+import game.GameException
+import game.event.Event
+import game.event.memory.EventMemory
 import game.state.domain.User
 import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 

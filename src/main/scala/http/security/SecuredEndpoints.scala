@@ -2,7 +2,7 @@ package http.security
 
 import cats.Monad
 import cats.implicits.{toBifunctorOps, toFunctorOps}
-import game.errors.GameException
+import game.GameException
 import http.GameExceptionResponse
 import http.security.SecuredEndpoints.{BearerToken, ServerAppEndpoint}
 import http.security.errors.{BusinessFailure, Failure}

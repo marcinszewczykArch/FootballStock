@@ -4,9 +4,9 @@ import cats.Applicative
 import cats.data.EitherT
 import cats.effect._
 import cats.implicits.toFunctorOps
-import game.errors.GameException
-import game.errors.GameException.{SharesNumberException, UserAlreadyExistsException}
-import game.events.Event.SYSTEM_USER_NAME
+import game.GameException
+import GameException.{SharesNumberException, UserAlreadyExistsException}
+import game.event.Event.SYSTEM_USER_NAME
 import game.state.domain.{Shares, User, UserGameState}
 import game.state.memory.UserGameStateMemory
 import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}

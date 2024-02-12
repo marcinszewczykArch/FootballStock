@@ -1,8 +1,8 @@
-package http.gameState
+package http.state
 
-import game.errors.GameException
+import game.GameException
 import http.BaseEndpoint.baseEndpoint
-import http.gameState.domain._
+import http.state.domain._
 import http.security.SecuredEndpoints.AppEndpointSecret
 import http.security.SecuredEndpoints.AppEndpointSecretWithError
 import http.security.SecuredEndpoints.secretBearer

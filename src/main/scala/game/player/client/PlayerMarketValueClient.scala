@@ -4,7 +4,7 @@ import cats.{Applicative, MonadThrow}
 import cats.effect._
 import cats.syntax.all._
 import config.AppConfig.PlayerMarketValueClientConfig
-import game.errors.GameException.PlayerMarketValueHistoryClientException
+import game.GameException.PlayerMarketValueHistoryClientException
 import game.player.client.domain.FetchedMarketValueHistory
 import game.player.service.domain.PlayerId
 import org.typelevel.log4cats.LoggerFactory

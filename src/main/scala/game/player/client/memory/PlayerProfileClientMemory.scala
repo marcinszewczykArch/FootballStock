@@ -8,10 +8,10 @@ import cats.implicits.toFlatMapOps
 import cats.implicits.toFunctorOps
 import cats.syntax.all._
 import config.AppConfig.PlayerProfileClientConfig
-import game.errors.GameException
-import game.errors.GameException.DynamoReaderException
-import game.errors.GameException.JsonParsingFailure
-import game.errors.GameException.PlayerJsonNotFoundInMemoryCacheException
+import game.GameException
+import GameException.DynamoReaderException
+import GameException.JsonParsingFailure
+import GameException.PlayerJsonNotFoundInMemoryCacheException
 import game.player.client.PlayerProfileClient
 import game.player.service.domain.PlayerId
 import io.circe.Json

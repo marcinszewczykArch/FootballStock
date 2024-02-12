@@ -2,7 +2,7 @@ package http.player
 
 import game.player.service.domain.{MarketValue, MarketValueHistory, PlayerProfile, PlayerSimple}
 import game.state.domain.UserBalance
-import http.gameState.domain.UserGameStateResponse
+import http.state.domain.UserGameStateResponse
 import http.player.domain.MarketValueResponse.fromDomainMarketValue
 import io.circe.Decoder
 import io.circe.Encoder

@@ -1,9 +1,9 @@
 package http.event
 
 import cats.effect.Sync
-import game.events.Event
-import game.events.Event._
-import game.logic.GameEngine
+import game.GameEngine
+import game.event.Event
+import game.event.Event._
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder

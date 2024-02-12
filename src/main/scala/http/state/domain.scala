@@ -1,10 +1,10 @@
-package http.gameState
+package http.state
 
 import game.state.domain.{BalancePerPlayer, Shares, User, UserBalance}
 import game.player.service.domain.PlayerId
 import game.player.service.domain.PlayerProfile
 import game.player.service.domain.PlayerSimple
-import http.gameState.domain.PlayerStockResponse
+import http.state.domain.PlayerStockResponse
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder

@@ -1,7 +1,7 @@
 package game.player.service
 
-import game.errors.GameException
-import game.errors.GameException.JsonDecodingException
+import game.GameException
+import GameException.JsonDecodingException
 import game.player.client.domain._
 import game.player.service.domain._
 import io.circe.Json

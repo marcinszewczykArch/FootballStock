@@ -1,9 +1,9 @@
 package console
 
 import cats.Applicative
-import game.errors.GameException
-import game.errors.GameException.IncorrectConsoleInputException
-import game.errors.GameException.IncorrectParsingException
+import game.GameException
+import GameException.IncorrectConsoleInputException
+import GameException.IncorrectParsingException
 
 sealed trait InputMessage
 

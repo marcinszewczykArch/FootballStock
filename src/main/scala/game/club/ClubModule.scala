@@ -1,13 +1,10 @@
-package application
+package game.club
 
 import cats.effect._
 import config.AppConfig
-import game.club.client.{ClubPlayersClient, ClubProfileClient, ClubSearchClient}
 import game.club.client.memory.{ClubPlayersClientMemory, ClubProfileClientMemory}
+import game.club.client.{ClubPlayersClient, ClubProfileClient, ClubSearchClient}
 import game.club.service.ClubService
-import game.player.client.PlayerProfileClient
-import game.player.client.memory.PlayerProfileClientMemory
-import game.player.service.PlayerService
 import org.scanamo.Scanamo
 import org.typelevel.log4cats.LoggerFactory
 

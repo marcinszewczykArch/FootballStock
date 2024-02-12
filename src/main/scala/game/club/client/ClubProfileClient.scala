@@ -4,9 +4,9 @@ import cats.Applicative
 import cats.MonadThrow
 import cats.effect._
 import config.AppConfig.ClubProfileClientConfig
+import game.GameException
 import game.club.service.domain.ClubId
-import game.errors.GameException
-import game.errors.GameException.ClubProfileClientException
+import GameException.ClubProfileClientException
 import io.circe.Json
 import io.circe.parser
 import sttp.client3._

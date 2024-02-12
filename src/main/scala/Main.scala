@@ -1,20 +1,21 @@
-import application.{ClubModule, EventModule, PlayerModule, StateModule}
 import cats.effect._
 import cats.implicits.toSemigroupKOps
 import config.AppConfig
 import config.AppConfig._
 import console.ConsolePrinter
 import fs2.Stream
-import game.club.service.domain.ClubId
-import game.errors.GameException
-import game.logic.GameEngine
+import game.{GameEngine, GameException}
+import game.club.ClubModule
+import game.event.EventModule
+import game.player.PlayerModule
 import game.player.service.PlayersUpdater
+import game.state.StateModule
 import http.SwaggerRoutes
 import http.club.{ClubLogic, ClubRoutes}
 import http.event.{EventLogic, EventRoutes}
-import http.gameState.{GameStateLogic, GameStateRoutes}
 import http.player.{PlayerProfileLogic, PlayerProfileRoutes}
 import http.security.{EloTokenVerification, TokenVerification}
+import http.state.{GameStateLogic, GameStateRoutes}
 import org.http4s.{BuildInfo, HttpRoutes}
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.{Router, Server}
@@ -30,7 +31,6 @@ object Main extends IOApp {
   implicit val timeProvider: TimeProvider[IO]           = TimeProvider.impl[IO]
   implicit val loggerFactory: LoggerFactory[IO]         = Slf4jFactory.create[IO]
   implicit val tokenVerification: TokenVerification[IO] = EloTokenVerification
-  type Result[A] = Either[GameException, A] //todo: this can be used in multiple places for simplification
   val corsService: CORSPolicy = CORS.policy.withAllowOriginAll
 
   private val log = LoggerFactory.getLoggerFromClass(classOf[Main.type])

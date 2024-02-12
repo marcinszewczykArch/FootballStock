@@ -3,8 +3,7 @@ package console
 import cats.{Applicative, Monad}
 import cats.effect.std.Console
 import cats.syntax.all._
-import game.errors.GameException
-import game.logic.GameEngine
+import game.{GameEngine, GameException}
 import game.player.service.domain.{PlayerId, PlayerSimple}
 import game.state.domain.User
 

@@ -4,12 +4,12 @@ import cats.Applicative
 import cats.data.EitherT
 import cats.effect._
 import cats.implicits.{catsSyntaxApplicativeError, toFlatMapOps, toFunctorOps}
+import game.GameException
 import game.club.client.ClubSearchClient
 import game.club.client.memory.{ClubPlayersClientMemory, ClubProfileClientMemory}
 import game.club.service.ClubMapper._
 import game.club.service.domain.{ClubId, ClubPlayers, ClubProfile, ClubSimple}
-import game.errors.GameException
-import game.errors.GameException.ClubSearchByNameException
+import GameException.ClubSearchByNameException
 import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 
 trait ClubService[F[_]] {

@@ -2,7 +2,7 @@ package http.club
 
 import cats.effect.Sync
 import cats.implicits.toFunctorOps
-import game.logic.GameEngine
+import game.GameEngine
 import game.player.service.domain.PlayerId
 import http.GameExceptionResponse
 import http.club.domain.{ClubPlayersResponse, ClubProfileResponse, ClubSearchResponse}

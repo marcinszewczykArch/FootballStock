@@ -1,4 +1,4 @@
-package application
+package game.state
 
 import cats.effect._
 import game.state.memory.UserGameStateMemory

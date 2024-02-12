@@ -1,9 +1,9 @@
 package game.club.service
 
+import game.GameException
 import game.club.client.domain.{FetchedClubLeague, FetchedClubPlayer, FetchedClubPlayers, FetchedClubProfile, FetchedClubSimple, FetchedClubSquad}
 import game.club.service.domain._
-import game.errors.GameException
-import game.errors.GameException.JsonDecodingException
+import GameException.JsonDecodingException
 import game.player.service.domain.PlayerId
 import io.circe.Json
 import utils.Parser.{toBigDecimalOrZero, toInstantOrFarPastForUpdateAt}

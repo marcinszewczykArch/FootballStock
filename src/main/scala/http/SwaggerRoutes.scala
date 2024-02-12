@@ -3,7 +3,7 @@ package http
 import cats.effect.IO
 import http.club.ClubEndpoints
 import http.event.EventEndpoints
-import http.gameState.GameStateEndpoints
+import http.state.GameStateEndpoints
 import http.player.PlayerEndpoints
 import org.http4s.HttpRoutes
 import sttp.apispec.openapi.circe.yaml.RichOpenAPI

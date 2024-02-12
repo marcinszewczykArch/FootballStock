@@ -1,9 +1,9 @@
 package http.player
 
-import game.errors.GameException
+import game.GameException
 import game.player.service.domain.PlayerProfile
 import http.BaseEndpoint.baseEndpoint
-import http.gameState.domain._
+import http.state.domain._
 import http.player.domain.{MarketValueHistoryResponse, PlayerProfileResponse, PlayerSearchResponse}
 import http.security.SecuredEndpoints.AppEndpointSecretWithError
 import http.security.SecuredEndpoints.secretBearer

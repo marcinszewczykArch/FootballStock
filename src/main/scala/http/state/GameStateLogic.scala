@@ -1,12 +1,12 @@
-package http.gameState
+package http.state
 
 import cats.effect.Sync
 import cats.implicits.toFunctorOps
-import game.logic.GameEngine
+import game.GameEngine
 import game.player.service.domain.PlayerId
 import game.state.domain.User
 import http.GameExceptionResponse
-import http.gameState.domain._
+import http.state.domain._
 import org.typelevel.log4cats.LoggerFactory
 
 trait GameStateLogic[F[_]] {

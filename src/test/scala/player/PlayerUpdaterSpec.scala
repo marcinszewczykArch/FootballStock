@@ -4,8 +4,8 @@ import cats.effect.IO
 import cats.effect.Ref
 import config.AppConfig
 import config.AppConfig.PlayersUpdateCriteriaConfig
-import game.events.Event
-import game.events.memory.EventMemory
+import game.event.Event
+import game.event.memory.EventMemory
 import game.player.service.PlayersUpdater
 import game.player.service.domain.PlayerId
 import io.circe.Json

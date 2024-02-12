@@ -3,8 +3,8 @@ package game.player.client
 import cats.{Applicative, MonadThrow}
 import cats.effect._
 import config.AppConfig.PlayerProfileClientConfig
-import game.errors.GameException
-import game.errors.GameException.PlayerProfileClientException
+import game.GameException
+import GameException.PlayerProfileClientException
 import game.player.service.domain.PlayerId
 import io.circe.{Json, parser}
 import sttp.client3._

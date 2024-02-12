@@ -2,7 +2,7 @@ package http.event
 
 import cats.effect.Sync
 import cats.implicits.toFunctorOps
-import game.logic.GameEngine
+import game.GameEngine
 import game.state.domain.User
 import http.GameExceptionResponse
 import http.event.domain.{EventsResponse, toEventsResponse}

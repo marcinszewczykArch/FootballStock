@@ -1,4 +1,4 @@
-package http.gameState
+package http.state
 
 import cats.effect.Async
 import GameStateEndpoints._

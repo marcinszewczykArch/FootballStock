@@ -6,10 +6,10 @@ import cats.effect._
 import cats.implicits.{catsSyntaxApplyOps, toFlatMapOps, toFunctorOps}
 import cats.syntax.all._
 import config.AppConfig.ClubPlayersClientConfig
+import game.GameException
 import game.club.client.ClubPlayersClient
 import game.club.service.domain.ClubId
-import game.errors.GameException
-import game.errors.GameException.{ClubPlayersJsonNotFoundInMemoryCacheException, DynamoReaderException, JsonParsingFailure}
+import GameException.{ClubPlayersJsonNotFoundInMemoryCacheException, DynamoReaderException, JsonParsingFailure}
 import io.circe.{Json, parser}
 import org.scanamo.Scanamo
 import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}

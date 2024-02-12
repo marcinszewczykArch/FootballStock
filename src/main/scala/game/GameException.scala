@@ -1,4 +1,4 @@
-package game.errors
+package game
 
 import game.club.service.domain.ClubId
 import game.player.service.domain.PlayerId

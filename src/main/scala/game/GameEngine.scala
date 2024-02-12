@@ -1,4 +1,4 @@
-package game.logic
+package game
 
 import cats.Applicative
 import cats.data.EitherT
@@ -6,11 +6,10 @@ import cats.effect._
 import cats.implicits.toTraverseOps
 import game.club.service.ClubService
 import game.club.service.domain.{ClubId, ClubPlayers, ClubProfile, ClubSimple}
-import game.errors.GameException
-import game.errors.GameException.{NotEnoughMoneyException, PlayerMarketValueNotUpToDateException}
-import game.events.Event
-import game.events.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
-import game.events.service.EventService
+import GameException.{NotEnoughMoneyException, PlayerMarketValueNotUpToDateException}
+import game.event.Event
+import game.event.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
+import game.event.service.EventService
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
 import game.player.service.domain.{MarketValueHistory, PlayerId, PlayerProfile, PlayerSimple}
@@ -18,6 +17,7 @@ import game.state.domain._
 import game.state.service.UserGameStateService
 import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 import utils.TimeProvider
+import utils.Type.ErrorOr
 
 trait GameEngine[F[_]] {
 
@@ -34,7 +34,7 @@ trait GameEngine[F[_]] {
 
   def getUserEvents(user: User): F[Either[GameException, List[Event]]]
 
-  def searchPlayerByName(playerName: String): F[Either[GameException, List[PlayerSimple]]]
+  def searchPlayerByName(playerName: String): F[ErrorOr[List[PlayerSimple]]]
   def getMarketValueByPlayerId(id: PlayerId): F[Either[GameException, BigDecimal]]
   def getMarketValueHistoryByPlayerId(id: PlayerId): F[Either[GameException, MarketValueHistory]]
   def getPlayerProfileById(id: PlayerId): F[Either[GameException, PlayerProfile]]
