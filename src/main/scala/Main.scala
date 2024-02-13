@@ -62,6 +62,8 @@ object Main extends IOApp {
                          appConfig.playersUpdateCriteria
                        )
 
+      //todo: clubsUpdater to be implemented like once a day
+
       gameEngine = GameEngine.impl(stateModule.service, eventModule.service, playerModule.service, clubModule.service)
 
       //server

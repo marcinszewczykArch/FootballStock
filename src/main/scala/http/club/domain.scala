@@ -135,7 +135,7 @@ object domain {
     implicit val clubPlayersResponseResponseEncoder: Encoder[ClubPlayersResponse] = deriveEncoder
   }
 
-  object ClubPlayerResponse {
+  private object ClubPlayerResponse {
 
     def fromDomainClubPlayer(clubPlayer: ClubPlayer): ClubPlayerResponse = new ClubPlayerResponse(
       id = clubPlayer.id.value,

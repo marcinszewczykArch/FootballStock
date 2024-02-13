@@ -122,8 +122,8 @@ object ClubMapper {
       ClubPlayer(
         id = PlayerId(id.getOrElse(0)),
         name = name.getOrElse("-"),
-        position = name.getOrElse("-"),
-        dateOfBirth = name.getOrElse("-"),
+        position = position.getOrElse("-"),
+        dateOfBirth = dateOfBirth.getOrElse("-"),
         age = age.getOrElse(0),
         nationality = nationality.getOrElse(Nil),
         height = height.getOrElse("-"),

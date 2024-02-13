@@ -35,7 +35,6 @@ object UserGameState {
 final case class StockInfo(
                             shares: List[Shares],
                             lastPlayerValue: BigDecimal
-//                            lastPlayerClub: String //todo: to ClubId
                           )
 
 object StockInfo {
