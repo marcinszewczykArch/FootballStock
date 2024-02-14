@@ -92,12 +92,19 @@ object GameException extends CirceExtraConfiguration {
   implicit val playerJsonNotFoundInMemoryExceptionCodec: Codec[PlayerJsonNotFoundInMemoryException] =
     deriveConfiguredCodec[PlayerJsonNotFoundInMemoryException]
 
-  final case class PlayerJsonNotFoundInMemoryCacheException(playerId: PlayerId) extends GameException {
+  final case class PlayerProfileJsonNotFoundInMemoryCacheException(playerId: PlayerId) extends GameException {
     override def getMessage = s"Player profile JSON for player $playerId not found in memory cache."
   }
 
-  implicit val playerJsonNotFoundInMemoryCacheExceptionCodec: Codec[PlayerJsonNotFoundInMemoryCacheException] =
-    deriveConfiguredCodec[PlayerJsonNotFoundInMemoryCacheException]
+  implicit val playerProfileJsonNotFoundInMemoryCacheExceptionCodec: Codec[PlayerProfileJsonNotFoundInMemoryCacheException] =
+    deriveConfiguredCodec[PlayerProfileJsonNotFoundInMemoryCacheException]
+
+  final case class PlayerStatsJsonNotFoundInMemoryCacheException(playerId: PlayerId) extends GameException {
+    override def getMessage = s"Player stats JSON for player $playerId not found in memory cache."
+  }
+
+  implicit val playerStatsJsonNotFoundInMemoryCacheExceptionCodec: Codec[PlayerStatsJsonNotFoundInMemoryCacheException] =
+    deriveConfiguredCodec[PlayerStatsJsonNotFoundInMemoryCacheException]
 
   final case class ClubProfileJsonNotFoundInMemoryCacheException(clubId: ClubId) extends GameException {
     override def getMessage = s"Club profile JSON for club $clubId not found in memory cache."

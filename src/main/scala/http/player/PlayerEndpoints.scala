@@ -4,7 +4,7 @@ import game.GameException
 import game.player.service.domain.PlayerProfile
 import http.BaseEndpoint.baseEndpoint
 import http.state.domain._
-import http.player.domain.{MarketValueHistoryResponse, PlayerProfileResponse, PlayerSearchResponse}
+import http.player.domain.{MarketValueHistoryResponse, PlayerProfileResponse, PlayerSearchResponse, PlayerStatsResponse}
 import http.security.SecuredEndpoints.AppEndpointSecretWithError
 import http.security.SecuredEndpoints.secretBearer
 import http.security.errors
@@ -19,7 +19,8 @@ object PlayerEndpoints {
   lazy val endpoints: List[AppEndpointSecretWithError[_, _]] = List(
     getPlayer,
     getPlayerSearch,
-    getPlayerValue
+    getPlayerValue,
+    getPlayerStats
   )
 
   lazy val getPlayer: AppEndpointSecretWithError[Int, PlayerProfileResponse] = baseEndpoint
@@ -48,5 +49,14 @@ object PlayerEndpoints {
     .description("Request Transfermatrk api to search player market value history")
     .tag("Player")
     .out(jsonBody[MarketValueHistoryResponse])
+
+  lazy val getPlayerStats: AppEndpointSecretWithError[Int, PlayerStatsResponse] = baseEndpoint
+    .get
+    .in("playerStats")
+    .in(query[Int]("playerId"))
+    .summary("Get player stats by id")
+    .description("Scan DB to find player stats, if not exist make call to Transfermatrk api")
+    .tag("Player")
+    .out(jsonBody[PlayerStatsResponse])
 
 }

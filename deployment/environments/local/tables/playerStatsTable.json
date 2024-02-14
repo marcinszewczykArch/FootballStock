@@ -1,0 +1,15 @@
+{
+  "TableName": "PlayerStats",
+  "KeySchema": [
+    { "AttributeName": "source", "KeyType": "HASH" },
+    { "AttributeName": "playerId", "KeyType": "RANGE" }
+  ],
+  "AttributeDefinitions": [
+    { "AttributeName": "source", "AttributeType": "S" },
+    { "AttributeName": "playerId", "AttributeType": "N" }
+  ],
+  "ProvisionedThroughput": {
+    "ReadCapacityUnits": 5,
+    "WriteCapacityUnits": 5
+  }
+}

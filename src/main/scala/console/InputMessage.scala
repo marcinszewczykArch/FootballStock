@@ -38,7 +38,7 @@ object InputMessage {
         case ("/state", user, _, _)   => Right(GetUserState(user))
         case ("/allStates", _, _, _)  => Right(GetAllUsersStates())
         case ("/balance", user, _, _) => Right(GetUserBalance(user))
-        case ("/events", user, _, _)  => Right(GetUserEvents(user))
+        case ("/event", user, _, _)  => Right(GetUserEvents(user))
 
         case ("/buy", user, playerId, shares)  =>
           (for {

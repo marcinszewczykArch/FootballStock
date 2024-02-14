@@ -7,12 +7,10 @@ import cats.implicits.catsSyntaxApplyOps
 import cats.implicits.toFlatMapOps
 import cats.implicits.toFunctorOps
 import cats.syntax.all._
-import config.AppConfig.PlayerProfileClientConfig
+import config.AppConfig.{PlayerProfileClientConfig, PlayerStatsClientConfig}
 import game.GameException
-import GameException.DynamoReaderException
-import GameException.JsonParsingFailure
-import GameException.PlayerProfileJsonNotFoundInMemoryCacheException
-import game.player.client.PlayerProfileClient
+import GameException.{DynamoReaderException, JsonParsingFailure, PlayerProfileJsonNotFoundInMemoryCacheException, PlayerStatsJsonNotFoundInMemoryCacheException}
+import game.player.client.{PlayerProfileClient, PlayerStatsClient}
 import game.player.service.domain.PlayerId
 import io.circe.Json
 import io.circe.parser
@@ -22,7 +20,7 @@ import org.typelevel.log4cats.SelfAwareStructuredLogger
 import utils.Cache
 import utils.Type.ErrorOr
 
-trait PlayerProfileClientMemory[F[_]] {
+trait PlayerStatsClientMemory[F[_]] {
 
   def getById(playerId: PlayerId): F[ErrorOr[Json]]
   def getAll(): F[Map[PlayerId, Json]]
@@ -30,27 +28,27 @@ trait PlayerProfileClientMemory[F[_]] {
 
 }
 
-object PlayerProfileClientMemory {
+object PlayerStatsClientMemory {
 
   def cachedInstance[F[_]: Sync: LoggerFactory](
-    config: PlayerProfileClientConfig,
-    playerProfileClient: PlayerProfileClient[F],
-    underlying: PlayerProfileClientMemory[F]
-  ): PlayerProfileClientMemory[F] = {
-    implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[PlayerProfileClientMemory[F]].getName)
+    config: PlayerStatsClientConfig,
+    playerStatsClient: PlayerStatsClient[F],
+    underlying: PlayerStatsClientMemory[F]
+  ): PlayerStatsClientMemory[F] = {
+    implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[PlayerStatsClientMemory[F]].getName)
 
-    val fetchRawPlayersProfileCache: Cache[F, PlayerId, Json] =
+    val fetchRawPlayersStatsCache: Cache[F, PlayerId, Json] =
       Cache.instance[F, PlayerId, Json](
         cacheName = config.cacheName
       )(
         lookup = playerId =>
-          log.debug(s"player $playerId not found in cache. Checking memory...") *>
+          log.debug(s"player stats for $playerId not found in cache. Checking memory...") *>
             underlying.getById(playerId).flatMap {
               case Right(json) => Applicative[F].pure(json)
               case Left(err)   =>
                 (for {
                   _    <- EitherT.liftF(log.debug(s"${err.getMessage} Calling http client..."))
-                  json <- EitherT(playerProfileClient.fetchRawPlayerProfileById(playerId))
+                  json <- EitherT(playerStatsClient.fetchRawPlayerStatsById(playerId))
                   _    <- EitherT(underlying.save(playerId)(json))
                 } yield json).rethrowT
             }
@@ -59,23 +57,23 @@ object PlayerProfileClientMemory {
         failedFetchTtl = config.failedCacheTtl
       )
 
-    new PlayerProfileClientMemory[F] {
+    new PlayerStatsClientMemory[F] {
       def getById(playerId: PlayerId): F[ErrorOr[Json]]                =
-        fetchRawPlayersProfileCache
+        fetchRawPlayersStatsCache
           .get(playerId)
           .attempt
-          .map(_.left.map(_ => PlayerProfileJsonNotFoundInMemoryCacheException(playerId)))
+          .map(_.left.map(_ => PlayerStatsJsonNotFoundInMemoryCacheException(playerId)))
       def getAll(): F[Map[PlayerId, Json]]                                           = underlying.getAll()
       def save(playerId: PlayerId)(playerJson: Json): F[ErrorOr[Unit]] = (for {
         _ <- EitherT(underlying.save(playerId)(playerJson))
-        _ <- EitherT.liftF[F, GameException, Json](fetchRawPlayersProfileCache.update(playerId)(playerJson))
+        _ <- EitherT.liftF[F, GameException, Json](fetchRawPlayersStatsCache.update(playerId)(playerJson))
       } yield ()).value
 
     }
   }
 
-  def impl[F[_]: Sync: LoggerFactory](scanamo: Scanamo): PlayerProfileClientMemory[F] =
-    new PlayerProfileClientMemory[F] {
+  def impl[F[_]: Sync: LoggerFactory](scanamo: Scanamo): PlayerStatsClientMemory[F] =
+    new PlayerStatsClientMemory[F] {
       import org.scanamo._
       import org.scanamo.generic.auto._
       import org.scanamo.syntax._
@@ -83,14 +81,14 @@ object PlayerProfileClientMemory {
       implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[PlayerProfileClientMemory[F]].getName)
 
       private val SOURCE_TRANSFERMARKT = "Transfermarkt"
-      private val table                = Table[PlayerProfileTable]("PlayerProfile")
-      private case class PlayerProfileTable(source: String, playerId: Int, json: String)
+      private val table                = Table[PlayerStatsTable]("PlayerStats")
+      private case class PlayerStatsTable(source: String, playerId: Int, json: String)
 
       override def save(playerId: PlayerId)(playerJson: Json): F[ErrorOr[Unit]] =
-        log.debug(s"saving player $playerId to dynamoDb") *> scanamo
+        log.debug(s"saving player stats for $playerId to dynamoDb") *> scanamo
           .exec(
             table.put(
-              PlayerProfileTable(
+              PlayerStatsTable(
                 source = SOURCE_TRANSFERMARKT,
                 playerId = playerId.value,
                 json = playerJson.toString()
@@ -103,7 +101,7 @@ object PlayerProfileClientMemory {
       override def getById(
         playerId: PlayerId
       ): F[ErrorOr[Json]] =
-        log.debug(s"getting player profile json $playerId from dynamoDb") *> (scanamo
+        log.debug(s"getting player stats json $playerId from dynamoDb") *> (scanamo
           .exec(table.get("source" === SOURCE_TRANSFERMARKT and "playerId" === playerId.value.toLong))
           .map(_.left.map(err => DynamoReaderException(err.toString))) match {
           case Some(value) =>
@@ -121,7 +119,7 @@ object PlayerProfileClientMemory {
         })
 
       override def getAll(): F[Map[PlayerId, Json]] =
-        log.debug(s"getting all player profiles json from dynamoDb") *> scanamo
+        log.debug(s"getting all player stats json from dynamoDb") *> scanamo
           .exec(table.scan())
           .sequence
           .getOrElse(Nil)

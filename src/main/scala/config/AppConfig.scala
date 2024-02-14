@@ -7,7 +7,7 @@ import com.comcast.ip4s.Host
 import com.comcast.ip4s.Port
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import config.AppConfig.{AwsConfig, ClubPlayersClientConfig, ClubProfileClientConfig, ClubSearchClientConfig, HttpConfig, PlayerMarketValueClientConfig, PlayerProfileClientConfig, PlayerSearchClientConfig, PlayersUpdateCriteriaConfig, UpdaterTaskConfig}
+import config.AppConfig.{AwsConfig, ClubPlayersClientConfig, ClubProfileClientConfig, ClubSearchClientConfig, HttpConfig, PlayerMarketValueClientConfig, PlayerProfileClientConfig, PlayerSearchClientConfig, PlayerStatsClientConfig, PlayersUpdateCriteriaConfig, UpdaterTaskConfig}
 import pureconfig._
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
@@ -20,16 +20,17 @@ import scala.util.Try
 import scala.util.control.NoStackTrace
 
 final case class AppConfig(
-  http: HttpConfig,
-  aws: AwsConfig,
-  playerProfileClient: PlayerProfileClientConfig,
-  playerSearchClient: PlayerSearchClientConfig,
-  playersUpdateCriteria: PlayersUpdateCriteriaConfig,
-  playerMarketValueClient: PlayerMarketValueClientConfig,
-  clubProfileClient: ClubProfileClientConfig,
-  clubPlayersClient: ClubPlayersClientConfig,
-  clubSearchClient: ClubSearchClientConfig,
-  updaterTask: UpdaterTaskConfig
+                            http: HttpConfig,
+                            aws: AwsConfig,
+                            playerProfileClient: PlayerProfileClientConfig,
+                            playerSearchClient: PlayerSearchClientConfig,
+                            playersUpdateCriteria: PlayersUpdateCriteriaConfig,
+                            playerMarketValueClient: PlayerMarketValueClientConfig,
+                            playerStatsClient: PlayerStatsClientConfig,
+                            clubProfileClient: ClubProfileClientConfig,
+                            clubPlayersClient: ClubPlayersClientConfig,
+                            clubSearchClient: ClubSearchClientConfig,
+                            updaterTask: UpdaterTaskConfig
 )
 
 object AppConfig {
@@ -77,6 +78,13 @@ object AppConfig {
   )
 
   final case class PlayerMarketValueClientConfig(
+    uri: Uri,
+    cacheTtl: FiniteDuration,
+    failedCacheTtl: FiniteDuration,
+    cacheName: String
+  )
+
+  final case class PlayerStatsClientConfig(
     uri: Uri,
     cacheTtl: FiniteDuration,
     failedCacheTtl: FiniteDuration,

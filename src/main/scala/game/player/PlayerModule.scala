@@ -2,8 +2,8 @@ package game.player
 
 import cats.effect._
 import config.AppConfig
-import game.player.client.memory.PlayerProfileClientMemory
-import game.player.client.{PlayerMarketValueClient, PlayerProfileClient, PlayerSearchClient}
+import game.player.client.memory.{PlayerProfileClientMemory, PlayerStatsClientMemory}
+import game.player.client.{PlayerMarketValueClient, PlayerProfileClient, PlayerSearchClient, PlayerStatsClient}
 import game.player.service.PlayerService
 import org.scanamo.Scanamo
 import org.typelevel.log4cats.LoggerFactory
@@ -27,12 +27,18 @@ object PlayerModule {
       PlayerProfileClientMemory.cachedInstance[F](appConfig.playerProfileClient, playerProfileClient, playerProfileClientMemory)
     val playerSearchClient                       = PlayerSearchClient.cachedInstance[F](appConfig.playerSearchClient)
     val playerMarketValueClient                  = PlayerMarketValueClient.cachedInstance[F](appConfig.playerMarketValueClient)
+    val playerStatsClientMemory = PlayerStatsClientMemory.impl[F](scanamo)
+    val playerStatsClient = PlayerStatsClient.impl[F](appConfig.playerStatsClient)
+    val playerStatsClientMemoryCached =
+      PlayerStatsClientMemory.cachedInstance[F](appConfig.playerStatsClient, playerStatsClient, playerStatsClientMemory)
+
 
     override val service = PlayerService.impl[F](
       playerProfileClientMemoryCached,
       playerProfileClient,
       playerSearchClient,
-      playerMarketValueClient
+      playerMarketValueClient,
+      playerStatsClientMemoryCached
     )
 
   }

@@ -12,7 +12,7 @@ import game.event.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
 import game.event.service.EventService
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
-import game.player.service.domain.{MarketValueHistory, PlayerId, PlayerProfile, PlayerSimple}
+import game.player.service.domain.{MarketValueHistory, PlayerId, PlayerProfile, PlayerSimple, PlayerStats}
 import game.state.domain._
 import game.state.service.UserGameStateService
 import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
@@ -38,6 +38,7 @@ trait GameEngine[F[_]] {
   def getMarketValueByPlayerId(id: PlayerId): F[ErrorOr[BigDecimal]]
   def getMarketValueHistoryByPlayerId(id: PlayerId): F[ErrorOr[MarketValueHistory]]
   def getPlayerProfileById(id: PlayerId): F[ErrorOr[PlayerProfile]]
+  def getPlayerStatsById(id: PlayerId): F[ErrorOr[PlayerStats]]
 
   def searchClubByName(clubName: String): F[ErrorOr[List[ClubSimple]]]
   def getClubProfileById(id: ClubId): F[ErrorOr[ClubProfile]]
@@ -185,6 +186,10 @@ object GameEngine {
       override def getMarketValueHistoryByPlayerId(
         id: PlayerId
       ): F[ErrorOr[MarketValueHistory]] = playerService.getMarketValueHistoryById(id)
+
+      override def getPlayerStatsById(
+        id: PlayerId
+      ): F[ErrorOr[PlayerStats]] = playerService.getPlayerStatsById(id)
 
       override def searchClubByName(
         clubName: String

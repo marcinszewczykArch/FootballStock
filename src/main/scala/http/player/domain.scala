@@ -1,9 +1,10 @@
 package http.player
 
-import game.player.service.domain.{MarketValue, MarketValueHistory, PlayerProfile, PlayerSimple}
+import game.player.service.domain.{MarketValue, MarketValueHistory, PlayerProfile, PlayerSimple, PlayerStats, Stat}
 import game.state.domain.UserBalance
 import http.state.domain.UserGameStateResponse
 import http.player.domain.MarketValueResponse.fromDomainMarketValue
+import http.player.domain.StatResponse.fromDomainStat
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -133,6 +134,52 @@ object domain {
 
     implicit val marketValueResponseDecoder: Decoder[MarketValueResponse] = deriveDecoder
     implicit val marketValueResponseEncoder: Encoder[MarketValueResponse] = deriveEncoder
+  }
+
+  final case class PlayerStatsResponse(
+    id: Int,
+    stats: List[StatResponse],
+    updatedAt: Instant
+  )
+
+  object PlayerStatsResponse {
+
+    def fromDomainStats(playerStats: PlayerStats): PlayerStatsResponse = new PlayerStatsResponse(
+      id = playerStats.id.value,
+      stats = playerStats.stats.map(fromDomainStat),
+      updatedAt = playerStats.updatedAt
+    )
+
+    implicit val playerStatsResponseDecoder: Decoder[PlayerStatsResponse] = deriveDecoder
+    implicit val playerStatsResponseEncoder: Encoder[PlayerStatsResponse] = deriveEncoder
+  }
+
+  final case class StatResponse(
+                                 competitionID: String,
+                                 clubID: Int,
+                                 seasonID: String,
+                                 competitionName: String,
+                                 appearances: Int,
+                                 goals: Int,
+                                 yellowCards: Int,
+                                 minutesPlayed: Int
+  )
+
+  object StatResponse {
+
+    def fromDomainStat(stat: Stat): StatResponse = new StatResponse(
+      competitionID = stat.competitionID,
+      clubID = stat.clubID,
+      seasonID = stat.seasonID,
+      competitionName = stat.competitionName,
+      appearances = stat.appearances,
+      goals = stat.goals,
+      yellowCards = stat.yellowCards,
+      minutesPlayed = stat.minutesPlayed
+    )
+
+    implicit val statResponseDecoder: Decoder[StatResponse] = deriveDecoder
+    implicit val statResponseEncoder: Encoder[StatResponse] = deriveEncoder
   }
 
 

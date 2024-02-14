@@ -5,10 +5,10 @@ import cats.data.EitherT
 import cats.effect._
 import cats.implicits.{catsSyntaxApplicativeError, toFlatMapOps, toFunctorOps}
 import game.GameException
-import GameException.{PlayerMarketValueException, PlayerSearchByNameException}
+import game.GameException.{PlayerMarketValueException, PlayerSearchByNameException}
 import game.player.client.{PlayerMarketValueClient, PlayerProfileClient, PlayerSearchClient}
-import game.player.client.memory.PlayerProfileClientMemory
-import game.player.service.PlayerMapper.{fetchedMarketValueHistoryToMarketValueHistory, fetchedPlayerProfileToProfile, fetchedPlayerSimpleToPlayerSimple, jsonToFetchedPlayerProfile}
+import game.player.client.memory.{PlayerProfileClientMemory, PlayerStatsClientMemory}
+import game.player.service.PlayerMapper.{fetchedMarketValueHistoryToMarketValueHistory, fetchedPlayerProfileToProfile, fetchedPlayerSimpleToPlayerSimple, fetchedPlayerStatsToStats, jsonToFetchedPlayerProfile, jsonToFetchedPlayerStats}
 import game.player.service.domain._
 import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 import utils.Type.ErrorOr
@@ -19,6 +19,7 @@ trait PlayerService[F[_]] {
   def getPlayerProfileById(id: PlayerId): F[ErrorOr[PlayerProfile]]
   def updateAndGetPlayerProfileById(id: PlayerId): F[ErrorOr[PlayerProfile]]
   def getMarketValueHistoryById(id: PlayerId): F[ErrorOr[MarketValueHistory]]
+  def getPlayerStatsById(id: PlayerId): F[ErrorOr[PlayerStats]]
 }
 
 object PlayerService {
@@ -27,7 +28,8 @@ object PlayerService {
     playerProfileClientMemory: PlayerProfileClientMemory[F],
     playerProfileClient: PlayerProfileClient[F],
     playerSearchClient: PlayerSearchClient[F],
-    playerMarketValueClient: PlayerMarketValueClient[F]
+    playerMarketValueClient: PlayerMarketValueClient[F],
+    playerStatsClientMemory: PlayerStatsClientMemory[F]
   ) = new PlayerService[F] {
     implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[PlayerService[F]].getName)
 
@@ -80,6 +82,12 @@ object PlayerService {
                 Left(PlayerMarketValueException(id, err.getMessage))
               )
         }
+
+    override def getPlayerStatsById(id: PlayerId): F[ErrorOr[PlayerStats]] = (for {
+      json               <- EitherT(playerStatsClientMemory.getById(id))
+      fetchedPlayerStats <- EitherT.fromEither(jsonToFetchedPlayerStats(json))
+      playerStats = fetchedPlayerStatsToStats(fetchedPlayerStats)
+    } yield playerStats).value
 
   }
 

@@ -1,17 +1,11 @@
 package http.event
 
-import game.event.Event
 import http.BaseEndpoint.baseEndpoint
 import http.event.domain.EventsResponse
-import http.player.domain.{PlayerProfileResponse, PlayerSearchResponse}
 import http.security.SecuredEndpoints.AppEndpointSecretWithError
-import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
 import sttp.tapir._
 import sttp.tapir.generic.auto._
 import sttp.tapir.json.circe._
-
-import java.time.Instant
 
 object EventEndpoints {
 
@@ -27,6 +21,5 @@ object EventEndpoints {
     .description("Get game events for given User")
     .tag("Events")
     .out(jsonBody[EventsResponse]) //todo: add pagination
-
 
 }
