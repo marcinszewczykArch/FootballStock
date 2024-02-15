@@ -1,10 +1,13 @@
 package http.player
 
+import game.GameEngine
+import game.club.service.domain.{ClubId, ClubProfile}
 import game.player.service.domain.{MarketValue, MarketValueHistory, PlayerProfile, PlayerSimple, PlayerStats, Stat}
 import game.state.domain.UserBalance
 import http.state.domain.UserGameStateResponse
 import http.player.domain.MarketValueResponse.fromDomainMarketValue
 import http.player.domain.StatResponse.fromDomainStat
+import http.state.GameStateLogic
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -144,9 +147,9 @@ object domain {
 
   object PlayerStatsResponse {
 
-    def fromDomainStats(playerStats: PlayerStats): PlayerStatsResponse = new PlayerStatsResponse(
+    def fromDomainStats(playerStats: PlayerStats)(clubs: List[ClubProfile]): PlayerStatsResponse = new PlayerStatsResponse(
       id = playerStats.id.value,
-      stats = playerStats.stats.map(fromDomainStat),
+      stats = playerStats.stats.map(stat => fromDomainStat(clubs.find(_.id == stat.clubID))(stat)),
       updatedAt = playerStats.updatedAt
     )
 
@@ -157,6 +160,8 @@ object domain {
   final case class StatResponse(
                                  competitionID: String,
                                  clubID: Int,
+                                 clubName: String,
+                                 clubImage: String,
                                  seasonID: String,
                                  competitionName: String,
                                  appearances: Int,
@@ -167,9 +172,11 @@ object domain {
 
   object StatResponse {
 
-    def fromDomainStat(stat: Stat): StatResponse = new StatResponse(
+    def fromDomainStat(club: Option[ClubProfile])(stat: Stat): StatResponse = new StatResponse(
       competitionID = stat.competitionID,
-      clubID = stat.clubID,
+      clubID = stat.clubID.value,
+      clubName = club.map(_.name).getOrElse("-"),
+      clubImage = club.map(_.image).getOrElse(""),
       seasonID = stat.seasonID,
       competitionName = stat.competitionName,
       appearances = stat.appearances,

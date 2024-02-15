@@ -2,33 +2,20 @@ package game.player.service
 
 import cats.Applicative
 import cats.data.EitherT
-import cats.data.OptionT
-import cats.effect.Async
-import cats.effect.Ref
+import cats.effect.{Async, Ref}
 import cats.effect.kernel.Clock
-import cats.implicits.catsSyntaxApplicativeId
-import cats.implicits.catsSyntaxApplyOps
-import cats.implicits.toFlatMapOps
-import cats.implicits.toFunctorFilterOps
-import cats.implicits.toFunctorOps
-import cats.implicits.toTraverseOps
+import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxApplyOps, toFlatMapOps, toFunctorFilterOps, toFunctorOps, toTraverseOps}
 import config.AppConfig.PlayersUpdateCriteriaConfig
 import game.GameException
-import game.event.Event
-import game.event.Event.PlayerValueChanged
-import game.event.Event.PlayersUpdateEvent
+import game.event.Event.{PlayerValueChanged, PlayersUpdateEvent}
 import game.event.service.EventService
 import game.player.client.PlayerProfileClient
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.domain.PlayerId
-import game.state.domain.Shares
-import game.state.domain.StockInfo
-import game.state.domain.User
-import game.state.domain.UserGameState
+import game.state.domain.{StockInfo, User, UserGameState}
 import game.state.service.UserGameStateService
 import io.circe.Json
-import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 import utils.Parser.toInstantOrFarPastForUpdateAt
 import utils.TimeProvider
 
@@ -43,7 +30,7 @@ object PlayersUpdater {
 
   def impl[F[_]: Async: LoggerFactory](
     playerProfileClient: PlayerProfileClient[F],
-    playerProfileClientMemory: PlayerProfileClientMemory[F], //to fetch data directly from DB
+    playerProfileClientMemory: PlayerProfileClientMemory[F],       //to fetch data directly from DB
     playerProfileClientMemoryCached: PlayerProfileClientMemory[F], //to update with cache update
     playerService: PlayerService[F],
     eventService: EventService[F],
@@ -79,19 +66,21 @@ object PlayersUpdater {
     } yield ()
 
     override def updatePlayersValueInUserStates: F[Unit] = (for { //todo: test for this
-      _                  <- EitherT.liftF[F, GameException, Unit](log.info("Starting players value update task for players in User Game States..."))
-      now                = timeProvider.getCurrentTimestamp
+      _ <- EitherT.liftF[F, GameException, Unit](log.info("Starting players value update task for players in User Game States..."))
+      now = timeProvider.getCurrentTimestamp
       allStates          <- EitherT(userGameStateService.getAllGameStates())
       updateStatisticRef <- EitherT.liftF(Ref.of[F, UpdateStats](UpdateStats()))
       playerIdsToUpdate = getAllPlayersFromUserStates(allStates).toList
       (updateDuration, _)          <- EitherT.liftF(Clock[F].timed(updatePlayersUnderlying(updateStatisticRef)(playerIdsToUpdate)))
       UpdateStats(failed, success) <- EitherT.liftF(updateStatisticRef.get)
-      _                            <- EitherT.liftF(log.info(
-                                        s"Updated successfully: ${success.size} players," +
-                                          s"failed to update: ${failed.size} players." +
-                                          s"Total duration: ${updateDuration.toSeconds} seconds."
-                                      ))
-      events      <- allStates //todo: improve me: to separate method
+      _                            <- EitherT.liftF(
+                                        log.info(
+                                          s"Updated successfully: ${success.size} players," +
+                                            s"failed to update: ${failed.size} players." +
+                                            s"Total duration: ${updateDuration.toSeconds} seconds."
+                                        )
+                                      )
+      events                       <- allStates //todo: improve me: to separate method
                                         .toList
                                         .traverse { case (user, state) =>
                                           for {
@@ -130,16 +119,19 @@ object PlayersUpdater {
                                                   .map(_.sequence)
                                               )
                                             updatedPortfolio = playerInfoEvent.map { case (id, info, _) => (id, info) }.toMap
-                                            events               = playerInfoEvent.mapFilter(_._3)
-                                            updatedState         = UserGameState(
-                                                                     portfolio = updatedPortfolio,
-                                                                     money = state.money,
-                                                                     updatedAt = now
-                                                                   )
+                                            events        = playerInfoEvent.mapFilter(_._3)
+                                            updatedState  = UserGameState(
+                                                              user = user,
+                                                              portfolio = updatedPortfolio,
+                                                              money = state.money,
+                                                              updatedAt = now,
+                                                              wishlist = state.wishlist
+                                                            )
                                             versionNumber = state.updatedAt
                                             _ <- EitherT(userGameStateService.updateGameStateFroUser(user)(updatedState)(versionNumber))
                                           } yield events
-                                        }.map(_.flatten)
+                                        }
+                                        .map(_.flatten)
       _                            <- EitherT.liftF[F, GameException, Unit](log.info(s"Sending ${events.size} PlayerValueChanged events"))
       _                            <- EitherT.liftF[F, GameException, List[Unit]](events.map(eventService.sendEvent).sequence)
     } yield ()).rethrowT

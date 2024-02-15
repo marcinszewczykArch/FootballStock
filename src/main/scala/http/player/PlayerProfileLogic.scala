@@ -1,8 +1,10 @@
 package http.player
 
+import cats.data.EitherT
 import cats.effect.Sync
-import cats.implicits.toFunctorOps
+import cats.implicits.{toFunctorOps, toTraverseOps}
 import game.GameEngine
+import game.club.service.domain.ClubId
 import game.player.service.domain.PlayerId
 import http.GameExceptionResponse
 import http.player.domain.{MarketValueHistoryResponse, PlayerProfileResponse, PlayerSearchResponse, PlayerStatsResponse}
@@ -49,13 +51,11 @@ object PlayerProfileLogic {
 
     override def getPlayerStats(
       playerId: Int
-    ): F[Either[GameExceptionResponse, PlayerStatsResponse]] = gameEngine
-        .getPlayerStatsById(PlayerId(playerId))
-        .map(
-          _.map(domain.PlayerStatsResponse.fromDomainStats)
-            .left
-            .map(ge => GameExceptionResponse(ge.getMessage))
-        )
+    ): F[Either[GameExceptionResponse, PlayerStatsResponse]] = (for {
+        playerStats <- EitherT(gameEngine.getPlayerStatsById(PlayerId(playerId)))
+        clubs <- EitherT(playerStats.stats.traverse(stat => gameEngine.getClubProfileById(stat.clubID)).map(_.sequence))
+      } yield PlayerStatsResponse.fromDomainStats(playerStats)(clubs)).value
+      .map(_.left.map(ge => GameExceptionResponse(ge.getMessage)))
 
     }
 

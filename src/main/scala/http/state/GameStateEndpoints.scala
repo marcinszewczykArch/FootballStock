@@ -22,7 +22,9 @@ object GameStateEndpoints {
     getAllGameState,
     buyPlayer,
     sellPlayer,
-    createNewUser
+    createNewUser,
+    addToWishlist,
+    removeFromWishlist
   )
 
   lazy val getUserGameState: AppEndpointSecretWithError[String, UserGameStateResponse] = baseEndpoint
@@ -68,5 +70,25 @@ object GameStateEndpoints {
     .description("User name has to be unique, case insensitive.")
     .tag("GameState")
     .out(jsonBody[CreateNewUserResponse])
+
+  lazy val addToWishlist: AppEndpointSecretWithError[(String, Int), Unit] = baseEndpoint
+    .post
+    .in("addToWishlist")
+    .in(query[String]("user"))
+    .in(query[Int]("playerId"))
+    .summary("Add player to user wishlist")
+    .description("Add player to user wishlist in user game state")
+    .tag("GameState")
+    .out(jsonBody[Unit])
+
+  lazy val removeFromWishlist: AppEndpointSecretWithError[(String, Int), Unit] = baseEndpoint
+    .post
+    .in("removeFromWishlist")
+    .in(query[String]("user"))
+    .in(query[Int]("playerId"))
+    .summary("Remove player from user wishlist")
+    .description("Remove player from user wishlist in user game state")
+    .tag("GameState")
+    .out(jsonBody[Unit])
 
 }

@@ -1,10 +1,15 @@
 package http.state
 
-import game.state.domain.{BalancePerPlayer, Shares, User, UserBalance}
+import game.state.domain.BalancePerPlayer
+import game.state.domain.Shares
+import game.state.domain.User
+import game.state.domain.UserBalance
 import game.player.service.domain.PlayerId
 import game.player.service.domain.PlayerProfile
 import game.player.service.domain.PlayerSimple
 import http.state.domain.PlayerStockResponse
+import http.state.domain.PlayerStockResponse.ageFromDateOfBirth
+import http.state.domain.WishlistPlayerResponse.fromDomainWishlist
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -19,6 +24,7 @@ object domain {
   final case class UserGameStateResponse(
     user: String,
     portfolio: List[PlayerStockResponse],
+    wishlist: List[WishlistPlayerResponse],
     playersCurrentValue: Int,
     cash: Int,
     profit: Int,
@@ -37,7 +43,6 @@ object domain {
     marketValue: String,
     imageURL: String,
     description: String,
-
     shares: Int,
     averageBuyPrice: String,
     totalBuyValue: String,
@@ -47,15 +52,79 @@ object domain {
     revenuePercent: Int
   )
 
+  final case class WishlistPlayerResponse(
+    id: Int,
+    name: String,
+    position: List[String],
+    club: String,
+    clubId: Int,
+    age: Int,
+    nationalities: List[String],
+    marketValue: String,
+    isRetired: Boolean,
+    addedDate: Instant
+  )
+
+  object WishlistPlayerResponse {
+
+    def fromDomainWishlist(wishlist: List[(PlayerProfile, Instant)]): List[WishlistPlayerResponse] = wishlist.map {
+      case (
+            PlayerProfile(
+              id,
+              url,
+              name,
+              description,
+              imageURL,
+              dateOfBirth,
+              citizenship,
+              isRetired,
+              position,
+              clubId,
+              club,
+              marketValue,
+              updatedAt
+            ),
+            addedDate
+          ) =>
+        new WishlistPlayerResponse(
+          id = id.value,
+          name = name,
+          position = position.main +: position.other,
+          club = club,
+          clubId = clubId,
+          age = ageFromDateOfBirth(dateOfBirth),
+          nationalities = citizenship,
+          marketValue = CurrencyFormatter.toEuroString(marketValue),
+          isRetired = isRetired,
+          addedDate = addedDate
+        )
+    }
+
+    implicit val wishlistPlayerResponseDecoder: Decoder[WishlistPlayerResponse] = deriveDecoder
+    implicit val wishlistPlayerResponseEncoder: Encoder[WishlistPlayerResponse] = deriveEncoder
+
+  }
+
+  final case class BuyPlayerRequest(user: String, playerId: Int, sharesToBuy: Int)
+
+  final case class BuyPlayerResponse(message: String)
+
+  final case class SellPlayerRequest(user: String, playerId: Int, sharesToSell: Int)
+
+  final case class SellPlayerResponse(message: String)
+
+  final case class CreateNewUserResponse(message: String)
+
   object UserGameStateResponse {
 
     def fromUserBalance(userBalance: UserBalance): UserGameStateResponse = userBalance match {
-      case UserBalance(user, portfolio, playersCurrentValue, cash, profit, revenuePercent, updatedAt) =>
+      case UserBalance(user, portfolio, wishlist, playersCurrentValue, cash, profit, revenuePercent, updatedAt) =>
         new UserGameStateResponse(
           user = user.value,
           portfolio = portfolio.map { case (playerProfile, balancePerPlayer) =>
             PlayerStockResponse.fromDomainPortfolio(playerProfile, balancePerPlayer)
           },
+          wishlist = fromDomainWishlist(wishlist),
           playersCurrentValue.toInt,
           cash.toInt,
           profit.toInt,
@@ -121,38 +190,29 @@ object domain {
     implicit val playerStockResponseEncoder: Encoder[PlayerStockResponse] = deriveEncoder
   }
 
-  final case class BuyPlayerRequest(user: String, playerId: Int, sharesToBuy: Int)
-
   object BuyPlayerRequest {
     implicit val buyPlayerRequestDecoder: Decoder[BuyPlayerRequest] = deriveDecoder
     implicit val buyPlayerRequestEncoder: Encoder[BuyPlayerRequest] = deriveEncoder
   }
-
-  final case class BuyPlayerResponse(message: String)
 
   object BuyPlayerResponse {
     implicit val buyPlayerResponseDecoder: Decoder[BuyPlayerResponse] = deriveDecoder
     implicit val buyPlayerResponseEncoder: Encoder[BuyPlayerResponse] = deriveEncoder
   }
 
-  final case class SellPlayerRequest(user: String, playerId: Int, sharesToSell: Int)
-
   object SellPlayerRequest {
     implicit val sellPlayerRequestDecoder: Decoder[SellPlayerRequest] = deriveDecoder
     implicit val sellPlayerRequestEncoder: Encoder[SellPlayerRequest] = deriveEncoder
   }
-
-  final case class SellPlayerResponse(message: String)
 
   object SellPlayerResponse {
     implicit val sellPlayerResponseDecoder: Decoder[SellPlayerResponse] = deriveDecoder
     implicit val sellPlayerResponseEncoder: Encoder[SellPlayerResponse] = deriveEncoder
   }
 
-  final case class CreateNewUserResponse(message: String)
-
   object CreateNewUserResponse {
     implicit val sellPlayerResponseDecoder: Decoder[CreateNewUserResponse] = deriveDecoder
     implicit val sellPlayerResponseEncoder: Encoder[CreateNewUserResponse] = deriveEncoder
   }
+
 }

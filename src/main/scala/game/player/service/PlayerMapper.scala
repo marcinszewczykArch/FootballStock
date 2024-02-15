@@ -2,6 +2,7 @@ package game.player.service
 
 import game.GameException
 import game.GameException.JsonDecodingException
+import game.club.service.domain.ClubId
 import game.player.client.domain._
 import game.player.service.domain._
 import io.circe.Json
@@ -113,7 +114,7 @@ object PlayerMapper {
         ) =>
       Stat(
         competitionID = competitionID.getOrElse("-"),
-        clubID = clubID.getOrElse(0),
+        clubID = ClubId(clubID.getOrElse(0)),
         seasonID = seasonID.getOrElse("-"),
         competitionName = competitionName.getOrElse("-"),
         appearances = appearances.getOrElse(0),

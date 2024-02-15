@@ -1,9 +1,8 @@
 package game.state.domain
 
-import cats.Applicative
 import cats.data.EitherT
 import cats.effect.Sync
-import game.GameException
+import cats.implicits.toFunctorOps
 import game.player.service.PlayerService
 import game.player.service.domain.PlayerProfile
 import utils.Type.ErrorOr
@@ -13,6 +12,7 @@ import java.time.Instant
 final case class UserBalance(
   user: User,
   portfolio: List[(PlayerProfile, BalancePerPlayer)],
+  wishlist: List[(PlayerProfile, Instant)],
   playersCurrentValue: BigDecimal,
   cash: BigDecimal,
   profit: BigDecimal,
@@ -59,13 +59,20 @@ object UserBalance {
                    }
                    .toList
                    .sequence
-
+    wishlist  <- EitherT(
+                   userState
+                     .wishlist
+                     .traverse { case (playerId, addedDate) =>
+                       playerService.getPlayerProfileById(playerId)
+                         .map(_.map(playerProfile => (playerProfile, addedDate)))
+                     }
+                     .map(_.sequence)
+                 )
     playersCurrentValue = portfolio.map(_._2.totalCurrentValue).sum
-    cash                = userState.money
-    profit              = playersCurrentValue + cash - UserGameState.initialCash
-    revenuePercent      = ((profit / UserGameState.initialCash) * 100).toInt
-    updatedAt           = userState.updatedAt
-//    user                = userState.user //todo
-  } yield UserBalance(user, portfolio, playersCurrentValue, cash, profit, revenuePercent, updatedAt)).value
+    cash           = userState.money
+    profit         = playersCurrentValue + cash - UserGameState.initialCash
+    revenuePercent = ((profit / UserGameState.initialCash) * 100).toInt
+    updatedAt      = userState.updatedAt
+  } yield UserBalance(user, portfolio, wishlist, playersCurrentValue, cash, profit, revenuePercent, updatedAt)).value
 
 }

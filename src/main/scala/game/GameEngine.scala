@@ -4,15 +4,15 @@ import cats.Applicative
 import cats.data.EitherT
 import cats.effect._
 import cats.implicits.toTraverseOps
+import game.GameException.{NotEnoughMoneyException, PlayerMarketValueNotUpToDateException}
 import game.club.service.ClubService
 import game.club.service.domain.{ClubId, ClubPlayers, ClubProfile, ClubSimple}
-import GameException.{NotEnoughMoneyException, PlayerMarketValueNotUpToDateException}
 import game.event.Event
 import game.event.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
 import game.event.service.EventService
 import game.player.client.memory.PlayerProfileClientMemory
 import game.player.service.PlayerService
-import game.player.service.domain.{MarketValueHistory, PlayerId, PlayerProfile, PlayerSimple, PlayerStats}
+import game.player.service.domain._
 import game.state.domain._
 import game.state.service.UserGameStateService
 import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
@@ -33,6 +33,9 @@ trait GameEngine[F[_]] {
   def createUser(user: User): F[ErrorOr[InitializeGameEvent]]
 
   def getUserEvents(user: User): F[ErrorOr[List[Event]]]
+
+  def addToUserWishlist(user: User)(playerId: PlayerId): F[ErrorOr[Unit]]
+  def removeFromUserWishlist(user: User)(playerId: PlayerId): F[ErrorOr[Unit]]
 
   def searchPlayerByName(playerName: String): F[ErrorOr[List[PlayerSimple]]]
   def getMarketValueByPlayerId(id: PlayerId): F[ErrorOr[BigDecimal]]
@@ -79,7 +82,9 @@ object GameEngine {
         _ <- EitherT(validateEnoughMoney(userState.money, transactionValue))
         event        = BuyPlayerEvent(playerId, player.name, sharesToBuy, transactionValue, user, now)
         newUserState = UserGameState(
+                         user = user,
                          portfolio = userState.portfolio + (playerId -> StockInfo(newShares, player.marketValue)),
+                         wishlist = userState.wishlist,
                          money = userState.money - transactionValue,
                          updatedAt = now
                        )
@@ -111,10 +116,12 @@ object GameEngine {
           transactionValue = player.marketValue * sharesToSell / 100
           event            = SellPlayerEvent(playerId, player.name, sharesToSell, transactionValue, user, now)
           newUserState     = UserGameState(
+                               user = user,
                                portfolio = newShares match {
                                  case Nil => userState.portfolio - playerId
                                  case _   => userState.portfolio + (playerId -> StockInfo(newShares, player.marketValue))
                                },
+                               wishlist = userState.wishlist,
                                money = userState.money + transactionValue,
                                updatedAt = now
                              )
@@ -137,13 +144,14 @@ object GameEngine {
       override def createUser(
         user: User
       ): F[ErrorOr[InitializeGameEvent]] = (for {
-        _            <- EitherT.liftF(log.info(s"Start creating new USER $user..."))
-        now          <- EitherT.pure(timeProvider.getCurrentTimestamp)
-        _            <- EitherT(stateService.validateUserNotExists(user))
-        initialCash  <- EitherT.pure(UserGameState.initialCash)
-        portfolio    <- EitherT.pure(Map.empty[PlayerId, StockInfo])
-        event        <- EitherT.pure(InitializeGameEvent(initialCash, user, now))
-        initialState <- EitherT.pure(UserGameState(portfolio, initialCash, now))
+        _           <- EitherT.liftF(log.info(s"Start creating new USER $user..."))
+        now         <- EitherT.pure(timeProvider.getCurrentTimestamp)
+        _           <- EitherT(stateService.validateUserNotExists(user))
+        initialCash <- EitherT.pure(UserGameState.initialCash)
+        portfolio   <- EitherT.pure(Map.empty[PlayerId, StockInfo])
+        event       <- EitherT.pure(InitializeGameEvent(initialCash, user, now))
+        wishlist = Nil
+        initialState <- EitherT.pure(UserGameState(user, portfolio, initialCash, now, wishlist))
         _            <- EitherT(stateService.saveGameStateFroUser(user)(initialState))
         _            <- EitherT.liftF[F, GameException, Unit](eventService.sendEvent(event))
       } yield event).value
@@ -166,7 +174,8 @@ object GameEngine {
       ): F[ErrorOr[List[UserBalance]]] = (for {
         _           <- EitherT.liftF(log.debug(s"Checking balance for all users..."))
         allStates   <- EitherT(stateService.getAllGameStates())
-        allBalances <- allStates.toList.map { case (user -> state) => EitherT(UserBalance.fromUserState(playerService)(state)(user)) }.sequence
+        allBalances <-
+          allStates.toList.map { case (user -> state) => EitherT(UserBalance.fromUserState(playerService)(state)(user)) }.sequence
       } yield allBalances).value
 
       override def searchPlayerByName(
@@ -204,6 +213,42 @@ object GameEngine {
       override def getClubPlayersById(
         id: ClubId
       ): F[ErrorOr[ClubPlayers]] = clubService.getClubPlayersById(id)
+
+      override def addToUserWishlist(
+        user: User
+      )(
+        playerId: PlayerId
+      ): F[ErrorOr[Unit]] = (for {
+        _         <- EitherT.liftF(log.debug(s"Adding $playerId to wishlist for $user..."))
+        now       <- EitherT.pure(timeProvider.getCurrentTimestamp)
+        userState <- EitherT(stateService.getStateForUser(user))
+        newUserState = UserGameState(
+                         user = user,
+                         portfolio = userState.portfolio,
+                         wishlist = userState.wishlist :+ (playerId, now),
+                         money = userState.money,
+                         updatedAt = now
+                       )
+        _ <- EitherT(stateService.updateGameStateFroUser(user)(newUserState)(versionNumber = userState.updatedAt))
+      } yield ()).value
+
+      override def removeFromUserWishlist(
+        user: User
+      )(
+        playerId: PlayerId
+      ): F[ErrorOr[Unit]] = (for {
+        _         <- EitherT.liftF(log.debug(s"Removing $playerId from wishlist for $user..."))
+        now       <- EitherT.pure(timeProvider.getCurrentTimestamp)
+        userState <- EitherT(stateService.getStateForUser(user))
+        newUserState = UserGameState(
+                         user = user,
+                         portfolio = userState.portfolio,
+                         wishlist = userState.wishlist.filterNot(_._1 == playerId),
+                         money = userState.money,
+                         updatedAt = now
+                       )
+        _ <- EitherT(stateService.updateGameStateFroUser(user)(newUserState)(versionNumber = userState.updatedAt))
+      } yield ()).value
 
     }
 

@@ -38,6 +38,14 @@ class GameStateRoutes[F[_]: Async: LoggerFactory](
       .endpointSecured(RoleSelection.Any(Roles.Admin, Roles.User))
       .withServerLogic(logic.sellPlayer)
 
+    val addToWishlistServerEndpoint: ServerEndpoint[Any, F] = addToWishlist
+      .endpointSecured(RoleSelection.Any(Roles.Admin, Roles.User))
+      .withServerLogic(input => logic.addToUserWishlist(input._1)(input._2))
+
+    val removeFromWishlistServerEndpoint: ServerEndpoint[Any, F] = removeFromWishlist
+      .endpointSecured(RoleSelection.Any(Roles.Admin, Roles.User))
+      .withServerLogic(input => logic.removeFromUserWishlist(input._1)(input._2))
+
     Http4sServerInterpreter[F]()
       .toRoutes(
         List(
@@ -45,7 +53,9 @@ class GameStateRoutes[F[_]: Async: LoggerFactory](
           getAllGameStateServerEndpoint,
           createNewUserServerEndpoint,
           buyPlayerServerEndpoint,
-          sellPlayerServerEndpoint
+          sellPlayerServerEndpoint,
+          addToWishlistServerEndpoint,
+          removeFromWishlistServerEndpoint
         )
       )
   }

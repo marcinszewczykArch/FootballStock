@@ -15,6 +15,8 @@ trait GameStateLogic[F[_]] {
   def createNewUser(userName: String): F[Either[GameExceptionResponse, CreateNewUserResponse]]
   def buyPlayer(request: BuyPlayerRequest): F[Either[GameExceptionResponse, BuyPlayerResponse]]
   def sellPlayer(request: SellPlayerRequest): F[Either[GameExceptionResponse, SellPlayerResponse]]
+  def addToUserWishlist(userName: String)(playerId: Int): F[Either[GameExceptionResponse, Unit]]
+  def removeFromUserWishlist(userName: String)(playerId: Int): F[Either[GameExceptionResponse, Unit]]
   //getUserInfo
   //getUserPortfolio
   //getUserBalance
@@ -38,10 +40,10 @@ object GameStateLogic {
     override def getAllStates(): F[Either[GameExceptionResponse, List[UserGameStateResponse]]] = gameEngine
       .getAllUsersBalances()
       .map(
-          _.map(userBalances => userBalances.map(UserGameStateResponse.fromUserBalance))
-            .left
-            .map(ge => GameExceptionResponse(ge.getMessage))
-        )
+        _.map(userBalances => userBalances.map(UserGameStateResponse.fromUserBalance))
+          .left
+          .map(ge => GameExceptionResponse(ge.getMessage))
+      )
 
     override def createNewUser(userName: String): F[Either[GameExceptionResponse, CreateNewUserResponse]] = gameEngine
       .createUser(User(userName))
@@ -67,6 +69,22 @@ object GameStateLogic {
           .map(ge => GameExceptionResponse(ge.getMessage))
       )
 
-    }
+    override def addToUserWishlist(
+      userName: String
+    )(
+      playerId: Int
+    ): F[Either[GameExceptionResponse, Unit]] = gameEngine
+      .addToUserWishlist(User(userName))(PlayerId(playerId))
+      .map(_.left.map(ge => GameExceptionResponse(ge.getMessage)))
+
+    override def removeFromUserWishlist(
+      userName: String
+    )(
+      playerId: Int
+    ): F[Either[GameExceptionResponse, Unit]] = gameEngine
+      .removeFromUserWishlist(User(userName))(PlayerId(playerId))
+      .map(_.left.map(ge => GameExceptionResponse(ge.getMessage)))
+
+  }
 
 }

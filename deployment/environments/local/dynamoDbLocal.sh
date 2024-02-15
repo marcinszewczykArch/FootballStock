@@ -106,7 +106,7 @@ echo "PlayerProfile Table Count check: $PlayerProfileTableCount"
 echo "uploading TESTUSER to UserGameState Table..."
 body='{
         "json": {
-            "S": "{  \"portfolio\" : {      },  \"money\" : 1000000,  \"updatedAt\" : \"2024-01-21T18:04:21.899614Z\"}"
+            "S": "{  \"user\" : {    \"value\" : \"TESTUSER\"  },  \"wishlist\" : [      ],  \"portfolio\" : {      },  \"money\" : 1000000,  \"updatedAt\" : \"2024-01-21T18:04:21.899614Z\"}"
         },
         "user": {
             "S": "TESTUSER"
