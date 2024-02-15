@@ -108,7 +108,7 @@ object ConsolePrinter {
       case Right(players) =>
         Applicative[F].pure {
           println("id | name | position | club | age | nationality | marketValue")
-          players.foreach { case PlayerSimple(id, name, position, club, age, nationality, marketValue) =>
+          players.foreach { case PlayerSimple(id, name, position, club, clubId, age, nationality, marketValue) =>
             println(
               id + " | " +
                 name + " | " +

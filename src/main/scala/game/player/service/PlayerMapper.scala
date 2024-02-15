@@ -9,6 +9,8 @@ import io.circe.Json
 import utils.Parser.{toBigDecimalOrZero, toInstantOrFarPastForDate, toInstantOrFarPastForUpdateAt}
 import utils.Type.ErrorOr
 
+import scala.util.Try
+
 object PlayerMapper {
 
   val defaultImageUrl = "https://img.a.transfermarkt.technology/portrait/header/default.jpg?lm=1"
@@ -20,6 +22,7 @@ object PlayerMapper {
         name = name.getOrElse("-"),
         position = position.getOrElse("-"),
         club = club.flatMap(_.name).getOrElse("-"),
+        clubId = ClubId(club.flatMap(_.id).getOrElse(0)),
         age = age.getOrElse("-"),
         nationalities = nationalities.getOrElse(Nil),
         marketValue = toBigDecimalOrZero(marketValue)
@@ -28,6 +31,16 @@ object PlayerMapper {
 
   val fetchedPlayerProfileToMarketValue: FetchedPlayerProfile => BigDecimal = { playerProfile =>
     toBigDecimalOrZero(playerProfile.marketValue)
+  }
+
+  //  /robert-lewandowski/profil/spieler/38253
+  private def nameFromUrl(maybeUrl: Option[String]): Option[String] = maybeUrl.flatMap { url =>
+    Try(url.split("/")(1))
+      .toOption
+      .map(_.split("-")
+        .map(_.capitalize)
+        .mkString(" ")
+      )
   }
 
   val fetchedPlayerProfileToProfile: FetchedPlayerProfile => PlayerProfile = {
@@ -48,7 +61,7 @@ object PlayerMapper {
       PlayerProfile(
         id = PlayerId(id.flatMap(_.toIntOption).getOrElse(0)),
         url = url.getOrElse("-"),
-        name = name.getOrElse("-"),
+        name = nameFromUrl(url).getOrElse(name.getOrElse("-")),
         description = description.getOrElse("-"),
         imageURL = imageURL.getOrElse(defaultImageUrl),
         dateOfBirth = dateOfBirth.getOrElse("-"),

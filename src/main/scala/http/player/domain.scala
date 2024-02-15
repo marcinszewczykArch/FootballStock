@@ -76,6 +76,7 @@ object domain {
     name: String,
     position: String,
     club: String,
+    clubId: Int,
     age: String,
     nationalities: List[String],
     marketValue: String
@@ -88,6 +89,7 @@ object domain {
       name = playerSimple.name,
       position = playerSimple.position,
       club = playerSimple.club,
+      clubId = playerSimple.clubId.value,
       age = playerSimple.age,
       nationalities = playerSimple.nationalities,
       marketValue = CurrencyFormatter.toEuroString(playerSimple.marketValue)
