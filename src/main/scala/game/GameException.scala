@@ -129,6 +129,18 @@ object GameException extends CirceExtraConfiguration {
 
   implicit val playerProfileClientExceptionCodec: Codec[PlayerProfileClientException] = deriveConfiguredCodec[PlayerProfileClientException]
 
+  final case class PlayerStatsClientException(cause: String) extends GameException {
+    override def getMessage = s"Exception while invoking PlayerStatsClient. Message: $cause"
+  }
+
+  implicit val playerStatsClientExceptionCodec: Codec[PlayerStatsClientException] = deriveConfiguredCodec[PlayerStatsClientException]
+
+  final case class PlayerSearchClientException(cause: String) extends GameException {
+    override def getMessage = s"Exception while invoking PlayerSearchClient. Message: $cause"
+  }
+
+  implicit val playerSearchClientExceptionCodec: Codec[PlayerSearchClientException] = deriveConfiguredCodec[PlayerSearchClientException]
+
   final case class PlayerMarketValueHistoryClientException(cause: String) extends GameException {
     override def getMessage = s"Exception while invoking PlayerMarketValueHistoryClient. Message: $cause"
   }

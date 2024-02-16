@@ -21,13 +21,14 @@ final case class UserBalance(
 )
 
 final case class BalancePerPlayer(
-  shares: Int, //todo: with history
+  shares: Int,
   averageBuyPrice: BigDecimal,
   totalBuyValue: BigDecimal,
   currentPrice: BigDecimal,
   totalCurrentValue: BigDecimal,
   profit: BigDecimal,
-  revenuePercent: Int
+  revenuePercent: Int,
+  lastPlayerMinutesPlayed: Int
 )
 
 object UserBalance {
@@ -53,7 +54,8 @@ object UserBalance {
                                             revenuePercent = totalBuyValue match {
                                               case value if value == 0 => 0
                                               case _                   => ((currentValue - totalBuyValue) * 100 / totalBuyValue).toInt
-                                            }
+                                            },
+                                            lastPlayerMinutesPlayed = stockInfo.lastPlayerMinutesPlayed
                                           )
                      } yield (playerProfile, balancePerPlayer)
                    }
@@ -63,7 +65,8 @@ object UserBalance {
                    userState
                      .wishlist
                      .traverse { case (playerId, addedDate) =>
-                       playerService.getPlayerProfileById(playerId)
+                       playerService
+                         .getPlayerProfileById(playerId)
                          .map(_.map(playerProfile => (playerProfile, addedDate)))
                      }
                      .map(_.sequence)

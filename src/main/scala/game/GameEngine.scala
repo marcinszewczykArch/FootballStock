@@ -75,6 +75,7 @@ object GameEngine {
         userState            <- EitherT(stateService.getStateForUser(user))
         playerDisplayedValue <- EitherT(playerService.getMarketValueByPlayerId(playerId))
         player               <- EitherT(playerService.updateAndGetPlayerProfileById(playerId))
+        playerStats          <- EitherT(playerService.getPlayerStatsById(playerId))
         _                    <- EitherT.fromEither[F](validateDisplayedValueIsValid(playerDisplayedValue, player))
         newShares            <-
           EitherT(stateService.calculateSharesAfterBuy(userState.portfolio.get(playerId).map(_.shares), sharesToBuy, player.marketValue))
@@ -83,7 +84,12 @@ object GameEngine {
         event        = BuyPlayerEvent(playerId, player.name, sharesToBuy, transactionValue, user, now)
         newUserState = UserGameState(
                          user = user,
-                         portfolio = userState.portfolio + (playerId -> StockInfo(newShares, player.marketValue)),
+                         portfolio = userState.portfolio + (playerId -> StockInfo(
+                           playerId,
+                           newShares,
+                           player.marketValue,
+                           playerStats.totalMinutesPlayed
+                         )),
                          wishlist = userState.wishlist,
                          money = userState.money - transactionValue,
                          updatedAt = now
@@ -111,6 +117,7 @@ object GameEngine {
           userState            <- EitherT(stateService.getStateForUser(user))
           playerDisplayedValue <- EitherT(playerService.getMarketValueByPlayerId(playerId))
           player               <- EitherT(playerService.updateAndGetPlayerProfileById(playerId))
+          playerStats          <- EitherT(playerService.getPlayerStatsById(playerId))
           _                    <- EitherT.fromEither[F](validateDisplayedValueIsValid(playerDisplayedValue, player))
           newShares            <- EitherT(stateService.calculateSharesAfterSell(userState.portfolio.get(playerId).map(_.shares), sharesToSell))
           transactionValue = player.marketValue * sharesToSell / 100
@@ -119,7 +126,13 @@ object GameEngine {
                                user = user,
                                portfolio = newShares match {
                                  case Nil => userState.portfolio - playerId
-                                 case _   => userState.portfolio + (playerId -> StockInfo(newShares, player.marketValue))
+                                 case _   =>
+                                   userState.portfolio + (playerId -> StockInfo(
+                                     playerId,
+                                     newShares,
+                                     player.marketValue,
+                                     playerStats.totalMinutesPlayed
+                                   ))
                                },
                                wishlist = userState.wishlist,
                                money = userState.money + transactionValue,

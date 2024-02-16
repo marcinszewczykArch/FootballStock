@@ -4,11 +4,10 @@ import cats.Applicative
 import cats.data.EitherT
 import cats.effect._
 import cats.implicits.{catsSyntaxApplicativeError, toFlatMapOps, toFunctorOps}
-import game.GameException
 import game.GameException.{PlayerMarketValueException, PlayerSearchByNameException}
-import game.player.client.{PlayerMarketValueClient, PlayerProfileClient, PlayerSearchClient}
-import game.player.client.memory.{PlayerProfileClientMemory, PlayerStatsClientMemory}
-import game.player.service.PlayerMapper.{fetchedMarketValueHistoryToMarketValueHistory, fetchedPlayerProfileToProfile, fetchedPlayerSimpleToPlayerSimple, fetchedPlayerStatsToStats, jsonToFetchedPlayerProfile, jsonToFetchedPlayerStats}
+import game.player.client.{PlayerMarketValueClient, PlayerProfileClient, PlayerSearchClient, PlayerStatsClient}
+import game.player.client.memory.PlayerProfileClientMemory
+import game.player.service.PlayerMapper._
 import game.player.service.domain._
 import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 import utils.Type.ErrorOr
@@ -29,7 +28,7 @@ object PlayerService {
     playerProfileClient: PlayerProfileClient[F],
     playerSearchClient: PlayerSearchClient[F],
     playerMarketValueClient: PlayerMarketValueClient[F],
-    playerStatsClientMemory: PlayerStatsClientMemory[F]
+    playerStatsClient: PlayerStatsClient[F]
   ) = new PlayerService[F] {
     implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[PlayerService[F]].getName)
 
@@ -84,8 +83,7 @@ object PlayerService {
         }
 
     override def getPlayerStatsById(id: PlayerId): F[ErrorOr[PlayerStats]] = (for {
-      json               <- EitherT(playerStatsClientMemory.getById(id))
-      fetchedPlayerStats <- EitherT.fromEither(jsonToFetchedPlayerStats(json))
+      fetchedPlayerStats <- EitherT.liftF(playerStatsClient.fetchRawPlayerStatsById(id))
       playerStats = fetchedPlayerStatsToStats(fetchedPlayerStats)
     } yield playerStats).value
 

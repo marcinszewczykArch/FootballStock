@@ -49,7 +49,8 @@ object domain {
     currentPrice: String,
     totalCurrentValue: String,
     profit: String,
-    revenuePercent: Int
+    revenuePercent: Int,
+    lastPlayerMinutesPlayed: Int
   )
 
   final case class WishlistPlayerResponse(
@@ -62,8 +63,19 @@ object domain {
     nationalities: List[String],
     marketValue: String,
     isRetired: Boolean,
-    addedDate: Instant
+    addedDate: Instant,
+    imageURL: String,
   )
+
+  final case class BuyPlayerRequest(user: String, playerId: Int, sharesToBuy: Int)
+
+  final case class BuyPlayerResponse(message: String)
+
+  final case class SellPlayerRequest(user: String, playerId: Int, sharesToSell: Int)
+
+  final case class SellPlayerResponse(message: String)
+
+  final case class CreateNewUserResponse(message: String)
 
   object WishlistPlayerResponse {
 
@@ -96,7 +108,8 @@ object domain {
           nationalities = citizenship,
           marketValue = CurrencyFormatter.toEuroString(marketValue),
           isRetired = isRetired,
-          addedDate = addedDate
+          addedDate = addedDate,
+          imageURL = imageURL
         )
     }
 
@@ -104,16 +117,6 @@ object domain {
     implicit val wishlistPlayerResponseEncoder: Encoder[WishlistPlayerResponse] = deriveEncoder
 
   }
-
-  final case class BuyPlayerRequest(user: String, playerId: Int, sharesToBuy: Int)
-
-  final case class BuyPlayerResponse(message: String)
-
-  final case class SellPlayerRequest(user: String, playerId: Int, sharesToSell: Int)
-
-  final case class SellPlayerResponse(message: String)
-
-  final case class CreateNewUserResponse(message: String)
 
   object UserGameStateResponse {
 
@@ -157,7 +160,16 @@ object domain {
                 marketValue,
                 updatedAt
               ),
-              BalancePerPlayer(shares, averageBuyPrice, totalBuyValue, currentPrice, totalCurrentValue, profit, revenuePercent)
+              BalancePerPlayer(
+                shares,
+                averageBuyPrice,
+                totalBuyValue,
+                currentPrice,
+                totalCurrentValue,
+                profit,
+                revenuePercent,
+                lastPlayerMinutesPlayed
+              )
             ) =>
           new PlayerStockResponse(
             id = id.value,
@@ -176,7 +188,8 @@ object domain {
             currentPrice = CurrencyFormatter.toEuroString(currentPrice),
             totalCurrentValue = CurrencyFormatter.toEuroString(totalCurrentValue),
             profit = CurrencyFormatter.toEuroString(profit),
-            revenuePercent = revenuePercent
+            revenuePercent = revenuePercent,
+            lastPlayerMinutesPlayed = lastPlayerMinutesPlayed
           )
       }
 

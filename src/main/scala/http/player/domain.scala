@@ -144,6 +144,7 @@ object domain {
   final case class PlayerStatsResponse(
     id: Int,
     stats: List[StatResponse],
+    totalMinutesPlayed: Int,
     updatedAt: Instant
   )
 
@@ -152,6 +153,7 @@ object domain {
     def fromDomainStats(playerStats: PlayerStats)(clubs: List[ClubProfile]): PlayerStatsResponse = new PlayerStatsResponse(
       id = playerStats.id.value,
       stats = playerStats.stats.map(stat => fromDomainStat(clubs.find(_.id == stat.clubID))(stat)),
+      totalMinutesPlayed = playerStats.totalMinutesPlayed,
       updatedAt = playerStats.updatedAt
     )
 

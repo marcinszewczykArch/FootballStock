@@ -103,16 +103,16 @@ object PlayerMapper {
     )
   }
 
-  val jsonToFetchedPlayerStats: Json => ErrorOr[FetchedPlayerStats] =
-    _.as[FetchedPlayerStats].left.map(decodingFailure => JsonDecodingException(decodingFailure.getMessage()))
-
-  val fetchedPlayerStatsToStats: FetchedPlayerStats => PlayerStats = { case FetchedPlayerStats(id, stats, updatedAt) =>
+  val fetchedPlayerStatsToStats: FetchedPlayerStats => PlayerStats = { case FetchedPlayerStats(id, stats, updatedAt) => {
+    val domainStats = stats.map(_.map(fetchedStatsToStats)).getOrElse(Nil)
     PlayerStats(
       id = PlayerId(id.getOrElse(0)),
-      stats = stats.map(_.map(fetchedStatsToStats)).getOrElse(Nil),
+      stats = domainStats,
+      totalMinutesPlayed = domainStats.map(_.minutesPlayed).sum,
       updatedAt = toInstantOrFarPastForUpdateAt(updatedAt)
     )
   }
+    }
 
   val fetchedStatsToStats: FetchedStat => Stat = {
     case FetchedStat(

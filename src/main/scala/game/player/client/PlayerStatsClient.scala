@@ -2,39 +2,61 @@ package game.player.client
 
 import cats.{Applicative, MonadThrow}
 import cats.effect._
-import config.AppConfig.{PlayerProfileClientConfig, PlayerStatsClientConfig}
-import game.GameException
-import GameException.PlayerProfileClientException
+import cats.implicits.toFunctorOps
+import config.AppConfig.PlayerStatsClientConfig
+import game.GameException.PlayerStatsClientException
+import game.player.client.domain.FetchedPlayerStats
 import game.player.service.domain.PlayerId
-import io.circe.{Json, parser}
+import org.typelevel.log4cats.LoggerFactory
 import sttp.client3._
+import sttp.client3.circe.asJson
 import sttp.model.Uri
-import utils.Type.ErrorOr
+import utils.Cache
 
 //https://github.com/felipeall/transfermarkt-api
 trait PlayerStatsClient[F[_]] {
-  def fetchRawPlayerStatsById(id: PlayerId): F[ErrorOr[Json]]
+  def fetchRawPlayerStatsById(id: PlayerId): F[FetchedPlayerStats]
 }
 
 object PlayerStatsClient {
+
+  def cachedInstance[F[_]: Sync: LoggerFactory](
+    config: PlayerStatsClientConfig
+  ): PlayerStatsClient[F] = {
+    val underlying = PlayerStatsClient.impl[F](config)
+
+    val fetchRawPlayersStatsCache: Cache[F, PlayerId, FetchedPlayerStats] =
+      Cache.instance[F, PlayerId, FetchedPlayerStats](
+        cacheName = config.cacheName
+      )(
+        lookup = playerId => underlying.fetchRawPlayerStatsById(playerId)
+      )(
+        ttl = config.cacheTtl,
+        failedFetchTtl = config.failedCacheTtl
+      )
+
+    new PlayerStatsClient[F] {
+      override def fetchRawPlayerStatsById(id: PlayerId): F[FetchedPlayerStats] = fetchRawPlayersStatsCache.get(id)
+    }
+  }
 
   def impl[F[_]: Sync: MonadThrow](config: PlayerStatsClientConfig) = new PlayerStatsClient[F] {
     val serviceUri: Uri                     = config.uri
     val backend: SttpBackend[Identity, Any] = HttpClientSyncBackend()
 
-    override def fetchRawPlayerStatsById(id: PlayerId): F[ErrorOr[Json]] = Applicative[F].pure(for {
-      jsonRes <- backend.send {
+    override def fetchRawPlayerStatsById(id: PlayerId): F[FetchedPlayerStats] =
+      for {
+        res <- backend
+                 .send {
                    basicRequest
                      .get(serviceUri.addPath("players", id.value.toString, "stats"))
-                 }.body match {
-                   case Right(strJson) =>
-                     parser.parse(strJson) match {
-                       case Right(json)          => Right(json)
-                       case Left(parsingFailure) => Left(PlayerProfileClientException(parsingFailure.getMessage()))
-                     }
-                   case Left(cause)    => Left(PlayerProfileClientException(cause))
+                     .response(asJson[FetchedPlayerStats])
                  }
-    } yield jsonRes)
+                 .map(_.body) match {
+                 case Right(fetchedPlayerStats) => Applicative[F].pure(fetchedPlayerStats)
+                 case Left(cause)               => MonadThrow[F].raiseError[FetchedPlayerStats](PlayerStatsClientException(cause.getMessage))
+               }
+      } yield res
 
   }
 

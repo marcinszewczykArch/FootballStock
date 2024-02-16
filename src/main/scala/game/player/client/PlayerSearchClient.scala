@@ -4,6 +4,7 @@ import cats.{Applicative, MonadThrow}
 import cats.effect._
 import cats.syntax.all._
 import config.AppConfig.PlayerSearchClientConfig
+import game.GameException.PlayerSearchClientException
 import game.player.client.domain.{FetchedPlayerSimple, PlayerSearchResponse}
 import org.typelevel.log4cats.LoggerFactory
 import sttp.client3._
@@ -21,12 +22,12 @@ object PlayerSearchClient {
   def cachedInstance[F[_]: Sync: LoggerFactory](
     config: PlayerSearchClientConfig
   ): PlayerSearchClient[F] = {
-    val playersClient                                                       = PlayerSearchClient.impl[F](config)
+    val underlying                                                       = PlayerSearchClient.impl[F](config)
     val fetchPlayerSearchCache: Cache[F, String, List[FetchedPlayerSimple]] =
       Cache.instance[F, String, List[FetchedPlayerSimple]](
         cacheName = config.cacheName
       )(
-        lookup = playersClient.searchByName
+        lookup = underlying.searchByName
       )(
         ttl = config.cacheTtl,
         failedFetchTtl = config.failedCacheTtl
@@ -52,13 +53,10 @@ object PlayerSearchClient {
                  .map(_.body)
                  .map(_.result) match {
                  case Right(fetchedPlayersSimple) => Applicative[F].pure(fetchedPlayersSimple)
-                 case Left(cause)                 => MonadThrow[F].raiseError[List[FetchedPlayerSimple]](PlayerSearchClientException(cause))
+                 case Left(cause)                 => MonadThrow[F].raiseError[List[FetchedPlayerSimple]](PlayerSearchClientException(cause.getMessage))
                }
       } yield res
 
   }
-
-  final case class PlayerSearchClientException(cause: Throwable)
-    extends Exception(s"Exception while invoking PlayerSearchClient. Message: ${cause.getMessage}", cause)
 
 }

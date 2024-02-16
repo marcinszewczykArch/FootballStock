@@ -92,6 +92,7 @@ object PlayersUpdater {
                                                   .traverse { case (playerId, info) =>
                                                     (for {
                                                       freshPlayerProfile <- EitherT(playerService.getPlayerProfileById(playerId))
+                                                      freshPlayerStats <- EitherT(playerService.getPlayerStatsById(playerId))
                                                       freshPlayerValue      = freshPlayerProfile.marketValue
                                                       previousPlayerValue   = info.lastPlayerValue
                                                       playerName            = freshPlayerProfile.name
@@ -99,8 +100,10 @@ object PlayersUpdater {
                                                                                 case true  => (info, None)
                                                                                 case false =>
                                                                                   val newStockInfo = StockInfo(
+                                                                                    playerId = playerId,
                                                                                     shares = info.shares,
-                                                                                    lastPlayerValue = freshPlayerValue
+                                                                                    lastPlayerValue = freshPlayerValue,
+                                                                                    lastPlayerMinutesPlayed = freshPlayerStats.totalMinutesPlayed //todo: this will override lastPlayerMinutesPlayed and may cause dividend will not be added if override happened before update task
                                                                                   )
                                                                                   val event        = Some(
                                                                                     PlayerValueChanged(

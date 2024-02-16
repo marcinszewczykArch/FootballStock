@@ -34,8 +34,10 @@ object UserGameState {
 }
 
 final case class StockInfo(
+                            playerId: PlayerId,
                             shares: List[Shares],
-                            lastPlayerValue: BigDecimal
+                            lastPlayerValue: BigDecimal,
+                            lastPlayerMinutesPlayed: Int
                           )
 
 object StockInfo {
