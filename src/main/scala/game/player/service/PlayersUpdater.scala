@@ -80,57 +80,21 @@ object PlayersUpdater {
                                             s"Total duration: ${updateDuration.toSeconds} seconds."
                                         )
                                       )
-      events                       <- allStates //todo: improve me: to separate method
+      events                       <- allStates
                                         .toList
                                         .traverse { case (user, state) =>
                                           for {
-                                            playerInfoEvent <-
-                                              EitherT(
-                                                state
-                                                  .portfolio
-                                                  .toList
-                                                  .traverse { case (playerId, info) =>
-                                                    (for {
-                                                      freshPlayerProfile <- EitherT(playerService.getPlayerProfileById(playerId))
-                                                      freshPlayerStats <- EitherT(playerService.getPlayerStatsById(playerId))
-                                                      freshPlayerValue      = freshPlayerProfile.marketValue
-                                                      previousPlayerValue   = info.lastPlayerValue
-                                                      playerName            = freshPlayerProfile.name
-                                                      (newStockInfo, event) = previousPlayerValue equals freshPlayerValue match {
-                                                                                case true  => (info, None)
-                                                                                case false =>
-                                                                                  val newStockInfo = StockInfo(
-                                                                                    playerId = playerId,
-                                                                                    shares = info.shares,
-                                                                                    lastPlayerValue = freshPlayerValue,
-                                                                                    lastPlayerMinutesPlayed = freshPlayerStats.totalMinutesPlayed //todo: this will override lastPlayerMinutesPlayed and may cause dividend will not be added if override happened before update task
-                                                                                  )
-                                                                                  val event        = Some(
-                                                                                    PlayerValueChanged(
-                                                                                      playerId = playerId,
-                                                                                      playerName = playerName,
-                                                                                      previousValue = previousPlayerValue,
-                                                                                      newValue = freshPlayerValue,
-                                                                                      user = user,
-                                                                                      timestamp = now
-                                                                                    )
-                                                                                  )
-                                                                                  (newStockInfo, event)
-                                                                              }
-                                                    } yield (playerId, newStockInfo, event)).value
-                                                  }
-                                                  .map(_.sequence)
-                                              )
+                                            playerInfoEvent <- EitherT(state.portfolio.values.toList.traverse(playerStockInfoToPlayerValueChangedEvent(now, user)).map(_.sequence))
                                             updatedPortfolio = playerInfoEvent.map { case (id, info, _) => (id, info) }.toMap
-                                            events        = playerInfoEvent.mapFilter(_._3)
-                                            updatedState  = UserGameState(
-                                                              user = user,
-                                                              portfolio = updatedPortfolio,
-                                                              money = state.money,
-                                                              updatedAt = now,
-                                                              wishlist = state.wishlist
-                                                            )
-                                            versionNumber = state.updatedAt
+                                            events           = playerInfoEvent.mapFilter(_._3)
+                                            updatedState     = UserGameState(
+                                                                 user = user,
+                                                                 portfolio = updatedPortfolio,
+                                                                 money = state.money,
+                                                                 updatedAt = now,
+                                                                 wishlist = state.wishlist
+                                                               )
+                                            versionNumber    = state.updatedAt
                                             _ <- EitherT(userGameStateService.updateGameStateFroUser(user)(updatedState)(versionNumber))
                                           } yield events
                                         }
@@ -184,6 +148,41 @@ object PlayersUpdater {
         ref.update { case UpdateStats(failed, success) => UpdateStats(failed, success :+ playerId.value) } *>
           log.debug(s"$playerId updated")
     }
+
+    private def playerStockInfoToPlayerValueChangedEvent(
+      now: Instant,
+      user: User
+    )(
+      stockInfo: StockInfo
+    ): F[Either[GameException, (PlayerId, StockInfo, Option[PlayerValueChanged])]] = (for {
+      freshPlayerProfile <- EitherT(playerService.getPlayerProfileById(stockInfo.playerId))
+      freshPlayerStats   <- EitherT(playerService.getPlayerStatsById(stockInfo.playerId))
+      freshPlayerValue      = freshPlayerProfile.marketValue
+      previousPlayerValue   = stockInfo.lastPlayerValue
+      playerName            = freshPlayerProfile.name
+      (newStockInfo, event) = previousPlayerValue equals freshPlayerValue match {
+                                case true  => (stockInfo, None)
+                                case false =>
+                                  val newStockInfo = StockInfo(
+                                    playerId = stockInfo.playerId,
+                                    shares = stockInfo.shares,
+                                    lastPlayerValue = freshPlayerValue,
+                                    lastPlayerMinutesPlayed =
+                                      freshPlayerStats.totalMinutesPlayed //todo: this will override lastPlayerMinutesPlayed and may cause dividend will not be added if override happened before update task
+                                  )
+                                  val event = Some(
+                                    PlayerValueChanged(
+                                      playerId = stockInfo.playerId,
+                                      playerName = playerName,
+                                      previousValue = previousPlayerValue,
+                                      newValue = freshPlayerValue,
+                                      user = user,
+                                      timestamp = now
+                                    )
+                                  )
+                                  (newStockInfo, event)
+                              }
+    } yield (stockInfo.playerId, newStockInfo, event)).value
 
   }
 

@@ -1,23 +1,14 @@
 package http.state
 
-import game.state.domain.BalancePerPlayer
-import game.state.domain.Shares
-import game.state.domain.User
-import game.state.domain.UserBalance
-import game.player.service.domain.PlayerId
 import game.player.service.domain.PlayerProfile
-import game.player.service.domain.PlayerSimple
-import http.state.domain.PlayerStockResponse
+import game.state.domain.{BalancePerPlayer, UserBalance}
 import http.state.domain.PlayerStockResponse.ageFromDateOfBirth
 import http.state.domain.WishlistPlayerResponse.fromDomainWishlist
-import io.circe.Decoder
-import io.circe.Encoder
-import io.circe.generic.semiauto.deriveDecoder
-import io.circe.generic.semiauto.deriveEncoder
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import utils.CurrencyFormatter
 
-import java.time.Instant
-import java.time.Year
+import java.time.{Instant, Year}
 
 object domain {
 
@@ -43,14 +34,29 @@ object domain {
     marketValue: String,
     imageURL: String,
     description: String,
-    shares: Int,
+    sharesTotal: Int,
     averageBuyPrice: String,
     totalBuyValue: String,
     currentPrice: String,
     totalCurrentValue: String,
     profit: String,
     revenuePercent: Int,
-    lastPlayerMinutesPlayed: Int
+    lastPlayerMinutesPlayed: Int, //todo: this will be moved to shares
+    shares: List[SharesResponse],
+    totalDividend: String
+  )
+
+  final case class SharesResponse(
+    number: Int,
+    buyPrice: String,
+    totalBuyValue: String,
+    totalCurrentValue: String,
+    profit: String,
+    revenuePercent: Int,
+    buyTimestamp: Instant,
+    minutesPlayedSinceBuy: Int,
+    minutesPlayedLastSeen: Int,
+    dividend: String
   )
 
   final case class WishlistPlayerResponse(
@@ -64,7 +70,7 @@ object domain {
     marketValue: String,
     isRetired: Boolean,
     addedDate: Instant,
-    imageURL: String,
+    imageURL: String
   )
 
   final case class BuyPlayerRequest(user: String, playerId: Int, sharesToBuy: Int)
@@ -161,14 +167,16 @@ object domain {
                 updatedAt
               ),
               BalancePerPlayer(
-                shares,
+                sharesTotal,
                 averageBuyPrice,
                 totalBuyValue,
                 currentPrice,
                 totalCurrentValue,
                 profit,
                 revenuePercent,
-                lastPlayerMinutesPlayed
+                lastPlayerMinutesPlayed,
+                shares,
+                totalDividend
               )
             ) =>
           new PlayerStockResponse(
@@ -182,14 +190,29 @@ object domain {
             marketValue = CurrencyFormatter.toEuroString(marketValue),
             imageURL = imageURL,
             description = description,
-            shares = shares,
+            sharesTotal = sharesTotal,
             averageBuyPrice = CurrencyFormatter.toEuroString(averageBuyPrice),
             totalBuyValue = CurrencyFormatter.toEuroString(totalBuyValue),
             currentPrice = CurrencyFormatter.toEuroString(currentPrice),
             totalCurrentValue = CurrencyFormatter.toEuroString(totalCurrentValue),
             profit = CurrencyFormatter.toEuroString(profit),
             revenuePercent = revenuePercent,
-            lastPlayerMinutesPlayed = lastPlayerMinutesPlayed
+            lastPlayerMinutesPlayed = lastPlayerMinutesPlayed,
+            shares = shares.map(s =>
+              SharesResponse(
+                number = s.number,
+                buyPrice = CurrencyFormatter.toEuroString(s.buyPrice),
+                totalBuyValue = CurrencyFormatter.toEuroString(s.totalBuyValue),
+                totalCurrentValue = CurrencyFormatter.toEuroString(s.totalCurrentValue),
+                profit = CurrencyFormatter.toEuroString(s.profit),
+                revenuePercent = s.revenuePercent,
+                buyTimestamp = s.buyTimestamp,
+                minutesPlayedSinceBuy = s.minutesPlayedSinceBuy,
+                minutesPlayedLastSeen = s.minutesPlayedLastSeen,
+                dividend = CurrencyFormatter.toEuroString(s.dividend)
+              )
+            ),
+            totalDividend = CurrencyFormatter.toEuroString(totalDividend)
           )
       }
 
@@ -201,6 +224,11 @@ object domain {
 
     implicit val playerStockResponseDecoder: Decoder[PlayerStockResponse] = deriveDecoder
     implicit val playerStockResponseEncoder: Encoder[PlayerStockResponse] = deriveEncoder
+  }
+
+  object SharesResponse {
+    implicit val sharesResponseDecoder: Decoder[SharesResponse] = deriveDecoder
+    implicit val sharesResponseEncoder: Encoder[SharesResponse] = deriveEncoder
   }
 
   object BuyPlayerRequest {

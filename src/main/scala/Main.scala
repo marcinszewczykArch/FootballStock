@@ -108,6 +108,21 @@ object Main extends IOApp {
             .handleErrorWith(err => log.error(err)(s"UpdatePlayersValueInUserStates task failed. error: ${err.getMessage}"))
         )
 
+//    val payDividendForPlayersInPortfolio: Stream[IO, Unit] = ???
+      //1. iterate thorough all user states
+      //2. iterate thorough all user players in portfolio
+      //3. iterate thorough all stock packages for player
+      //4. pay dividend if (MinutesPlayed - MinutesPlayedLastSeen) > 0
+      //5. increment dividend by value:
+      // val value = currentPlayerValue * (numberOfStock * 0.01) * 0.01 * (MinutesPlayed - MinutesPlayedLastSeen)/90
+      //6. Add value to cash
+      //7. Update MinutesPlayedLastSeen to MinutesPlayed
+
+      //to consider:
+      //1. playerValue can changed after match was played - not a big deal, we can use new value
+      //2. sb can buy player stock just for the moment (before the match or even after but before stats are updated)
+      // to gain the dividend and then sell stock and buy another for the same reason
+
     Stream(gameStream, updatePlayersInMemoryStream, updatePlayersValueInUserStatesStream)
       .parJoinUnbounded
       .compile

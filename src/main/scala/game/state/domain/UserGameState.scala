@@ -37,7 +37,7 @@ final case class StockInfo(
                             playerId: PlayerId,
                             shares: List[Shares],
                             lastPlayerValue: BigDecimal,
-                            lastPlayerMinutesPlayed: Int
+                            lastPlayerMinutesPlayed: Int //to  be removed
                           )
 
 object StockInfo {

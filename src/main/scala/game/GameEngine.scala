@@ -77,8 +77,16 @@ object GameEngine {
         player               <- EitherT(playerService.updateAndGetPlayerProfileById(playerId))
         playerStats          <- EitherT(playerService.getPlayerStatsById(playerId))
         _                    <- EitherT.fromEither[F](validateDisplayedValueIsValid(playerDisplayedValue, player))
-        newShares            <-
-          EitherT(stateService.calculateSharesAfterBuy(userState.portfolio.get(playerId).map(_.shares), sharesToBuy, player.marketValue))
+        newShares            <- EitherT(
+                                  stateService.calculateSharesAfterBuy(
+                                    sharesInPortfolio = userState.portfolio.get(playerId).map(_.shares),
+                                    sharesToBuy = sharesToBuy,
+                                    currentPlayerMarketValue = player.marketValue,
+                                    buyMinutesPlayed = playerStats.totalMinutesPlayed,
+                                    minutesPlayedLastSeen = playerStats.totalMinutesPlayed,
+                                    dividend = 0
+                                  )
+                                )
         transactionValue = player.marketValue * sharesToBuy / 100
         _ <- EitherT(validateEnoughMoney(userState.money, transactionValue))
         event        = BuyPlayerEvent(playerId, player.name, sharesToBuy, transactionValue, user, now)
