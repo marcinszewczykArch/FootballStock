@@ -80,13 +80,11 @@ object PlayersUpdater {
                                             s"Total duration: ${updateDuration.toSeconds} seconds."
                                         )
                                       )
-      events                       <- allStates
-                                        .toList
-                                        .traverse { case (user, state) =>
+      events                       <- allStates.toList.traverse { case (user, state) =>
                                           for {
-                                            playerInfoEvent <- EitherT(state.portfolio.values.toList.traverse(playerStockInfoToPlayerValueChangedEvent(now, user)).map(_.sequence))
-                                            updatedPortfolio = playerInfoEvent.map { case (id, info, _) => (id, info) }.toMap
-                                            events           = playerInfoEvent.mapFilter(_._3)
+                                            playerInfoEvent <- EitherT(state.portfolio.traverse(playerStockInfoToPlayerValueChangedEvent(now, user)).map(_.sequence))
+                                            updatedPortfolio = playerInfoEvent.map { case (info, _) => info }
+                                            events           = playerInfoEvent.mapFilter { case (_, maybeEvent) => maybeEvent }
                                             updatedState     = UserGameState(
                                                                  user = user,
                                                                  portfolio = updatedPortfolio,
@@ -106,7 +104,7 @@ object PlayersUpdater {
     case class UpdateStats(failed: List[Int] = Nil, success: List[Int] = Nil)
 
     private def getAllPlayersFromUserStates(userStates: Map[User, UserGameState]): Set[PlayerId] =
-      userStates.toList.map(_._2).map(_.portfolio).flatMap(_.toList.map(_._1)).toSet
+      userStates.toList.map(_._2).map(_.portfolio).flatMap(_.map(_.playerId)).toSet
 
     private def updatePlayersUnderlying(ref: Ref[F, UpdateStats])(playersIdToUpdate: List[PlayerId]): F[Unit] = fs2
       .Stream
@@ -154,7 +152,7 @@ object PlayersUpdater {
       user: User
     )(
       stockInfo: StockInfo
-    ): F[Either[GameException, (PlayerId, StockInfo, Option[PlayerValueChanged])]] = (for {
+    ): F[Either[GameException, (StockInfo, Option[PlayerValueChanged])]] = (for {
       freshPlayerProfile <- EitherT(playerService.getPlayerProfileById(stockInfo.playerId))
       freshPlayerStats   <- EitherT(playerService.getPlayerStatsById(stockInfo.playerId))
       freshPlayerValue      = freshPlayerProfile.marketValue
@@ -182,7 +180,7 @@ object PlayersUpdater {
                                   )
                                   (newStockInfo, event)
                               }
-    } yield (stockInfo.playerId, newStockInfo, event)).value
+    } yield (newStockInfo, event)).value
 
   }
 

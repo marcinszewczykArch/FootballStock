@@ -79,7 +79,7 @@ object GameEngine {
         _                    <- EitherT.fromEither[F](validateDisplayedValueIsValid(playerDisplayedValue, player))
         newShares            <- EitherT(
                                   stateService.calculateSharesAfterBuy(
-                                    sharesInPortfolio = userState.portfolio.get(playerId).map(_.shares),
+                                    sharesInPortfolio = userState.portfolio.find(_.playerId == playerId).map(_.shares),
                                     sharesToBuy = sharesToBuy,
                                     currentPlayerMarketValue = player.marketValue,
                                     buyMinutesPlayed = playerStats.totalMinutesPlayed,
@@ -92,12 +92,12 @@ object GameEngine {
         event        = BuyPlayerEvent(playerId, player.name, sharesToBuy, transactionValue, user, now)
         newUserState = UserGameState(
                          user = user,
-                         portfolio = userState.portfolio + (playerId -> StockInfo(
+                         portfolio = userState.portfolio.filterNot(_.playerId == playerId) :+ StockInfo(
                            playerId,
                            newShares,
                            player.marketValue,
                            playerStats.totalMinutesPlayed
-                         )),
+                         ),
                          wishlist = userState.wishlist,
                          money = userState.money - transactionValue,
                          updatedAt = now
@@ -127,20 +127,21 @@ object GameEngine {
           player               <- EitherT(playerService.updateAndGetPlayerProfileById(playerId))
           playerStats          <- EitherT(playerService.getPlayerStatsById(playerId))
           _                    <- EitherT.fromEither[F](validateDisplayedValueIsValid(playerDisplayedValue, player))
-          newShares            <- EitherT(stateService.calculateSharesAfterSell(userState.portfolio.get(playerId).map(_.shares), sharesToSell))
+          newShares            <-
+            EitherT(stateService.calculateSharesAfterSell(userState.portfolio.find(_.playerId == playerId).map(_.shares), sharesToSell))
           transactionValue = player.marketValue * sharesToSell / 100
           event            = SellPlayerEvent(playerId, player.name, sharesToSell, transactionValue, user, now)
           newUserState     = UserGameState(
                                user = user,
                                portfolio = newShares match {
-                                 case Nil => userState.portfolio - playerId
+                                 case Nil => userState.portfolio.filterNot(_.playerId == playerId)
                                  case _   =>
-                                   userState.portfolio + (playerId -> StockInfo(
+                                   userState.portfolio.filterNot(_.playerId == playerId) :+ StockInfo(
                                      playerId,
                                      newShares,
                                      player.marketValue,
                                      playerStats.totalMinutesPlayed
-                                   ))
+                                   )
                                },
                                wishlist = userState.wishlist,
                                money = userState.money + transactionValue,
@@ -165,13 +166,13 @@ object GameEngine {
       override def createUser(
         user: User
       ): F[ErrorOr[InitializeGameEvent]] = (for {
-        _           <- EitherT.liftF(log.info(s"Start creating new USER $user..."))
-        now         <- EitherT.pure(timeProvider.getCurrentTimestamp)
-        _           <- EitherT(stateService.validateUserNotExists(user))
-        initialCash <- EitherT.pure(UserGameState.initialCash)
-        portfolio   <- EitherT.pure(Map.empty[PlayerId, StockInfo])
-        event       <- EitherT.pure(InitializeGameEvent(initialCash, user, now))
-        wishlist = Nil
+        _            <- EitherT.liftF(log.info(s"Start creating new USER $user..."))
+        now          <- EitherT.pure(timeProvider.getCurrentTimestamp)
+        _            <- EitherT(stateService.validateUserNotExists(user))
+        initialCash  <- EitherT.pure(UserGameState.initialCash)
+        portfolio    <- EitherT.pure(Nil)
+        event        <- EitherT.pure(InitializeGameEvent(initialCash, user, now))
+        wishlist     <- EitherT.pure(Nil)
         initialState <- EitherT.pure(UserGameState(user, portfolio, initialCash, now, wishlist))
         _            <- EitherT(stateService.saveGameStateFroUser(user)(initialState))
         _            <- EitherT.liftF[F, GameException, Unit](eventService.sendEvent(event))
