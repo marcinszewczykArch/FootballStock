@@ -21,14 +21,14 @@ trait PlayerMarketValueClient[F[_]] {
 object PlayerMarketValueClient {
 
   def cachedInstance[F[_]: Sync: LoggerFactory](
-    config: PlayerMarketValueClientConfig
+    config: PlayerMarketValueClientConfig,
+    underlying: PlayerMarketValueClient[F] //PlayerMarketValueClient.impl[F](config)
   ): PlayerMarketValueClient[F] = {
-    val playerMarketValueClient                                                    = PlayerMarketValueClient.impl[F](config)
     val fetchPlayerMarketValueCache: Cache[F, PlayerId, FetchedMarketValueHistory] =
       Cache.instance[F, PlayerId, FetchedMarketValueHistory](
         cacheName = config.cacheName
       )(
-        lookup = playerMarketValueClient.fetchRawMarketValueHistoryById
+        lookup = underlying.fetchRawMarketValueHistoryById
       )(
         ttl = config.cacheTtl,
         failedFetchTtl = config.failedCacheTtl

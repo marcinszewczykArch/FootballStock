@@ -1,0 +1,88 @@
+{
+  "query": "barcelona",
+  "pageNumber": 1,
+  "lastPageNumber": 4,
+  "results": [
+    {
+      "id": "131",
+      "url": "/fc-barcelona/startseite/verein/131",
+      "name": "FC Barcelona",
+      "country": "Spain",
+      "squad": "26",
+      "marketValue": "€863.50m"
+    },
+    {
+      "id": "714",
+      "url": "/espanyol-barcelona/startseite/verein/714",
+      "name": "RCD Espanyol Barcelona",
+      "country": "Spain",
+      "squad": "24",
+      "marketValue": "€57.65m"
+    },
+    {
+      "id": "2464",
+      "url": "/fc-barcelona-b/startseite/verein/2464",
+      "name": "FC Barcelona Atlètic",
+      "country": "Spain",
+      "squad": "29",
+      "marketValue": "€18.90m"
+    },
+    {
+      "id": "3523",
+      "url": "/barcelona-sc-guayaquil/startseite/verein/3523",
+      "name": "Barcelona SC Guayaquil",
+      "country": "Ecuador",
+      "squad": "31",
+      "marketValue": "€16.78m"
+    },
+    {
+      "id": "41584",
+      "url": "/fc-barcelona-uefa-u19/startseite/verein/41584",
+      "name": "FC Barcelona UEFA U19",
+      "country": "Spain",
+      "squad": "29",
+      "marketValue": "€9.00m"
+    },
+    {
+      "id": "2470",
+      "url": "/fc-barcelona-u19/startseite/verein/2470",
+      "name": "FC Barcelona U19",
+      "country": "Spain",
+      "squad": "24",
+      "marketValue": "€3.10m"
+    },
+    {
+      "id": "10773",
+      "url": "/espanyol-barcelona-b/startseite/verein/10773",
+      "name": "RCD Espanyol B",
+      "country": "Spain",
+      "squad": "27",
+      "marketValue": "€2.90m"
+    },
+    {
+      "id": "20528",
+      "url": "/ce-europa/startseite/verein/20528",
+      "name": "CE Europa",
+      "country": "Spain",
+      "squad": "24",
+      "marketValue": "€1.68m"
+    },
+    {
+      "id": "22587",
+      "url": "/barcelona-sc-guayaquil-u20/startseite/verein/22587",
+      "name": "Barcelona SC Guayaquil U20",
+      "country": "Ecuador",
+      "squad": "15",
+      "marketValue": "€100k"
+    },
+    {
+      "id": "93588",
+      "url": "/barcelona-futebol-clube/startseite/verein/93588",
+      "name": "Barcelona FC",
+      "country": "Brazil",
+      "squad": "31",
+      "marketValue": "€50k"
+    }
+  ],
+  "updatedAt": "2024-02-19T19:42:49.272248"
+}

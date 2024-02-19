@@ -1,0 +1,19 @@
+{
+  "id": "38256",
+  "marketValueHistory": [
+    {
+      "age": "20",
+      "date": "Jul 18, 2007",
+      "clubName": "Legia Warsaw II",
+      "value": "€50k",
+      "clubID": "6628"
+    },
+    {
+      "age": "24",
+      "date": "Apr 21, 2011",
+      "clubName": "Okecie Warszawa",
+      "clubID": "10192"
+    }
+  ],
+  "updatedAt": "2024-02-18T21:35:56.097087"
+}

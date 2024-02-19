@@ -11,8 +11,9 @@ object Dependencies {
   )
 
   val catsEffects = Seq(
-    "org.typelevel" %% "cats-effect" % Versions.catsEffectsVersion,
+    "org.typelevel" %% "cats-effect"         % Versions.catsEffectsVersion,
     "org.typelevel" %% "cats-effect-testkit" % "3.5.2" % Test,
+    "org.typelevel" %% "cats-effect-testing-scalatest" % "1.5.0" % Test
   )
 
   val fs2 = Seq(
@@ -74,6 +75,15 @@ object Dependencies {
     "org.http4s" %% "http4s-dsl"          % Versions.http4sVersion
   )
 
+  val testContainer = Seq(
+    "com.dimafeng"   %% "testcontainers-scala-scalatest"     % Versions.testcontainers % Test,
+    "com.dimafeng"   %% "testcontainers-scala-mockserver"    % Versions.testcontainers % Test,
+    "com.dimafeng"   %% "testcontainers-scala-localstack-v2" % Versions.testcontainers % Test,
+    "com.amazonaws"   % "aws-java-sdk-core"                  % "1.12.425",
+    "org.mock-server" % "mockserver-client-java"             % "5.15.0",
+    "io.circe"       %% "circe-literal"                      % "0.14.4"                % Test
+  )
+
 }
 
 object Versions {
@@ -89,4 +99,5 @@ object Versions {
   val tapirVersion          = "1.4.0"
   val http4sVersion         = "0.23.18"
   val http4sBlazeVersion    = "0.23.14"
+  val testcontainers        = "0.40.12"
 }

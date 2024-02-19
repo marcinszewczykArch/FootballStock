@@ -1,0 +1,19 @@
+{
+  "id": "38255",
+  "marketValueHistory": [
+    {
+      "age": "23",
+      "date": "Jan 7, 2009",
+      "clubName": "Gornik Leczna",
+      "value": "€50k",
+      "clubID": "3291"
+    },
+    {
+      "age": "25",
+      "date": "Jan 1, 2011",
+      "clubName": "Retired",
+      "clubID": "123"
+    }
+  ],
+  "updatedAt": "2024-02-18T21:35:39.376167"
+}

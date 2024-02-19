@@ -1,0 +1,42 @@
+{
+  "id": "38257",
+  "stats": [
+    {
+      "competitionID": "NOPO",
+      "clubID": "6493",
+      "seasonID": "2013",
+      "competitionName": "NM-Cup",
+      "appearances": "1",
+      "goalsConceded": "3",
+      "minutesPlayed": "120'"
+    },
+    {
+      "competitionID": "NO2",
+      "clubID": "9987",
+      "seasonID": "2012",
+      "competitionName": "Adeccoligaen",
+      "appearances": "1",
+      "goalsConceded": "1",
+      "minutesPlayed": "90'"
+    },
+    {
+      "competitionID": "NOPO",
+      "clubID": "36213",
+      "seasonID": "2012",
+      "competitionName": "NM-Cup",
+      "appearances": "1",
+      "goalsConceded": "3",
+      "minutesPlayed": "90'"
+    },
+    {
+      "competitionID": "POPU",
+      "clubID": "9055",
+      "seasonID": "10/11",
+      "competitionName": "Fortuna Polish Cup",
+      "appearances": "1",
+      "goalsConceded": "1",
+      "minutesPlayed": "90'"
+    }
+  ],
+  "updatedAt": "2024-02-18T21:50:06.236573"
+}

@@ -1,0 +1,51 @@
+{
+  "id": "422",
+  "url": "/wisla-krakau/startseite/verein/422",
+  "name": "Wisla Kraków",
+  "officialName": "Wisła Kraków Spółka Akcyjna",
+  "image": "https://tmssl.akamaized.net/images/wappen/big/422.png",
+  "legalForm": "AG",
+  "addressLine1": "Reymonta 20",
+  "addressLine2": "30-059 Kraków",
+  "addressLine3": "Poland",
+  "tel": "+48 12 6307600",
+  "fax": "+48 12 6307691",
+  "website": "www.wisla.krakow.pl",
+  "foundedOn": "Sep 1, 1906",
+  "otherSports": [
+    "Basketball",
+    "Boxen",
+    "Bridge",
+    "Futsal",
+    "Gymnastik",
+    "Judo",
+    "Sportschießen",
+    "Volleyball"
+  ],
+  "colors": [
+    "#0022FF",
+    "#FFFFFF",
+    "#FF0000"
+  ],
+  "stadiumName": "Stadion Miejski im. Henryka Reymana",
+  "stadiumSeats": "33130",
+  "currentTransferRecord": "+-0",
+  "currentMarketValue": "€6.45m",
+  "squad": {
+    "size": "31",
+    "averageAge": "25.3",
+    "foreigners": "12",
+    "nationalTeamPlayers": "0"
+  },
+  "league": {
+    "id": "PL2",
+    "name": "Fortuna 1 Liga",
+    "countryID": "1",
+    "countryName": "Poland",
+    "tier": "Second Tier"
+  },
+  "historicalCrests": [
+    "https://tmssl.akamaized.net/images/wappen/medium/422_1579355130.png"
+  ],
+  "updatedAt": "2024-02-19T19:40:45.074714"
+}

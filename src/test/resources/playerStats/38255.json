@@ -1,0 +1,22 @@
+{
+  "id": "38255",
+  "stats": [
+    {
+      "competitionID": "PL2",
+      "clubID": "3291",
+      "seasonID": "09/10",
+      "competitionName": "1 Liga",
+      "appearances": "3",
+      "minutesPlayed": "135'"
+    },
+    {
+      "competitionID": "PL2",
+      "clubID": "4000",
+      "seasonID": "07/08",
+      "competitionName": "2 Liga",
+      "appearances": "1",
+      "minutesPlayed": "90'"
+    }
+  ],
+  "updatedAt": "2024-02-18T21:50:43.597354"
+}

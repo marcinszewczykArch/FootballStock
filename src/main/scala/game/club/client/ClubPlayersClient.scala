@@ -5,7 +5,7 @@ import cats.effect._
 import config.AppConfig.ClubPlayersClientConfig
 import game.GameException
 import game.club.service.domain.ClubId
-import GameException.ClubProfileClientException
+import GameException.{ClubPlayersClientException, ClubProfileClientException}
 import io.circe.{Json, parser}
 import sttp.client3._
 import sttp.model.Uri
@@ -30,9 +30,9 @@ object ClubPlayersClient {
                    case Right(strJson) =>
                      parser.parse(strJson) match {
                        case Right(json)          => Right(json)
-                       case Left(parsingFailure) => Left(ClubProfileClientException(parsingFailure.getMessage()))
+                       case Left(parsingFailure) => Left(ClubPlayersClientException(parsingFailure.getMessage()))
                      }
-                   case Left(cause)    => Left(ClubProfileClientException(cause))
+                   case Left(cause)    => Left(ClubPlayersClientException(cause))
                  }
     } yield jsonRes)
 

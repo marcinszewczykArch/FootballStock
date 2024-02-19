@@ -1,0 +1,316 @@
+{
+  "id": "38253",
+  "marketValue": "€20.00m",
+  "marketValueHistory": [
+    {
+      "age": "19",
+      "date": "Mar 18, 2008",
+      "clubName": "Znicz Pruszkow",
+      "value": "€100k",
+      "clubID": "9109"
+    },
+    {
+      "age": "19",
+      "date": "May 19, 2008",
+      "clubName": "Znicz Pruszkow",
+      "value": "€500k",
+      "clubID": "9109"
+    },
+    {
+      "age": "20",
+      "date": "Sep 5, 2008",
+      "clubName": "Lech Poznan",
+      "value": "€800k",
+      "clubID": "238"
+    },
+    {
+      "age": "20",
+      "date": "Dec 30, 2008",
+      "clubName": "Lech Poznan",
+      "value": "€1.65m",
+      "clubID": "238"
+    },
+    {
+      "age": "20",
+      "date": "Jul 4, 2009",
+      "clubName": "Lech Poznan",
+      "value": "€3.00m",
+      "clubID": "238"
+    },
+    {
+      "age": "21",
+      "date": "Mar 17, 2010",
+      "clubName": "Lech Poznan",
+      "value": "€3.60m",
+      "clubID": "238"
+    },
+    {
+      "age": "21",
+      "date": "May 18, 2010",
+      "clubName": "Lech Poznan",
+      "value": "€4.50m",
+      "clubID": "238"
+    },
+    {
+      "age": "21",
+      "date": "Jul 16, 2010",
+      "clubName": "Borussia Dortmund",
+      "value": "€6.00m",
+      "clubID": "16"
+    },
+    {
+      "age": "22",
+      "date": "Jan 12, 2011",
+      "clubName": "Borussia Dortmund",
+      "value": "€6.00m",
+      "clubID": "16"
+    },
+    {
+      "age": "22",
+      "date": "Jun 29, 2011",
+      "clubName": "Borussia Dortmund",
+      "value": "€7.00m",
+      "clubID": "16"
+    },
+    {
+      "age": "23",
+      "date": "Jan 23, 2012",
+      "clubName": "Borussia Dortmund",
+      "value": "€12.00m",
+      "clubID": "16"
+    },
+    {
+      "age": "23",
+      "date": "Mar 5, 2012",
+      "clubName": "Borussia Dortmund",
+      "value": "€15.00m",
+      "clubID": "16"
+    },
+    {
+      "age": "23",
+      "date": "Jun 29, 2012",
+      "clubName": "Borussia Dortmund",
+      "value": "€20.00m",
+      "clubID": "16"
+    },
+    {
+      "age": "24",
+      "date": "Oct 26, 2012",
+      "clubName": "Borussia Dortmund",
+      "value": "€25.00m",
+      "clubID": "16"
+    },
+    {
+      "age": "24",
+      "date": "Jan 13, 2013",
+      "clubName": "Borussia Dortmund",
+      "value": "€28.00m",
+      "clubID": "16"
+    },
+    {
+      "age": "24",
+      "date": "Jun 30, 2013",
+      "clubName": "Borussia Dortmund",
+      "value": "€39.00m",
+      "clubID": "16"
+    },
+    {
+      "age": "25",
+      "date": "Feb 12, 2014",
+      "clubName": "Borussia Dortmund",
+      "value": "€50.00m",
+      "clubID": "16"
+    },
+    {
+      "age": "25",
+      "date": "Jul 10, 2014",
+      "clubName": "Bayern Munich",
+      "value": "€50.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "26",
+      "date": "Feb 4, 2015",
+      "clubName": "Bayern Munich",
+      "value": "€50.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "26",
+      "date": "Jul 1, 2015",
+      "clubName": "Bayern Munich",
+      "value": "€50.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "27",
+      "date": "Oct 16, 2015",
+      "clubName": "Bayern Munich",
+      "value": "€70.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "27",
+      "date": "Feb 15, 2016",
+      "clubName": "Bayern Munich",
+      "value": "€70.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "27",
+      "date": "Jun 1, 2016",
+      "clubName": "Bayern Munich",
+      "value": "€75.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "27",
+      "date": "Jul 22, 2016",
+      "clubName": "Bayern Munich",
+      "value": "€75.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "28",
+      "date": "Feb 7, 2017",
+      "clubName": "Bayern Munich",
+      "value": "€80.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "28",
+      "date": "Jun 19, 2017",
+      "clubName": "Bayern Munich",
+      "value": "€80.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "29",
+      "date": "Dec 28, 2017",
+      "clubName": "Bayern Munich",
+      "value": "€80.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "29",
+      "date": "Apr 4, 2018",
+      "clubName": "Bayern Munich",
+      "value": "€90.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "29",
+      "date": "Jun 5, 2018",
+      "clubName": "Bayern Munich",
+      "value": "€90.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "29",
+      "date": "Jul 16, 2018",
+      "clubName": "Bayern Munich",
+      "value": "€85.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "30",
+      "date": "Oct 22, 2018",
+      "clubName": "Bayern Munich",
+      "value": "€80.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "30",
+      "date": "Dec 18, 2018",
+      "clubName": "Bayern Munich",
+      "value": "€70.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "30",
+      "date": "Jun 5, 2019",
+      "clubName": "Bayern Munich",
+      "value": "€65.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "31",
+      "date": "Dec 17, 2019",
+      "clubName": "Bayern Munich",
+      "value": "€70.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "31",
+      "date": "Apr 8, 2020",
+      "clubName": "Bayern Munich",
+      "value": "€56.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "32",
+      "date": "Sep 16, 2020",
+      "clubName": "Bayern Munich",
+      "value": "€60.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "32",
+      "date": "Feb 10, 2021",
+      "clubName": "Bayern Munich",
+      "value": "€60.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "32",
+      "date": "May 31, 2021",
+      "clubName": "Bayern Munich",
+      "value": "€60.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "33",
+      "date": "Dec 22, 2021",
+      "clubName": "Bayern Munich",
+      "value": "€50.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "33",
+      "date": "Jun 9, 2022",
+      "clubName": "Bayern Munich",
+      "value": "€45.00m",
+      "clubID": "27"
+    },
+    {
+      "age": "34",
+      "date": "Nov 7, 2022",
+      "clubName": "FC Barcelona",
+      "value": "€45.00m",
+      "clubID": "131"
+    },
+    {
+      "age": "34",
+      "date": "Mar 23, 2023",
+      "clubName": "FC Barcelona",
+      "value": "€40.00m",
+      "clubID": "131"
+    },
+    {
+      "age": "34",
+      "date": "Jun 13, 2023",
+      "clubName": "FC Barcelona",
+      "value": "€30.00m",
+      "clubID": "131"
+    }
+  ],
+  "ranking": {
+    "Worldwide": "429",
+    "LaLiga": "57",
+    "Barcelona": "15",
+    "Poland": "4",
+    "Centre-Forward": "55",
+    "Year 1988": "1"
+  },
+  "updatedAt": "2024-02-18T21:34:38.105077"
+}

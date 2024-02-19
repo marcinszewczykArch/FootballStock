@@ -20,9 +20,9 @@ trait PlayerSearchClient[F[_]] {
 object PlayerSearchClient {
 
   def cachedInstance[F[_]: Sync: LoggerFactory](
-    config: PlayerSearchClientConfig
+    config: PlayerSearchClientConfig,
+    underlying: PlayerSearchClient[F] //PlayerSearchClient.impl[F](config)
   ): PlayerSearchClient[F] = {
-    val underlying                                                       = PlayerSearchClient.impl[F](config)
     val fetchPlayerSearchCache: Cache[F, String, List[FetchedPlayerSimple]] =
       Cache.instance[F, String, List[FetchedPlayerSimple]](
         cacheName = config.cacheName

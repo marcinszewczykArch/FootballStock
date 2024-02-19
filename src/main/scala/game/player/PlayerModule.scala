@@ -28,16 +28,23 @@ object PlayerModule {
     override val playerProfileClient             = PlayerProfileClient.impl[F](appConfig.playerProfileClient)
     override val playerProfileClientMemoryCached =
       PlayerProfileClientMemory.cachedInstance[F](appConfig.playerProfileClient, playerProfileClient, playerProfileClientMemory)
-    val playerSearchClient                       = PlayerSearchClient.cachedInstance[F](appConfig.playerSearchClient)
-    val playerMarketValueClient                  = PlayerMarketValueClient.cachedInstance[F](appConfig.playerMarketValueClient)
-    val playerStatsClient                        = PlayerStatsClient.cachedInstance[F](appConfig.playerStatsClient)
+
+    val playerSearchClient       = PlayerSearchClient.impl[F](appConfig.playerSearchClient)
+    val playerSearchClientCached = PlayerSearchClient.cachedInstance[F](appConfig.playerSearchClient, playerSearchClient)
+
+    val playerMarketValueClient       = PlayerMarketValueClient.impl[F](appConfig.playerMarketValueClient)
+    val playerMarketValueClientCached =
+      PlayerMarketValueClient.cachedInstance[F](appConfig.playerMarketValueClient, playerMarketValueClient)
+
+    val playerStatsClient       = PlayerStatsClient.impl(appConfig.playerStatsClient)
+    val playerStatsClientCached = PlayerStatsClient.cachedInstance[F](appConfig.playerStatsClient, playerStatsClient)
 
     override val service = PlayerService.impl[F](
       playerProfileClientMemoryCached,
       playerProfileClient,
-      playerSearchClient,
-      playerMarketValueClient,
-      playerStatsClient
+      playerSearchClientCached,
+      playerMarketValueClientCached,
+      playerStatsClientCached
     )
 
   }

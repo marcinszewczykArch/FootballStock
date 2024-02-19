@@ -21,9 +21,9 @@ trait PlayerStatsClient[F[_]] {
 object PlayerStatsClient {
 
   def cachedInstance[F[_]: Sync: LoggerFactory](
-    config: PlayerStatsClientConfig
+    config: PlayerStatsClientConfig,
+    underlying: PlayerStatsClient[F] //PlayerStatsClient.impl[F](config)
   ): PlayerStatsClient[F] = {
-    val underlying = PlayerStatsClient.impl[F](config)
 
     val fetchRawPlayersStatsCache: Cache[F, PlayerId, FetchedPlayerStats] =
       Cache.instance[F, PlayerId, FetchedPlayerStats](

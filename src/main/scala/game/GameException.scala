@@ -85,12 +85,6 @@ object GameException extends CirceExtraConfiguration {
 
   implicit val userAlreadyExistsExceptionCodec: Codec[UserAlreadyExistsException] = deriveConfiguredCodec[UserAlreadyExistsException]
 
-  final case class PlayerJsonNotFoundInMemoryException(playerId: PlayerId) extends GameException {
-    override def getMessage = s"Player profile JSON for player $playerId not found in memory."
-  }
-
-  implicit val playerJsonNotFoundInMemoryExceptionCodec: Codec[PlayerJsonNotFoundInMemoryException] =
-    deriveConfiguredCodec[PlayerJsonNotFoundInMemoryException]
 
   final case class PlayerProfileJsonNotFoundInMemoryCacheException(playerId: PlayerId) extends GameException {
     override def getMessage = s"Player profile JSON for player $playerId not found in memory cache."
@@ -159,6 +153,12 @@ object GameException extends CirceExtraConfiguration {
   }
 
   implicit val clubProfileClientExceptionCodec: Codec[ClubProfileClientException] = deriveConfiguredCodec[ClubProfileClientException]
+
+  final case class ClubPlayersClientException(cause: String) extends GameException {
+    override def getMessage = s"Exception while invoking ClubPlayersClient. Message: $cause"
+  }
+
+  implicit val clubPlayersClientExceptionCodec: Codec[ClubPlayersClientException] = deriveConfiguredCodec[ClubPlayersClientException]
 
 
   final case class DynamoReaderException(cause: String) extends GameException {

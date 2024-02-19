@@ -22,5 +22,6 @@ lazy val root = project
         scanamo ++
         circe ++
         tapir ++
-        http4s
+        http4s ++
+        testContainer
   )

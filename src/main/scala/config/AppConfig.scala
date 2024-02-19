@@ -48,7 +48,7 @@ object AppConfig {
 
   final case class HttpConfig(host: Host, port: Port)
 
-  final case class AwsConfig(accessKey: String, secretKey: String, region: Region)
+  final case class AwsConfig(accessKey: String, secretKey: String, region: Region, endpointOverride: String)
 
   implicit val hostConfigReader: ConfigReader[Host] = ConfigReader.fromNonEmptyStringOpt(Host.fromString)
 

@@ -1,120 +1,81 @@
 package testUtils
 
-import cats.data.EitherT
-import cats.effect.IO
-import cats.effect.Ref
-import game.GameException
-import GameException.PlayerJsonNotFoundInMemoryException
-import GameException.PlayerProfileClientException
-import GameException.UserNotFoundException
+import cats.effect.{IO, Ref}
+import config.AppConfig
+import game.GameEngine
+import game.club.service.domain.ClubId
 import game.event.Event
-import game.event.memory.EventMemory
-import game.state.domain.User
-import game.state.domain.UserGameState
-import game.state.memory.UserGameStateMemory
-import game.player.client.PlayerProfileClient
-import game.player.client.PlayerSearchClient
-import game.player.client.domain.FetchedPlayerSimple
-import game.player.client.domain.PlayerSearchResponse
-import game.player.client.memory.PlayerProfileClientMemory
+import game.player.service.PlayersUpdater
 import game.player.service.domain.PlayerId
+import game.state.domain.{User, UserGameState}
 import io.circe.Json
-import io.circe.parser
-import utils.JsonParser.jsonString
+import logic.SampleGameSpec
+import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
+import org.typelevel.log4cats.slf4j.Slf4jFactory
 import utils.TimeProvider
 
 import java.time.Instant
 
 object TestUtils {
+  implicit val testLoggerFactory: LoggerFactory[IO] = Slf4jFactory.create[IO]
+  implicit val log: SelfAwareStructuredLogger[IO]   = LoggerFactory.getLoggerFromName[IO](classOf[SampleGameSpec].getName)
 
-  def testPlayerProfileClient(): IO[PlayerProfileClient[IO]] = IO.pure((id: PlayerId) =>
-    IO.pure(
-      parser.parse(jsonString(s"players/${id.value}.json")) match {
-        case Right(json)          => Right(json)
-        case Left(parsingFailure) => Left(PlayerProfileClientException(parsingFailure.getMessage()))
-      }
-    )
-  )
+  def testGameEngine(
+    playerProfileRef: Ref[IO, Map[PlayerId, Json]],
+    stateRef: Ref[IO, Map[User, UserGameState]],
+    eventRef: Ref[IO, List[Event]],
+    clubProfileRef: Ref[IO, Map[ClubId, Json]],
+    clubPlayersRef: Ref[IO, Map[ClubId, Json]]
+  )(
+    implicit timeProvider: TimeProvider[IO]
+  ): IO[GameEngine[IO]] = for {
+    testRawAppConfig <- AppConfig.getTypesafeConfig[IO]
+    appConfig        <- AppConfig.parseAppConfig[IO](testRawAppConfig)
+    _                <- log.info(s"Test config loaded: $appConfig")
 
-  def testPlayerSearchClient(): IO[PlayerSearchClient[IO]] = IO.pure(
-    new PlayerSearchClient[IO] {
+    testPlayerModule = TestPlayerModule.impl(appConfig, playerProfileRef)
+    testClubModule   = TestClubModule.impl(appConfig, clubProfileRef, clubPlayersRef)
+    testStateModule  = TestStateModule.impl(stateRef)
+    testEventModule  = TestEventModule.impl(eventRef)
+    gameLogic        = GameEngine.impl(
+                         stateService = testStateModule.service,
+                         eventService = testEventModule.service,
+                         playerService = testPlayerModule.service,
+                         clubService = testClubModule.service
+                       )
+  } yield gameLogic
 
-      def searchByName(playerName: String): IO[List[FetchedPlayerSimple]] =
-        IO.pure(
-          io.circe
-            .parser
-            .decode[PlayerSearchResponse](jsonString("playerSearch/testResponsePlayerSearch.json"))
-            .toOption
-            .get
-            .result
-        )
+  def testPlayersUpdater(
+    playerProfileRef: Ref[IO, Map[PlayerId, Json]],
+    stateRef: Ref[IO, Map[User, UserGameState]],
+    eventRef: Ref[IO, List[Event]],
+    clubProfileRef: Ref[IO, Map[ClubId, Json]],
+    clubPlayersRef: Ref[IO, Map[ClubId, Json]]
+  )(
+    implicit timeProvider: TimeProvider[IO]
+  ): IO[PlayersUpdater[IO]] = for {
+    testRawAppConfig <- AppConfig.getTypesafeConfig[IO]
+    appConfig        <- AppConfig.parseAppConfig[IO](testRawAppConfig)
+    _                <- log.info(s"Test config loaded: $appConfig")
 
-    }
-  )
+    playerModule = TestPlayerModule.impl(appConfig, playerProfileRef)
+    clubModule   = TestClubModule.impl(appConfig, clubProfileRef, clubPlayersRef)
+    stateModule  = TestStateModule.impl(stateRef)
+    eventModule  = TestEventModule.impl(eventRef)
 
-  def testPlayerProfileClientMemory(
-    ref: Ref[IO, Map[PlayerId, Json]]
-  ): IO[PlayerProfileClientMemory[IO]] = IO.pure(
-    new PlayerProfileClientMemory[IO] {
+    playersUpdater = PlayersUpdater.impl[IO](
+                       playerModule.playerProfileClient,
+                       playerModule.playerProfileClientMemory,
+                       playerModule.playerProfileClientMemoryCached,
+                       playerModule.service,
+                       eventModule.service,
+                       stateModule.service,
+                       appConfig.playersUpdateCriteria
+                     )
+  } yield playersUpdater
 
-      override def save(playerId: PlayerId)(playerJson: Json): IO[ErrorOr[Unit]] = (for {
-        json <- EitherT.right[GameException](ref.update(_ + (playerId -> playerJson)))
-      } yield json).value
-
-      override def getById(playerId: PlayerId): IO[ErrorOr[Json]] = ref
-        .get
-        .map(_.get(playerId) match {
-          case Some(playerJson) => Right(playerJson)
-          case None             => Left(PlayerJsonNotFoundInMemoryException(playerId))
-        })
-
-      override def getAll(): IO[Map[PlayerId, Json]] = ref.get
-
-    }
-  )
-
-  def testUserGameStateMemory(
-    ref: Ref[IO, Map[User, UserGameState]]
-  ): IO[UserGameStateMemory[IO]] = IO.pure(
-    new UserGameStateMemory[IO] {
-
-      def save(user: User)(newUserState: UserGameState): IO[ErrorOr[Unit]] = (for {
-        _ <- EitherT.right[GameException](ref.update(_ + (user -> newUserState)))
-      } yield ()).value
-
-      def update(user: User)(newUserState: UserGameState)(versionNumber: Instant): IO[ErrorOr[Unit]] =
-        save(user)(newUserState)
-
-      def getByUser(user: User): IO[ErrorOr[UserGameState]] = ref
-        .get
-        .map(_.get(user) match {
-          case Some(userStats) => Right(userStats)
-          case None            => Left(UserNotFoundException(user))
-        })
-
-      def getAll(): IO[ErrorOr[Map[User, UserGameState]]] = ref
-        .get
-        .map(Right[GameException, Map[User, UserGameState]])
-
-    }
-  )
-
-  def testEventMemory(ref: Ref[IO, List[Event]]) = IO.pure(
-    new EventMemory[IO] {
-      override def sendEvent(event: Event): IO[Unit] = ref.update(_ :+ event)
-
-      override def getEventsForUser(user: User): IO[ErrorOr[List[Event]]] = ref
-        .get
-        .map(_.filter(_.getUser == user) match {
-          case Nil                     => Left(UserNotFoundException(user))
-          case userEvents: List[Event] => Right(userEvents)
-        })
-
-    }
-  )
-
-  def testTimeProvider(now: Instant) = IO.pure(new TimeProvider[IO] {
+  def testTimeProvider(now: Instant) = new TimeProvider[IO] {
     override def getCurrentTimestamp: Instant = now
-  })
+  }
 
 }

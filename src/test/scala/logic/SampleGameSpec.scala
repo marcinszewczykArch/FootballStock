@@ -1,85 +1,43 @@
 package logic
 
-import cats.effect.IO
-import cats.effect.Ref
+import cats.effect.{IO, Ref}
 import cats.implicits.toTraverseOps
-import config.AppConfig
-import game.GameEngine
+import game.club.service.domain.ClubId
 import game.event.Event
-import game.event.Event.BuyPlayerEvent
-import game.event.Event.InitializeGameEvent
-import game.event.Event.SellPlayerEvent
-import game.event.service.EventService
-import game.player.client.memory.PlayerProfileClientMemory
-import game.player.service.PlayerService
+import game.event.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
 import game.player.service.domain.PlayerId
-import game.state.domain.Shares
-import game.state.domain.User
-import game.state.domain.UserGameState
-import game.state.service.UserGameStateService
+import game.state.domain.{Shares, StockInfo, User, UserGameState}
 import io.circe.Json
 import munit.CatsEffectSuite
-import org.typelevel.log4cats.slf4j.Slf4jFactory
-import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.log4cats.SelfAwareStructuredLogger
-import testUtils.TestUtils
+import testUtils._
 import utils.Parser.CaseClassToString
 import utils.TimeProvider
 
 import java.time.Instant
 
 class SampleGameSpec extends CatsEffectSuite {
-  private implicit val testLoggerFactory: LoggerFactory[IO] = Slf4jFactory.create[IO]
-  implicit val log: SelfAwareStructuredLogger[IO]           = LoggerFactory.getLoggerFromName[IO](classOf[SampleGameSpec].getName)
-
-  def getNewGameEngine(
-    playerProfileRef: Ref[IO, Map[PlayerId, Json]],
-    stateRef: Ref[IO, Map[User, UserGameState]],
-    eventRef: Ref[IO, List[Event]]
-  )(
-    implicit timeProvider: TimeProvider[IO]
-  ): IO[GameEngine[IO]] = for {
-    //config
-    testRawAppConfig <- AppConfig.getTypesafeConfig[IO]
-    appConfig        <- AppConfig.parseAppConfig[IO](testRawAppConfig)
-    _                <- log.info(s"Test config loaded: $appConfig")
-
-    //memory, clients
-    testPlayerProfileClient                 <- TestUtils.testPlayerProfileClient()
-    testPlayerSearchClient                  <- TestUtils.testPlayerSearchClient()
-    testPlayerProfileClientMemoryUnderlying <- TestUtils.testPlayerProfileClientMemory(playerProfileRef)
-    playerProfileClientMemoryCached         <-
-      IO.delay(
-        PlayerProfileClientMemory
-          .cachedInstance(appConfig.playerProfileClient, testPlayerProfileClient, testPlayerProfileClientMemoryUnderlying)
-      )
-    testStateMemory                         <- TestUtils.testUserGameStateMemory(stateRef)
-    testEventMemory                         <- TestUtils.testEventMemory(eventRef)
-
-    //services
-    eventService  = EventService.impl(testEventMemory)
-    stateService  = UserGameStateService.impl(testStateMemory)
-    playerService = PlayerService.impl[IO](playerProfileClientMemoryCached, testPlayerSearchClient)
-    gameLogic     = GameEngine.impl(stateService, eventService, playerService)
-  } yield gameLogic
 
   test("Sample game test") {
     for {
       now                                           <- IO.delay(Instant.now())
-      implicit0(testTimeProvider: TimeProvider[IO]) <- TestUtils.testTimeProvider(now)
+      implicit0(testTimeProvider: TimeProvider[IO]) <- IO.delay(TestUtils.testTimeProvider(now))
       playerProfileRef                              <- Ref.of[IO, Map[PlayerId, Json]](Map.empty[PlayerId, Json])
       stateRef                                      <- Ref.of[IO, Map[User, UserGameState]](Map.empty[User, UserGameState])
       eventRef                                      <- Ref.of[IO, List[Event]](Nil)
-      testGameEngine                                <- getNewGameEngine(playerProfileRef, stateRef, eventRef)
+      clubProfileRef                                <- Ref.of[IO, Map[ClubId, Json]](Map.empty[ClubId, Json])
+      clubPlayersRef                                <- Ref.of[IO, Map[ClubId, Json]](Map.empty[ClubId, Json])
+      testGameEngine                                <- TestUtils.testGameEngine(playerProfileRef, stateRef, eventRef, clubProfileRef, clubPlayersRef)
       testUser = User("TestUserName")
 
       _      <- testGameEngine.createUser(testUser)
       state1 <- testGameEngine.getUserState(testUser)
       state1Expected = Right(
                          UserGameState(
-                           portfolio = Map.empty,
+                           user = testUser,
+                           portfolio = Nil,
                            money = BigDecimal(1_000_000),
-                           updatedAt = now
+                           updatedAt = now,
+                           Nil
                          )
                        )
       events1 <- testGameEngine.getUserEvents(testUser)
@@ -91,15 +49,33 @@ class SampleGameSpec extends CatsEffectSuite {
       state2       <- testGameEngine.getUserState(testUser)
       state2Expected       = Right(
                                UserGameState(
-                                 portfolio = Map(PlayerId(38253) -> List(Shares(2, BigDecimal(30_000_000), now))),
+                                 user = testUser,
+                                 portfolio = List(
+                                   StockInfo(
+                                     playerId = PlayerId(38253),
+                                     shares = List(
+                                       Shares(
+                                         number = 2,
+                                         buyPrice = BigDecimal(3.0e+7),
+                                         buyTimestamp = now,
+                                         buyMinutesPlayed = 0,
+                                         minutesPlayedLastSeen = 0,
+                                         dividend = 0
+                                       )
+                                     ),
+                                     lastPlayerValue = BigDecimal(3.0e+7),
+                                     lastPlayerMinutesPlayed = 0
+                                   )
+                                 ),
                                  money = BigDecimal(400_000),
-                                 updatedAt = now
+                                 updatedAt = now,
+                                 wishlist = Nil
                                )
                              )
       transaction1Expected = Right(
                                BuyPlayerEvent(
                                  playerId = PlayerId(38253),
-                                 playerName = "Lewandowski",
+                                 playerName = "Robert Lewandowski",
                                  shares = 2,
                                  user = testUser,
                                  value = BigDecimal(600_000),
@@ -119,15 +95,33 @@ class SampleGameSpec extends CatsEffectSuite {
       state3       <- testGameEngine.getUserState(testUser)
       state3Expected       = Right(
                                UserGameState(
-                                 portfolio = Map(PlayerId(38253) -> List(Shares(1, BigDecimal(30_000_000), now))),
+                                 user = testUser,
+                                 portfolio = List(
+                                   StockInfo(
+                                     playerId = PlayerId(38253),
+                                     shares = List(
+                                       Shares(
+                                         number = 1,
+                                         buyPrice = BigDecimal(30_000_000),
+                                         buyTimestamp = now,
+                                         buyMinutesPlayed = 0,
+                                         minutesPlayedLastSeen = 0,
+                                         dividend = 0
+                                       )
+                                     ),
+                                     lastPlayerValue = BigDecimal(3.0e+7),
+                                     lastPlayerMinutesPlayed = 0
+                                   )
+                                 ),
                                  money = BigDecimal(700_000),
-                                 updatedAt = now
+                                 updatedAt = now,
+                                 wishlist = Nil
                                )
                              )
       transaction2Expected = Right(
                                SellPlayerEvent(
                                  playerId = PlayerId(38253),
-                                 playerName = "Lewandowski",
+                                 playerName = "Robert Lewandowski",
                                  shares = 1,
                                  user = testUser,
                                  value = BigDecimal(300_000),
