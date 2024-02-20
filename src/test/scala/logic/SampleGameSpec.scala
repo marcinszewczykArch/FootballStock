@@ -1,16 +1,14 @@
 package logic
 
 import cats.effect.{IO, Ref}
-import cats.implicits.toTraverseOps
-import game.modules.event.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
 import game.modules.club.service.domain.ClubId
 import game.modules.event.Event
+import game.modules.event.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
 import game.modules.player.service.domain.PlayerId
 import game.modules.state.domain.{Shares, StockInfo, User, UserGameState}
 import io.circe.Json
 import munit.CatsEffectSuite
 import testUtils._
-import utils.Parser.CaseClassToString
 import utils.TimeProvider
 
 import java.time.Instant
@@ -27,7 +25,7 @@ class SampleGameSpec extends CatsEffectSuite {
       clubProfileRef                                <- Ref.of[IO, Map[ClubId, Json]](Map.empty[ClubId, Json])
       clubPlayersRef                                <- Ref.of[IO, Map[ClubId, Json]](Map.empty[ClubId, Json])
       testGameEngine                                <- TestUtils.testGameEngine(playerProfileRef, stateRef, eventRef, clubProfileRef, clubPlayersRef)
-      testUser = User("TestUserName")
+      testUser = User("USER1")
 
       _      <- testGameEngine.createUser(testUser)
       state1 <- testGameEngine.getUserState(testUser)
@@ -58,13 +56,13 @@ class SampleGameSpec extends CatsEffectSuite {
                                          number = 2,
                                          buyPrice = BigDecimal(3.0e+7),
                                          buyTimestamp = now,
-                                         buyMinutesPlayed = 0,
-                                         minutesPlayedLastSeen = 0,
+                                         buyMinutesPlayed = 62188,
+                                         minutesPlayedLastSeen = 62188,
                                          dividend = 0
                                        )
                                      ),
                                      lastPlayerValue = BigDecimal(3.0e+7),
-                                     lastPlayerMinutesPlayed = 0
+                                     lastPlayerMinutesPlayed = 62188
                                    )
                                  ),
                                  money = BigDecimal(400_000),
@@ -102,15 +100,15 @@ class SampleGameSpec extends CatsEffectSuite {
                                      shares = List(
                                        Shares(
                                          number = 1,
-                                         buyPrice = BigDecimal(30_000_000),
+                                         buyPrice = BigDecimal(3.0e+7),
                                          buyTimestamp = now,
-                                         buyMinutesPlayed = 0,
-                                         minutesPlayedLastSeen = 0,
+                                         buyMinutesPlayed = 62188,
+                                         minutesPlayedLastSeen = 62188,
                                          dividend = 0
                                        )
                                      ),
                                      lastPlayerValue = BigDecimal(3.0e+7),
-                                     lastPlayerMinutesPlayed = 0
+                                     lastPlayerMinutesPlayed = 62188
                                    )
                                  ),
                                  money = BigDecimal(700_000),
@@ -136,10 +134,6 @@ class SampleGameSpec extends CatsEffectSuite {
       _               = assertEquals(transaction2, transaction2Expected)
       _               = assertEquals(state3, state3Expected)
       _               = assertEquals(events3, events3Expected)
-
-      userBalance <- testGameEngine.getUserBalance(testUser)
-      _           <- userBalance.right.get.toStringWithFields.map(IO.println).toList.sequence
-
     } yield ()
   }
 
