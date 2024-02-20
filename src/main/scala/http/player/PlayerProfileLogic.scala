@@ -4,8 +4,8 @@ import cats.data.EitherT
 import cats.effect.Sync
 import cats.implicits.{toFunctorOps, toTraverseOps}
 import game.GameEngine
-import game.club.service.domain.ClubId
-import game.player.service.domain.PlayerId
+import game.modules.club.service.domain.ClubId
+import game.modules.player.service.domain.PlayerId
 import http.GameExceptionResponse
 import http.player.domain.{MarketValueHistoryResponse, PlayerProfileResponse, PlayerSearchResponse, PlayerStatsResponse}
 import org.typelevel.log4cats.LoggerFactory

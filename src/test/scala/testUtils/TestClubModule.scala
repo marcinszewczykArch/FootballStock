@@ -5,12 +5,12 @@ import cats.effect.{IO, Ref}
 import config.AppConfig
 import game.GameException
 import game.GameException.{ClubPlayersClientException, ClubPlayersJsonNotFoundInMemoryCacheException, ClubProfileClientException, ClubProfileJsonNotFoundInMemoryCacheException}
-import game.club.ClubModule
-import game.club.client.{ClubPlayersClient, ClubProfileClient, ClubSearchClient}
-import game.club.client.domain.{ClubSearchResponse, FetchedClubSimple}
-import game.club.client.memory.{ClubPlayersClientMemory, ClubProfileClientMemory}
-import game.club.service.ClubService
-import game.club.service.domain.ClubId
+import game.modules.club.ClubModule
+import game.modules.club.client.{ClubPlayersClient, ClubProfileClient, ClubSearchClient}
+import game.modules.club.client.domain.{ClubSearchResponse, FetchedClubSimple}
+import game.modules.club.client.memory.{ClubPlayersClientMemory, ClubProfileClientMemory}
+import game.modules.club.service.ClubService
+import game.modules.club.service.domain.ClubId
 import io.circe.{Json, parser}
 import org.typelevel.log4cats.LoggerFactory
 import utils.JsonParser.jsonString

@@ -1,0 +1,126 @@
+package game.modules.state.memory
+
+import cats.Applicative
+import cats.effect._
+import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxApplyOps}
+import cats.syntax.all._
+import game.GameException
+import GameException.{DynamoDbUpdateException, DynamoReaderException, JsonDecodingException, JsonParsingFailure}
+import game.modules.state.domain.{User, UserGameState}
+import io.circe.parser
+import io.circe.syntax.EncoderOps
+import org.scanamo.Scanamo
+import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
+import utils.Type.ErrorOr
+
+import java.time.Instant
+
+trait UserGameStateMemory[F[_]] {
+
+  def getByUser(user: User): F[ErrorOr[UserGameState]]
+  def getAll(): F[ErrorOr[Map[User, UserGameState]]]
+  def update(user: User)(newUserState: UserGameState)(versionNumber: Instant): F[ErrorOr[Unit]]
+  def save(user: User)(initialUserState: UserGameState): F[ErrorOr[Unit]]
+
+}
+
+object UserGameStateMemory {
+
+  def impl[F[_]: Sync: LoggerFactory](scanamo: Scanamo): UserGameStateMemory[F] = new UserGameStateMemory[F] {
+
+    import org.scanamo._
+    import org.scanamo.generic.auto._
+    import org.scanamo.syntax._
+
+    implicit val log: SelfAwareStructuredLogger[F] =
+      LoggerFactory.getLoggerFromName[F](classOf[UserGameStateMemory[F]].getName)
+
+    private val table = Table[UserGameStateTable]("UserGameState")
+    private case class UserGameStateTable(user: String, json: String, updatedAt: String)
+
+    override def getByUser(user: User): F[ErrorOr[UserGameState]] =
+      log.debug(s"getting user state for $user from dynamoDb") *> (scanamo
+        .exec(table.get("user" === user.value))
+        .map(_.left.map(err => DynamoReaderException(err.toString))) match {
+        case Some(value) =>
+          value
+            .map(_.json)
+            .flatMap(toUserState)
+            .pure
+
+        case None =>
+          Applicative[F].pure(Left[GameException, UserGameState](DynamoReaderException(s"Result for $user not found in memory.")))
+      })
+
+    private def toUserState(jsonString: String): ErrorOr[UserGameState] =
+      parser.parse(jsonString) match {
+        case Left(parsingFailure) => Left[GameException, UserGameState](JsonParsingFailure(parsingFailure.getMessage()))
+        case Right(json)          =>
+          json.as[UserGameState] match {
+            case Left(decodingFailure) => Left[GameException, UserGameState](JsonDecodingException(decodingFailure.getMessage()))
+            case Right(userGameState)  => Right[GameException, UserGameState](userGameState)
+          }
+      }
+
+    override def getAll(): F[ErrorOr[Map[User, UserGameState]]]         =
+      log.debug(s"getting all user states from dynamoDb") *>
+//        (scanamo.exec(table.scan())
+//          .sequence match {
+//          case Left(err)      => Left[GameException, Map[User, UserGameState]](DynamoReaderException(err.toString))
+//          case Right(records) => Right[GameException, Map[User, UserGameState]](records.mapFilter { record =>
+//              val user          = User(record.user)
+//              val userGameState = toUserState(record.json).toOption
+//              userGameState.map(user -> _)
+//            }.toMap)
+//        }).pure
+      scanamo.exec(for {
+          scan <- table.scan()
+          res = scan.sequence match {
+                  case Left(err)      => Left[GameException, Map[User, UserGameState]](DynamoReaderException(err.toString))
+                  case Right(records) =>
+                    Right[GameException, Map[User, UserGameState]](records.mapFilter { record =>
+                      val user          = User(record.user)
+                      val userGameState = toUserState(record.json).toOption
+                      userGameState.map(user -> _)
+                    }.toMap)
+                }
+
+        } yield res)
+        .pure
+
+    override def save(user: User)(newUserState: UserGameState): F[ErrorOr[Unit]] =
+      log.debug(s"saving new user game state for $user to dynamoDb") *> scanamo
+        .exec(
+          table.put(
+            UserGameStateTable(
+              user = user.value,
+              json = newUserState.asJson.toString(),
+              updatedAt = newUserState.updatedAt.toString
+            )
+          )
+        )
+        .asRight[GameException]
+        .pure
+
+    override def update(user: User)(newUserState: UserGameState)(versionNumber: Instant): F[ErrorOr[Unit]] =
+      log.debug(s"updating user game state for $user to dynamoDb") *>
+        scanamo
+          .exec(
+            table
+              .when("updatedAt" === versionNumber.toString) //condition to verify optimistic locking
+              .put(
+                UserGameStateTable(
+                  user = user.value,
+                  json = newUserState.asJson.toString(),
+                  updatedAt = newUserState.updatedAt.toString
+                )
+              )
+          )
+          .left
+          .map(err => DynamoDbUpdateException(" [optimistic locking exception for this version number] " + err.toString))
+          .leftWiden[GameException]
+          .pure
+
+  }
+
+}

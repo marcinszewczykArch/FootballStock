@@ -1,9 +1,9 @@
 package http.player
 
 import game.GameEngine
-import game.club.service.domain.{ClubId, ClubProfile}
-import game.player.service.domain.{MarketValue, MarketValueHistory, PlayerProfile, PlayerSimple, PlayerStats, Stat}
-import game.state.domain.UserBalance
+import game.modules.club.service.domain.{ClubId, ClubProfile}
+import game.modules.player.service.domain.{MarketValue, MarketValueHistory, PlayerProfile, PlayerSimple, PlayerStats, Stat}
+import game.modules.state.domain.UserBalance
 import http.state.domain.UserGameStateResponse
 import http.player.domain.MarketValueResponse.fromDomainMarketValue
 import http.player.domain.StatResponse.fromDomainStat

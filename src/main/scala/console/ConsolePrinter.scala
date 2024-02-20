@@ -3,9 +3,9 @@ package console
 import cats.{Applicative, Monad}
 import cats.effect.std.Console
 import cats.syntax.all._
+import game.modules.player.service.domain.{PlayerId, PlayerSimple}
+import game.modules.state.domain.User
 import game.{GameEngine, GameException}
-import game.player.service.domain.{PlayerId, PlayerSimple}
-import game.state.domain.User
 import utils.Type.ErrorOr
 
 import scala.io.AnsiColor._

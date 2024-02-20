@@ -3,8 +3,8 @@ package http.state
 import cats.effect.Sync
 import cats.implicits.toFunctorOps
 import game.GameEngine
-import game.player.service.domain.PlayerId
-import game.state.domain.User
+import game.modules.player.service.domain.PlayerId
+import game.modules.state.domain.User
 import http.GameExceptionResponse
 import http.state.domain._
 import org.typelevel.log4cats.LoggerFactory

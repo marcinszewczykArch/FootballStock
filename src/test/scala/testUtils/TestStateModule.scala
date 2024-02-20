@@ -4,10 +4,10 @@ import cats.data.EitherT
 import cats.effect.{IO, Ref}
 import game.GameException
 import game.GameException.UserNotFoundException
-import game.state.StateModule
-import game.state.domain.{User, UserGameState}
-import game.state.memory.UserGameStateMemory
-import game.state.service.UserGameStateService
+import game.modules.state.StateModule
+import game.modules.state.domain.{User, UserGameState}
+import game.modules.state.memory.UserGameStateMemory
+import game.modules.state.service.UserGameStateService
 import org.typelevel.log4cats.LoggerFactory
 import utils.Type.ErrorOr
 

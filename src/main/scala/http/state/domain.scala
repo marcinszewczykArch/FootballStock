@@ -1,7 +1,7 @@
 package http.state
 
-import game.player.service.domain.PlayerProfile
-import game.state.domain.{BalancePerPlayer, UserBalance}
+import game.modules.player.service.domain.PlayerProfile
+import game.modules.state.domain.{BalancePerPlayer, UserBalance}
 import http.state.domain.PlayerStockResponse.ageFromDateOfBirth
 import http.state.domain.WishlistPlayerResponse.fromDomainWishlist
 import io.circe.{Decoder, Encoder}

@@ -5,16 +5,17 @@ import cats.data.EitherT
 import cats.effect._
 import cats.implicits.toTraverseOps
 import game.GameException.{NotEnoughMoneyException, PlayerMarketValueNotUpToDateException}
-import game.club.service.ClubService
-import game.club.service.domain.{ClubId, ClubPlayers, ClubProfile, ClubSimple}
-import game.event.Event
-import game.event.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
-import game.event.service.EventService
-import game.player.client.memory.PlayerProfileClientMemory
-import game.player.service.PlayerService
-import game.player.service.domain._
-import game.state.domain._
-import game.state.service.UserGameStateService
+import game.modules.club.service.ClubService
+import game.modules.club.service.domain.{ClubId, ClubPlayers, ClubProfile, ClubSimple}
+import game.modules.event.Event
+import game.modules.event.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
+import game.modules.event.service.EventService
+import game.modules.player.client.memory.PlayerProfileClientMemory
+import game.modules.player.service.PlayerService
+import game.modules.player.service.domain.{MarketValueHistory, PlayerId, PlayerProfile, PlayerSimple, PlayerStats}
+import game.modules.state.domain
+import game.modules.state.domain.{StockInfo, User, UserBalance, UserGameState}
+import game.modules.state.service.UserGameStateService
 import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 import utils.TimeProvider
 import utils.Type.ErrorOr
@@ -131,12 +132,12 @@ object GameEngine {
             EitherT(stateService.calculateSharesAfterSell(userState.portfolio.find(_.playerId == playerId).map(_.shares), sharesToSell))
           transactionValue = player.marketValue * sharesToSell / 100
           event            = SellPlayerEvent(playerId, player.name, sharesToSell, transactionValue, user, now)
-          newUserState     = UserGameState(
+          newUserState     = domain.UserGameState(
                                user = user,
                                portfolio = newShares match {
                                  case Nil => userState.portfolio.filterNot(_.playerId == playerId)
                                  case _   =>
-                                   userState.portfolio.filterNot(_.playerId == playerId) :+ StockInfo(
+                                   userState.portfolio.filterNot(_.playerId == playerId) :+ domain.StockInfo(
                                      playerId,
                                      newShares,
                                      player.marketValue,

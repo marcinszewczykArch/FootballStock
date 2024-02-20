@@ -2,10 +2,10 @@ package testUtils
 
 import cats.effect._
 import game.GameException.UserNotFoundException
-import game.event.{Event, EventModule}
-import game.event.memory.EventMemory
-import game.event.service.EventService
-import game.state.domain.User
+import game.modules.event.{Event, EventModule}
+import game.modules.event.memory.EventMemory
+import game.modules.event.service.EventService
+import game.modules.state.domain.User
 import org.typelevel.log4cats.LoggerFactory
 import utils.Type.ErrorOr
 

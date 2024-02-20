@@ -1,8 +1,8 @@
 package game
 
-import game.club.service.domain.ClubId
-import game.player.service.domain.PlayerId
-import game.state.domain.User
+import game.modules.club.service.domain.ClubId
+import game.modules.player.service.domain.PlayerId
+import game.modules.state.domain.User
 import http.security.CirceExtraConfiguration
 import io.circe.Codec
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec

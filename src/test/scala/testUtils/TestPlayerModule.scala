@@ -5,12 +5,12 @@ import cats.effect.{IO, Ref}
 import config.AppConfig
 import game.GameException
 import game.GameException.{PlayerMarketValueHistoryClientException, PlayerProfileClientException, PlayerProfileJsonNotFoundInMemoryCacheException, PlayerStatsClientException}
-import game.player.PlayerModule
-import game.player.client.domain.{FetchedMarketValueHistory, FetchedPlayerSimple, FetchedPlayerStats, PlayerSearchResponse}
-import game.player.client.{PlayerMarketValueClient, PlayerProfileClient, PlayerSearchClient, PlayerStatsClient}
-import game.player.client.memory.PlayerProfileClientMemory
-import game.player.service.PlayerService
-import game.player.service.domain.PlayerId
+import game.modules.player.PlayerModule
+import game.modules.player.client.{PlayerMarketValueClient, PlayerProfileClient, PlayerSearchClient, PlayerStatsClient}
+import game.modules.player.client.domain.{FetchedMarketValueHistory, FetchedPlayerSimple, FetchedPlayerStats, PlayerSearchResponse}
+import game.modules.player.client.memory.PlayerProfileClientMemory
+import game.modules.player.service.PlayerService
+import game.modules.player.service.domain.PlayerId
 import io.circe.{Json, parser}
 import org.typelevel.log4cats.LoggerFactory
 import utils.JsonParser.jsonString
@@ -20,13 +20,14 @@ object TestPlayerModule {
 
   def impl(
     appConfig: AppConfig,
-    ref: Ref[IO, Map[PlayerId, Json]]
+    ref: Ref[IO, Map[PlayerId, Json]],
+    playerProfileClient: PlayerProfileClient[IO] = testPlayerProfileClient(),
+    playerStatsClient: PlayerStatsClient[IO] = TestPlayerModule.testPlayerStatsClient()
   )(
     implicit loggerFactory: LoggerFactory[IO]
   ): PlayerModule[IO] = new PlayerModule[IO] {
-    override val playerProfileClientMemory       = testPlayerProfileClientMemory(ref)
-    override val playerProfileClient             = testPlayerProfileClient()
-    override val playerProfileClientMemoryCached = PlayerProfileClientMemory
+    val playerProfileClientMemory       = testPlayerProfileClientMemory(ref)
+    val playerProfileClientMemoryCached = PlayerProfileClientMemory
       .cachedInstance(appConfig.playerProfileClient, playerProfileClient, playerProfileClientMemory)
 
     val playerSearchClient       = testPlayerSearchClient()
@@ -36,7 +37,6 @@ object TestPlayerModule {
     val playerMarketValueClientCached =
       PlayerMarketValueClient.cachedInstance(appConfig.playerMarketValueClient, playerMarketValueClient)
 
-    val playerStatsClient       = testPlayerStatsClient()
     val playerStatsClientCached = PlayerStatsClient.cachedInstance(appConfig.playerStatsClient, playerStatsClient)
 
     override val service = PlayerService.impl(
@@ -49,7 +49,7 @@ object TestPlayerModule {
 
   }
 
-  private def testPlayerProfileClient(): PlayerProfileClient[IO] = (id: PlayerId) =>
+  def testPlayerProfileClient(): PlayerProfileClient[IO] = (id: PlayerId) =>
     IO.pure(
       parser.parse(jsonString(s"playerProfile/${id.value}.json")) match {
         case Right(json)          => Right(json)
@@ -77,7 +77,7 @@ object TestPlayerModule {
       }
     )
 
-  private def testPlayerStatsClient(): PlayerStatsClient[IO] = (id: PlayerId) =>
+  def testPlayerStatsClient(): PlayerStatsClient[IO] = (id: PlayerId) =>
     IO.pure(
       parser.parse(jsonString(s"playerStats/${id.value}.json")) match {
         case Right(json)          => json.as[FetchedPlayerStats].getOrElse(throw PlayerStatsClientException("decoding json failure"))

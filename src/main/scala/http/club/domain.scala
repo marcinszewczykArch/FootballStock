@@ -1,10 +1,17 @@
 package http.club
 
-import game.club.service.domain._
+import game.modules.club.service.domain.ClubLeague
+import game.modules.club.service.domain.ClubPlayer
+import game.modules.club.service.domain.ClubPlayers
+import game.modules.club.service.domain.ClubProfile
+import game.modules.club.service.domain.ClubSimple
+import game.modules.club.service.domain.ClubSquad
 import http.club.domain.ClubLeagueResponse.leagueToLeagueResponse
 import http.club.domain.ClubSquadResponse.squadToSquadResponse
-import io.circe.{Decoder, Encoder}
-import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.Decoder
+import io.circe.Encoder
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto.deriveEncoder
 import utils.CurrencyFormatter
 
 import java.time.Instant
@@ -135,28 +142,6 @@ object domain {
     implicit val clubPlayersResponseResponseEncoder: Encoder[ClubPlayersResponse] = deriveEncoder
   }
 
-  private object ClubPlayerResponse {
-
-    def fromDomainClubPlayer(clubPlayer: ClubPlayer): ClubPlayerResponse = new ClubPlayerResponse(
-      id = clubPlayer.id.value,
-      name = clubPlayer.name,
-      position = clubPlayer.position,
-      dateOfBirth = clubPlayer.dateOfBirth,
-      age = clubPlayer.age,
-      nationality = clubPlayer.nationality,
-      height = clubPlayer.height,
-      foot = clubPlayer.foot,
-      joinedOn = clubPlayer.joinedOn,
-      joined = clubPlayer.joined,
-      signedFrom = clubPlayer.signedFrom,
-      contract = clubPlayer.contract,
-      marketValue = CurrencyFormatter.toEuroString(clubPlayer.marketValue)
-    )
-
-    implicit val clubPlayerResponseResponseDecoder: Decoder[ClubPlayerResponse] = deriveDecoder
-    implicit val clubPlayerResponseResponseEncoder: Encoder[ClubPlayerResponse] = deriveEncoder
-  }
-
   object ClubSquadResponse {
 
     def squadToSquadResponse(clubSquad: ClubSquad): ClubSquadResponse = new ClubSquadResponse(
@@ -184,6 +169,28 @@ object domain {
     implicit val clubLeagueResponseDecoder: Decoder[ClubLeagueResponse] = deriveDecoder
     implicit val clubLeagueResponseEncoder: Encoder[ClubLeagueResponse] = deriveEncoder
 
+  }
+
+  private object ClubPlayerResponse {
+
+    def fromDomainClubPlayer(clubPlayer: ClubPlayer): ClubPlayerResponse = new ClubPlayerResponse(
+      id = clubPlayer.id.value,
+      name = clubPlayer.name,
+      position = clubPlayer.position,
+      dateOfBirth = clubPlayer.dateOfBirth,
+      age = clubPlayer.age,
+      nationality = clubPlayer.nationality,
+      height = clubPlayer.height,
+      foot = clubPlayer.foot,
+      joinedOn = clubPlayer.joinedOn,
+      joined = clubPlayer.joined,
+      signedFrom = clubPlayer.signedFrom,
+      contract = clubPlayer.contract,
+      marketValue = CurrencyFormatter.toEuroString(clubPlayer.marketValue)
+    )
+
+    implicit val clubPlayerResponseResponseDecoder: Decoder[ClubPlayerResponse] = deriveDecoder
+    implicit val clubPlayerResponseResponseEncoder: Encoder[ClubPlayerResponse] = deriveEncoder
   }
 
 }

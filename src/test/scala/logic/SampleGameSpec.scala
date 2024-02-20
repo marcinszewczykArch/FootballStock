@@ -2,11 +2,11 @@ package logic
 
 import cats.effect.{IO, Ref}
 import cats.implicits.toTraverseOps
-import game.club.service.domain.ClubId
-import game.event.Event
-import game.event.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
-import game.player.service.domain.PlayerId
-import game.state.domain.{Shares, StockInfo, User, UserGameState}
+import game.modules.event.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
+import game.modules.club.service.domain.ClubId
+import game.modules.event.Event
+import game.modules.player.service.domain.PlayerId
+import game.modules.state.domain.{Shares, StockInfo, User, UserGameState}
 import io.circe.Json
 import munit.CatsEffectSuite
 import testUtils._

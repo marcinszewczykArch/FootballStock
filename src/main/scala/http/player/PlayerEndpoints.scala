@@ -1,7 +1,7 @@
 package http.player
 
 import game.GameException
-import game.player.service.domain.PlayerProfile
+import game.modules.player.service.domain.PlayerProfile
 import http.BaseEndpoint.baseEndpoint
 import http.state.domain._
 import http.player.domain.{MarketValueHistoryResponse, PlayerProfileResponse, PlayerSearchResponse, PlayerStatsResponse}

@@ -5,12 +5,11 @@ import config.AppConfig
 import config.AppConfig._
 import console.ConsolePrinter
 import fs2.Stream
-import game.GameEngine
-import game.club.ClubModule
-import game.event.EventModule
-import game.player.PlayerModule
-import game.player.service.PlayersUpdater
-import game.state.StateModule
+import game.{GameEngine, PlayersUpdater}
+import game.modules.club.ClubModule
+import game.modules.event.EventModule
+import game.modules.player.PlayerModule
+import game.modules.state.StateModule
 import http.SwaggerRoutes
 import http.club.{ClubLogic, ClubRoutes}
 import http.event.{EventLogic, EventRoutes}
@@ -35,7 +34,7 @@ object Main extends IOApp {
       rawAppConfig   <- Resource.eval(AppConfig.getTypesafeConfig[IO])
       appConfig      <- Resource.eval(AppConfig.parseAppConfig[IO](rawAppConfig))
       dynamoDbClient <- Resource.eval(buildDynamoDbClient(appConfig.aws))
-      (gameEngine, playersUpdater) = getGameEngine(appConfig, dynamoDbClient)
+      (gameEngine, playersUpdater) = getGameElements(appConfig, dynamoDbClient)
       _ <- httpServerResource(appConfig, gameEngine)
       _ <- runBackgroundTasks(appConfig, gameEngine, playersUpdater)
     } yield ()).useForever
@@ -87,7 +86,7 @@ object FootballStockApp {
       _      <- Resource.eval(IO.println(s"Go to http://localhost:${server.address.getPort}/swagger to open SwaggerUI"))
     } yield server
 
-  def getGameEngine(
+  def getGameElements(
     appConfig: AppConfig,
     dynamoDbClient: DynamoDbClient
   )(
@@ -101,20 +100,43 @@ object FootballStockApp {
     val stateModule  = StateModule.impl[IO](scanamo)
     val eventModule  = EventModule.impl[IO](scanamo)
 
-    val playersUpdater = PlayersUpdater.impl[IO](
-      playerModule.playerProfileClient,
-      playerModule.playerProfileClientMemory,
-      playerModule.playerProfileClientMemoryCached,
+    val gameEngine = GameEngine.impl(
+      stateModule.service,
+      eventModule.service,
+      playerModule.service,
+      clubModule.service
+    )
+
+    val playersUpdater = PlayersUpdater.impl(
       playerModule.service,
       eventModule.service,
       stateModule.service,
       appConfig.playersUpdateCriteria
     )
 
-    //todo: clubsUpdater to be implemented like once a day
+    val clubsUpdater = ???
 
-    val gameEngine =
-      GameEngine.impl(stateModule.service, eventModule.service, playerModule.service, clubModule.service)
+    val dividendPayer = ???
+
+    val transactionOrderFinalizer = ???
+    //todo: instead of direct sell/buy transaction user should send transaction order (sell or buy)
+    // and this transaction order should:
+    // - block expected transaction value (when buying)
+    // - be finalized at midnight (?) every day
+    // - dividendPayer should start running before (
+    //    use case 1:
+    // a. player play in game 8pm-10pm
+    // b. buy player at 10pm
+    // c. transaction finalized at midnight (2h later)
+    // d. update player stats at 1 am (1 h later)
+    // e. user get dividend
+    //    use case 2:
+    // a. player play in game 8pm-10pm
+    // b. buy player at 10pm
+    // c. update player stats at midnight (2 h later)
+    // d. transaction finalized at 1 am (1h later)
+    // e. user NOT get dividend
+    // )
 
     (gameEngine, playersUpdater)
   }

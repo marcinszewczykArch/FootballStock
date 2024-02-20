@@ -3,8 +3,8 @@ package http.club
 import cats.effect.Sync
 import cats.implicits.toFunctorOps
 import game.GameEngine
-import game.club.service.domain.ClubId
-import game.player.service.domain.PlayerId
+import game.modules.club.service.domain.ClubId
+import game.modules.player.service.domain.PlayerId
 import http.GameExceptionResponse
 import http.club.domain.{ClubPlayersResponse, ClubProfileResponse, ClubSearchResponse}
 import http.player.domain.{MarketValueHistoryResponse, PlayerProfileResponse, PlayerSearchResponse}

@@ -3,13 +3,10 @@ package player
 import cats.effect.IO
 import cats.effect.Ref
 import config.AppConfig
-import game.player.client.domain.FetchedPlayerProfile
-import game.player.client.domain.PlayerSearchResponse
-import game.player.service.PlayerMapper
-import game.player.service.PlayerService
-import game.player.service.PlayerMapper.fetchedPlayerSimpleToPlayerSimple
-import game.player.service.domain.PlayerId
-import game.player.service.domain.PlayerProfile
+import game.modules.player.client.domain.{FetchedPlayerProfile, PlayerSearchResponse}
+import game.modules.player.service.{PlayerMapper, PlayerService}
+import game.modules.player.service.domain.{PlayerId, PlayerProfile}
+import PlayerMapper.fetchedPlayerSimpleToPlayerSimple
 import io.circe.Json
 import io.circe.parser
 import munit.CatsEffectSuite
