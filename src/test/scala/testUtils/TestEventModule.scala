@@ -5,6 +5,7 @@ import game.GameException.UserNotFoundException
 import game.modules.event.{Event, EventModule}
 import game.modules.event.memory.EventMemory
 import game.modules.event.service.EventService
+import game.modules.player.service.domain.PlayerId
 import game.modules.state.domain.User
 import org.typelevel.log4cats.LoggerFactory
 import utils.Type.ErrorOr
@@ -31,6 +32,17 @@ object TestEventModule {
           case Nil                     => Left(UserNotFoundException(user))
           case userEvents: List[Event] => Right(userEvents)
         })
+
+      override def getEventsForUserAndPlayer(
+        user: User
+      )(
+        playerId: PlayerId
+      ): IO[ErrorOr[List[Event]]] = ref
+          .get
+          .map(_.filter(_.getUser == user).filter(_.getPlayerId.contains(playerId)) match {
+            case Nil                     => Left(UserNotFoundException(user))
+            case userEvents: List[Event] => Right(userEvents)
+          })
 
     }
 
