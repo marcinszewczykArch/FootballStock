@@ -120,8 +120,9 @@ object PlayerMapper {
   }
 
   //  /robert-lewandowski/profil/spieler/38253
+  // "https://www.transfermarkt.com/robert-lewandowski/profil/spieler/38253"
   private def nameFromUrl(maybeUrl: Option[String]): Option[String] = maybeUrl.flatMap { url =>
-    Try(url.split("/")(1))
+    Try(url.split("/").takeRight(4)(0))
       .toOption
       .map(
         _.split("-")

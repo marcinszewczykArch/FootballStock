@@ -19,7 +19,7 @@ trait UserGameStateService[F[_]] {
 
   def getStateForUser(user: User): F[ErrorOr[UserGameState]]
   def getAllGameStates(): F[ErrorOr[Map[User, UserGameState]]]
-  def updateGameStateFroUser(user: User)(newUserState: UserGameState)(versionNumber: Instant): F[ErrorOr[Unit]]
+  def updateGameStateForUser(user: User)(newUserState: UserGameState)(versionNumber: Instant): F[ErrorOr[Unit]]
   def saveGameStateFroUser(user: User)(initialUserState: UserGameState): F[ErrorOr[Unit]]
 
   def validateUserNotExists(user: User): F[ErrorOr[Unit]]
@@ -53,7 +53,7 @@ object UserGameStateService {
 
     override def getAllGameStates(): F[ErrorOr[Map[User, UserGameState]]] = userGameStateMemory.getAll()
 
-    override def updateGameStateFroUser(
+    override def updateGameStateForUser(
       user: User
     )(
       newUserState: UserGameState

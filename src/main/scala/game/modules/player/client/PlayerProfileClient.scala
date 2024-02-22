@@ -1,12 +1,17 @@
 package game.modules.player.client
 
-import cats.{Applicative, MonadThrow}
+import cats.Applicative
+import cats.MonadThrow
 import cats.effect._
 import config.AppConfig.PlayerProfileClientConfig
 import game.GameException
 import GameException.PlayerProfileClientException
+import cats.data.EitherT
+import cats.implicits.{catsSyntaxApplyOps, toFunctorOps}
 import game.modules.player.service.domain.PlayerId
-import io.circe.{Json, parser}
+import io.circe.Json
+import io.circe.parser
+import org.typelevel.log4cats.LoggerFactory
 import sttp.client3._
 import sttp.model.Uri
 import utils.Type.ErrorOr

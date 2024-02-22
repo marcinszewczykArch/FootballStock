@@ -5,8 +5,7 @@ import cats.effect.IO
 import cats.effect.Ref
 import config.AppConfig
 import config.AppConfig.PlayersUpdateCriteriaConfig
-import game.GameEngine
-import game.PlayersUpdater
+import game.{DividendPayer, GameEngine, PlayersUpdater}
 import game.modules.club.service.domain.ClubId
 import game.modules.event.Event
 import game.modules.player.client.{PlayerProfileClient, PlayerStatsClient}
@@ -83,12 +82,13 @@ object TestUtils {
     stateModule  = TestStateModule.impl(stateRef)
     eventModule  = TestEventModule.impl(eventRef)
 
-    playersUpdater = PlayersUpdater.impl[IO](
+    playersUpdater = PlayersUpdater.impl(
                        playerModule.service,
                        eventModule.service,
                        stateModule.service,
                        appConfig.playersUpdateCriteria
                      )
+
   } yield playersUpdater
 
   def testTimeProvider(now: Instant) = new TimeProvider[IO] {

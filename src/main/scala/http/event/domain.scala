@@ -36,6 +36,7 @@ object domain {
             case PlayersUpdateEvent(updateSuccess, updateFailure, taskDurationSeconds, _) =>
               s"Task Duration: $taskDurationSeconds s. " +
                 s"Players updated with success: $updateSuccess, Players not updated because of failure: $updateFailure"
+            case UserDividendPayedEvent(user, timestamp, messages) => messages.mkString(" | ") //todo: do it better
           }
         )
 

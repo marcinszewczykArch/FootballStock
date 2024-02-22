@@ -34,6 +34,7 @@ trait GameEngine[F[_]] {
   def createUser(user: User): F[ErrorOr[InitializeGameEvent]]
 
   def getUserEvents(user: User): F[ErrorOr[List[Event]]]
+  def getUserPlayerEvents(user: User)(playerId: PlayerId): F[ErrorOr[List[Event]]]
 
   def addToUserWishlist(user: User)(playerId: PlayerId): F[ErrorOr[Unit]]
   def removeFromUserWishlist(user: User)(playerId: PlayerId): F[ErrorOr[Unit]]
@@ -103,7 +104,7 @@ object GameEngine {
                          money = userState.money - transactionValue,
                          updatedAt = now
                        )
-        _ <- EitherT(stateService.updateGameStateFroUser(user)(newUserState)(versionNumber = userState.updatedAt))
+        _ <- EitherT(stateService.updateGameStateForUser(user)(newUserState)(versionNumber = userState.updatedAt))
         _ <- EitherT.liftF[F, GameException, Unit](eventService.sendEvent(event))
       } yield event).value
 
@@ -148,7 +149,7 @@ object GameEngine {
                                money = userState.money + transactionValue,
                                updatedAt = now
                              )
-          _ <- EitherT(stateService.updateGameStateFroUser(user)(newUserState)(versionNumber = userState.updatedAt))
+          _ <- EitherT(stateService.updateGameStateForUser(user)(newUserState)(versionNumber = userState.updatedAt))
           _ <- EitherT.liftF[F, GameException, Unit](eventService.sendEvent(event))
         } yield event).value
 
@@ -189,6 +190,9 @@ object GameEngine {
 
       override def getUserEvents(user: User): F[ErrorOr[List[Event]]] =
         eventService.getEventsForUser(user)
+
+      override def getUserPlayerEvents(user: User)(playerId: PlayerId): F[ErrorOr[List[Event]]] =
+        eventService.getEventsForUserAndPlayer(user)(playerId)
 
       override def getAllUsersStates(
       ): F[ErrorOr[Map[User, UserGameState]]] = stateService.getAllGameStates()
@@ -252,7 +256,7 @@ object GameEngine {
                          money = userState.money,
                          updatedAt = now
                        )
-        _ <- EitherT(stateService.updateGameStateFroUser(user)(newUserState)(versionNumber = userState.updatedAt))
+        _ <- EitherT(stateService.updateGameStateForUser(user)(newUserState)(versionNumber = userState.updatedAt))
       } yield ()).value
 
       override def removeFromUserWishlist(
@@ -270,7 +274,7 @@ object GameEngine {
                          money = userState.money,
                          updatedAt = now
                        )
-        _ <- EitherT(stateService.updateGameStateFroUser(user)(newUserState)(versionNumber = userState.updatedAt))
+        _ <- EitherT(stateService.updateGameStateForUser(user)(newUserState)(versionNumber = userState.updatedAt))
       } yield ()).value
 
     }

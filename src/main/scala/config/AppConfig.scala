@@ -114,7 +114,9 @@ object AppConfig {
 
   final case class UpdaterTaskConfig(
     playersProfileUpdateEvery: FiniteDuration,
-    playersValueUpdateEvery: FiniteDuration
+    playersValueUpdateEvery: FiniteDuration,
+    dividendPayEvery: FiniteDuration,
+    dividendYield: Double
   )
 
   case class PlayersUpdateCriteriaConfig(notUpdatedFor: FiniteDuration)

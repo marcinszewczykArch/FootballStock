@@ -10,11 +10,13 @@ import GameException.DynamoReaderException
 import GameException.JsonDecodingException
 import GameException.JsonParsingFailure
 import GameException.UserNotFoundException
+import cats.data.EitherT
 import game.modules.event.Event.BuyPlayerEvent
 import game.modules.event.Event.InitializeGameEvent
 import game.modules.event.Event.PlayersUpdateEvent
 import game.modules.event.Event.SellPlayerEvent
 import game.modules.event.Event
+import game.modules.player.service.domain.PlayerId
 import game.modules.state.domain.User
 import io.circe.parser
 import io.circe.syntax.EncoderOps
@@ -29,7 +31,7 @@ trait EventMemory[F[_]] {
 
   def sendEvent(event: Event): F[Unit]
   def getEventsForUser(user: User): F[ErrorOr[List[Event]]]
-//todo: get events for user and player
+  def getEventsForUserAndPlayer(user: User)(playerId: PlayerId): F[ErrorOr[List[Event]]]
 }
 
 object EventMemory {
@@ -77,6 +79,15 @@ object EventMemory {
                 .sequence
 
           }).pure
+
+      override def getEventsForUserAndPlayer(
+        user: User
+      )(
+        playerId: PlayerId
+      ): F[ErrorOr[List[Event]]] = (for {
+        allForUser <- EitherT(getEventsForUser(user)) //todo: optimize query by adding playerId to Table
+        allForUserAndPlayer = allForUser.filter(_.getPlayerId.contains(playerId))
+      } yield allForUserAndPlayer).value
 
     }
 

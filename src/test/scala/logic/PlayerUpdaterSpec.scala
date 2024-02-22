@@ -1,11 +1,11 @@
-package player
+package logic
 
 import cats.effect.{IO, Ref}
 import config.AppConfig.PlayersUpdateCriteriaConfig
 import game.modules.event.Event
 import game.modules.event.Event.{PlayerValueChanged, PlayersUpdateEvent}
-import game.modules.player.client.{PlayerProfileClient, PlayerStatsClient}
 import game.modules.player.client.domain.FetchedPlayerStats
+import game.modules.player.client.{PlayerProfileClient, PlayerStatsClient}
 import game.modules.player.service.domain.PlayerId
 import game.modules.state.domain.{Shares, StockInfo, User, UserGameState}
 import io.circe.{Json, parser}

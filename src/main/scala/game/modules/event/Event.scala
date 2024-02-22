@@ -61,4 +61,10 @@ object Event {
     timestamp: Instant
   ) extends Event(User(SYSTEM_USER_NAME), timestamp, "PLAYERS UPDATE", None)
 
+  final case class UserDividendPayedEvent(
+                                           user: User,
+                                           timestamp: Instant,
+                                           messages: List[String]
+                                         ) extends Event(user, timestamp, "DIVIDEND PAYED", None)
+
 }

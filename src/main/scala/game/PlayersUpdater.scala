@@ -38,7 +38,7 @@ object PlayersUpdater {
     val maxConcurrent                              = 8
     implicit val log: SelfAwareStructuredLogger[F] = LoggerFactory.getLoggerFromName[F](classOf[PlayersUpdater[F]].getName)
 
-    override def updateAllPlayersInMemory: F[Unit] = for { //todo: test for this
+    override def updateAllPlayersInMemory: F[Unit] = for {
       _                            <- log.info("Starting players profile update task for all players in memory...")
       now                          <- Applicative[F].pure(timeProvider.getCurrentTimestamp)
       thresholdTimestamp           <- Applicative[F].pure(now.minusSeconds(playersUpdateCriteria.notUpdatedFor.toSeconds))
@@ -61,7 +61,7 @@ object PlayersUpdater {
                                       )
     } yield ()
 
-    override def updatePlayersValueInUserStates: F[Unit] = (for { //todo: test for this
+    override def updatePlayersValueInUserStates: F[Unit] = (for {
       _ <- EitherT.liftF[F, GameException, Unit](log.info("Starting players value update task for players in User Game States..."))
       now = timeProvider.getCurrentTimestamp
       allStates          <- EitherT(userGameStateService.getAllGameStates())
@@ -93,7 +93,7 @@ object PlayersUpdater {
                                                                )
                                             versionNumber    = state.updatedAt
                                             _ <- EitherT(
-                                                   userGameStateService.updateGameStateFroUser(user)(updatedState)(versionNumber)
+                                                   userGameStateService.updateGameStateForUser(user)(updatedState)(versionNumber)
                                                  ) //todo: we can ignore this update if nothing changed (only: updatedAt = now)
                                           } yield events
                                         }

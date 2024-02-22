@@ -5,7 +5,7 @@ import config.AppConfig
 import config.AppConfig._
 import console.ConsolePrinter
 import fs2.Stream
-import game.{GameEngine, PlayersUpdater}
+import game.{DividendPayer, GameEngine, PlayersUpdater}
 import game.modules.club.ClubModule
 import game.modules.event.EventModule
 import game.modules.player.PlayerModule
@@ -34,9 +34,9 @@ object Main extends IOApp {
       rawAppConfig   <- Resource.eval(AppConfig.getTypesafeConfig[IO])
       appConfig      <- Resource.eval(AppConfig.parseAppConfig[IO](rawAppConfig))
       dynamoDbClient <- Resource.eval(buildDynamoDbClient(appConfig.aws))
-      (gameEngine, playersUpdater) = getGameElements(appConfig, dynamoDbClient)
+      (gameEngine, playersUpdater, dividendPayer) = getGameElements(appConfig, dynamoDbClient)
       _ <- httpServerResource(appConfig, gameEngine)
-      _ <- runBackgroundTasks(appConfig, gameEngine, playersUpdater)
+      _ <- runBackgroundTasks(appConfig, gameEngine, playersUpdater, dividendPayer)
     } yield ()).useForever
 
 }
@@ -53,6 +53,7 @@ object FootballStockApp {
   )(
     implicit tokenVerification: TokenVerification[IO]
   ): Resource[IO, Server] = for {
+    _             <- Resource.eval(log.info(s"starting server with config: $appConfig"))
     swaggerRoutes <- Resource.eval(SwaggerRoutes.routes)
     gameStateLogic     = GameStateLogic.impl[IO](gameEngine)
     playerProfileLogic = PlayerProfileLogic.impl[IO](gameEngine)
@@ -91,7 +92,7 @@ object FootballStockApp {
     dynamoDbClient: DynamoDbClient
   )(
     implicit timeProvider: TimeProvider[IO]
-  ): (GameEngine[IO], PlayersUpdater[IO]) = {
+  ): (GameEngine[IO], PlayersUpdater[IO], DividendPayer[IO]) = {
     val scanamo = Scanamo(dynamoDbClient)
 
     //modules
@@ -100,25 +101,36 @@ object FootballStockApp {
     val stateModule  = StateModule.impl[IO](scanamo)
     val eventModule  = EventModule.impl[IO](scanamo)
 
-    val gameEngine = GameEngine.impl(
+    val gameEngine: GameEngine[IO] = GameEngine.impl(
       stateModule.service,
       eventModule.service,
       playerModule.service,
       clubModule.service
     )
 
-    val playersUpdater = PlayersUpdater.impl(
+    val playersUpdater: PlayersUpdater[IO] = PlayersUpdater.impl(
       playerModule.service,
       eventModule.service,
       stateModule.service,
       appConfig.playersUpdateCriteria
     )
 
-    val clubsUpdater = ???
+//    val clubsUpdater = ???
+//
+    val dividendPayer: DividendPayer[IO] = DividendPayer.impl(
+      playerModule.service,
+      eventModule.service,
+      stateModule.service,
+      appConfig
+    )
 
-    val dividendPayer = ???
+    //todo:
+    // to consider:
+    // 1. playerValue can changed after match was played - not a big deal, we can use new value
+    // 2. sb can buy player stock just for the moment (before the match or even after but before stats are updated)
+    // to gain the dividend and then sell stock and buy another for the same reason
 
-    val transactionOrderFinalizer = ???
+//    val transactionOrderFinalizer = ???
     //todo: instead of direct sell/buy transaction user should send transaction order (sell or buy)
     // and this transaction order should:
     // - block expected transaction value (when buying)
@@ -138,13 +150,14 @@ object FootballStockApp {
     // e. user NOT get dividend
     // )
 
-    (gameEngine, playersUpdater)
+    (gameEngine, playersUpdater, dividendPayer)
   }
 
   def runBackgroundTasks(
     appConfig: AppConfig,
     gameLogic: GameEngine[IO],
-    playersUpdater: PlayersUpdater[IO]
+    playersUpdater: PlayersUpdater[IO],
+    dividendPayer: DividendPayer[IO]
   ): Resource[IO, ExitCode] = {
     val consolePrinter = ConsolePrinter.impl[IO]
 
@@ -178,26 +191,28 @@ object FootballStockApp {
             .handleErrorWith(err => log.error(err)(s"UpdatePlayersValueInUserStates task failed. error: ${err.getMessage}"))
         )
 
-//    val payDividendForPlayersInPortfolio: Stream[IO, Unit] = ???
-    //1. iterate thorough all user states
-    //2. iterate thorough all user players in portfolio
-    //3. iterate thorough all stock packages for player
-    //4. pay dividend if (MinutesPlayed - MinutesPlayedLastSeen) > 0
-    //5. increment dividend by value:
-    // val value = currentPlayerValue * (numberOfStock * 0.01) * 0.01 * (MinutesPlayed - MinutesPlayedLastSeen)/90
-    //6. Add value to cash
-    //7. Update MinutesPlayedLastSeen to MinutesPlayed
-
-    //to consider:
-    //1. playerValue can changed after match was played - not a big deal, we can use new value
-    //2. sb can buy player stock just for the moment (before the match or even after but before stats are updated)
-    // to gain the dividend and then sell stock and buy another for the same reason
+    val payDividendForPlayersInPortfolio: Stream[IO, Unit] = fs2
+      .Stream
+      .awakeEvery[IO](appConfig.updaterTask.dividendPayEvery)
+      //todo: change it to store lastDividendPayTaskDateTime and start update if:
+      // -lastDividendPayTaskDateTime was more than 24h ago or
+      // -now is midnight and day is different then lastDividendPayTaskDateTime
+      .evalMap(_ =>
+        dividendPayer
+          .payDividendToAllUsers
+          .handleErrorWith(err => log.error(err)(s"payDividendForPlayersInPortfolio task failed. error: ${err.getMessage}"))
+      )
 
     Resource.eval(
       consolePrinter.printStartMessage[IO]
     ) *>
       Resource.eval {
-        Stream(gameCliStream, updatePlayersInMemoryStream, updatePlayersValueInUserStatesStream)
+        Stream(
+          gameCliStream,
+          updatePlayersInMemoryStream,
+          updatePlayersValueInUserStatesStream,
+          payDividendForPlayersInPortfolio
+        )
           .parJoinUnbounded
           .compile
           .drain
