@@ -1,25 +1,21 @@
 package testUtils
 
+import cats.effect.{IO, Ref}
 import cats.effect.unsafe.implicits.global
-import cats.effect.IO
-import cats.effect.Ref
 import config.AppConfig
 import config.AppConfig.PlayersUpdateCriteriaConfig
-import game.{DividendPayer, GameEngine, PlayersUpdater}
+import game.{GameEngine, PlayersUpdater}
 import game.modules.club.service.domain.ClubId
 import game.modules.event.Event
 import game.modules.player.client.{PlayerProfileClient, PlayerStatsClient}
 import game.modules.player.service.domain.PlayerId
-import game.modules.state.domain.StockInfo
-import game.modules.state.domain.User
-import game.modules.state.domain.UserGameState
+import game.modules.state.domain.{StockInfo, User, UserGameState}
 import io.circe.Json
 import logic.SampleGameSpec
-import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
+import org.typelevel.log4cats.{LoggerFactory, SelfAwareStructuredLogger}
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 import utils.TimeProvider
-import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 
 import java.time.Instant
 
@@ -57,7 +53,8 @@ object TestUtils {
                          stateService = testStateModule.service,
                          eventService = testEventModule.service,
                          playerService = testPlayerModule.service,
-                         clubService = testClubModule.service
+                         clubService = testClubModule.service,
+                         loginService = ??? //todo: add me!
                        )
   } yield gameLogic
 

@@ -84,6 +84,8 @@ object Dependencies {
     "io.circe"       %% "circe-literal"                      % "0.14.4"                % Test
   )
 
+  val bcrypt = Seq("com.github.t3hnar" %% "scala-bcrypt" % "4.3.0")
+
 }
 
 object Versions {

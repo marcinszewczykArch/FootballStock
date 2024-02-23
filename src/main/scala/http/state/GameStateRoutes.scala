@@ -3,6 +3,7 @@ package http.state
 import cats.effect.Async
 import GameStateEndpoints._
 import cats.Applicative
+import game.modules.login.domain.UserForm
 import http.security.TokenVerification
 import http.security.SecuredEndpoints
 import http.security.Roles
@@ -28,7 +29,7 @@ class GameStateRoutes[F[_]: Async: LoggerFactory](
 
     val createNewUserServerEndpoint: ServerEndpoint[Any, F] = createNewUser
       .endpointSecured(RoleSelection.Any(Roles.Admin, Roles.User))
-      .withServerLogic(logic.createNewUser)
+      .withServerLogic(userName => logic.createNewUser(UserForm(userName, "password", "email"))) //todo: send object as json
 
     val buyPlayerServerEndpoint: ServerEndpoint[Any, F] = buyPlayer
       .endpointSecured(RoleSelection.Any(Roles.Admin, Roles.User))

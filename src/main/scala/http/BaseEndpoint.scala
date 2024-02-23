@@ -2,7 +2,7 @@ package http
 
 import http.security.SecuredEndpoints.{AppEndpointSecretWithError, secretBearer}
 import http.security.{CirceExtraConfiguration, errors}
-import http.security.errors.BusinessFailure
+import http.security.errors.{BusinessFailure, Failure}
 import io.circe.Codec
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import sttp.model.StatusCode
@@ -17,6 +17,19 @@ object BaseEndpoint {
   val baseEndpoint: AppEndpointSecretWithError[Unit, Unit] = endpoint
     .in(ApiVersion)
     .securityIn(secretBearer)
+    .errorOut(
+      errors.errors[GameExceptionResponse](
+        oneOfVariantValueMatcher(
+          StatusCode.PreconditionFailed,
+          jsonBody[BusinessFailure[GameExceptionResponse]]
+            .description("???")
+          //            .example(allocateAlternativeInventoryErrorExample) //todo: add example
+        ) { case BusinessFailure(_) => true }
+      )
+    )
+
+  val baseEndpointNotSecured: Endpoint[Unit, Unit, Failure[GameExceptionResponse], Unit, Any] = endpoint
+    .in(ApiVersion)
     .errorOut(
       errors.errors[GameExceptionResponse](
         oneOfVariantValueMatcher(

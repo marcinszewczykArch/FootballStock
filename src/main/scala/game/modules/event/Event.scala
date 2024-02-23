@@ -66,5 +66,6 @@ object Event {
                                            timestamp: Instant,
                                            messages: List[String]
                                          ) extends Event(user, timestamp, "DIVIDEND PAYED", None)
+                                         //todo: send event separate for each player!!!
 
 }

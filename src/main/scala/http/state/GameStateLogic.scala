@@ -3,6 +3,7 @@ package http.state
 import cats.effect.Sync
 import cats.implicits.toFunctorOps
 import game.GameEngine
+import game.modules.login.domain.UserForm
 import game.modules.player.service.domain.PlayerId
 import game.modules.state.domain.User
 import http.GameExceptionResponse
@@ -12,7 +13,7 @@ import org.typelevel.log4cats.LoggerFactory
 trait GameStateLogic[F[_]] {
   def getStateByUserId(userName: String): F[Either[GameExceptionResponse, UserGameStateResponse]]
   def getAllStates(): F[Either[GameExceptionResponse, List[UserGameStateResponse]]]
-  def createNewUser(userName: String): F[Either[GameExceptionResponse, CreateNewUserResponse]]
+  def createNewUser(userForm: UserForm): F[Either[GameExceptionResponse, CreateNewUserResponse]]
   def buyPlayer(request: BuyPlayerRequest): F[Either[GameExceptionResponse, BuyPlayerResponse]]
   def sellPlayer(request: SellPlayerRequest): F[Either[GameExceptionResponse, SellPlayerResponse]]
   def addToUserWishlist(userName: String)(playerId: Int): F[Either[GameExceptionResponse, Unit]]
@@ -45,8 +46,8 @@ object GameStateLogic {
           .map(ge => GameExceptionResponse(ge.getMessage))
       )
 
-    override def createNewUser(userName: String): F[Either[GameExceptionResponse, CreateNewUserResponse]] = gameEngine
-      .createUser(User(userName))
+    override def createNewUser(userForm: UserForm): F[Either[GameExceptionResponse, CreateNewUserResponse]] = gameEngine
+      .createNewUser(userForm) //todo: to Login Logic
       .map(
         _.map(event => CreateNewUserResponse(event.toString))
           .left

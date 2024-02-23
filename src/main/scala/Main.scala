@@ -8,11 +8,13 @@ import fs2.Stream
 import game.{DividendPayer, GameEngine, PlayersUpdater}
 import game.modules.club.ClubModule
 import game.modules.event.EventModule
+import game.modules.login.LoginModule
 import game.modules.player.PlayerModule
 import game.modules.state.StateModule
 import http.SwaggerRoutes
 import http.club.{ClubLogic, ClubRoutes}
 import http.event.{EventLogic, EventRoutes}
+import http.login.{LoginLogic, LoginRoutes}
 import http.player.{PlayerProfileLogic, PlayerProfileRoutes}
 import http.security.{EloTokenVerification, TokenVerification}
 import http.state.{GameStateLogic, GameStateRoutes}
@@ -59,11 +61,13 @@ object FootballStockApp {
     playerProfileLogic = PlayerProfileLogic.impl[IO](gameEngine)
     eventLogic         = EventLogic.impl[IO](gameEngine)
     clubLogic          = ClubLogic.impl[IO](gameEngine)
+    loginLogic         = LoginLogic.impl[IO](gameEngine)
     gameStateRoutes     <- Resource.eval(new GameStateRoutes[IO](tokenVerification).routes(gameStateLogic))
     playerProfileRoutes <- Resource.eval(new PlayerProfileRoutes[IO](tokenVerification).routes(playerProfileLogic))
     eventRoutes         <- Resource.eval(new EventRoutes[IO](tokenVerification).routes(eventLogic))
     clubRoutes          <- Resource.eval(new ClubRoutes[IO](tokenVerification).routes(clubLogic))
-    server              <- buildServer(swaggerRoutes <+> gameStateRoutes <+> playerProfileRoutes <+> eventRoutes <+> clubRoutes, appConfig.http)
+    loginRoutes         <- Resource.eval(new LoginRoutes[IO].routes(loginLogic))
+    server              <- buildServer(swaggerRoutes <+> loginRoutes <+> gameStateRoutes <+> playerProfileRoutes <+> eventRoutes <+> clubRoutes, appConfig.http)
   } yield server
 
   private def buildServer(
@@ -100,12 +104,14 @@ object FootballStockApp {
     val clubModule   = ClubModule.impl[IO](scanamo, appConfig)
     val stateModule  = StateModule.impl[IO](scanamo)
     val eventModule  = EventModule.impl[IO](scanamo)
+    val loginModule  = LoginModule.impl[IO](scanamo)
 
     val gameEngine: GameEngine[IO] = GameEngine.impl(
       stateModule.service,
       eventModule.service,
       playerModule.service,
-      clubModule.service
+      clubModule.service,
+      loginModule.service
     )
 
     val playersUpdater: PlayersUpdater[IO] = PlayersUpdater.impl(

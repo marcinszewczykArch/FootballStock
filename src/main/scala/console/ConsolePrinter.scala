@@ -3,6 +3,7 @@ package console
 import cats.{Applicative, Monad}
 import cats.effect.std.Console
 import cats.syntax.all._
+import game.modules.login.domain.UserForm
 import game.modules.player.service.domain.{PlayerId, PlayerSimple}
 import game.modules.state.domain.User
 import game.{GameEngine, GameException}
@@ -55,7 +56,7 @@ object ConsolePrinter {
 
         case CreateNewUser(userName)                =>
           for {
-            initializeGameEvent <- gameLogic.createUser(User(userName))
+            initializeGameEvent <- gameLogic.createNewUser(UserForm(userName, "password", "email")) //todo: fix me
             _                   <- prettyPrintOr[F](initializeGameEvent)(s"${User(userName)} could not be created")
           } yield ()
         case GetUserState(userName)                 =>

@@ -69,12 +69,20 @@ else
     printf "\033[0;31m$t\033[0m\n"
 fi
 
+echo "creating loginTable..."
+t=$(aws dynamodb create-table --cli-input-json file://tables/loginTable.json --endpoint-url http://localhost:8000 2>&1)
+if  [ $? = "0" ]; then
+    printf "\033[0;32mdone!\033[0m\n"
+else
+    printf "\033[0;31m$t\033[0m\n"
+fi
+
 #check created tables
 tables=$(aws dynamodb list-tables --endpoint-url http://localhost:8000)
 echo "Created tables check: $tables"
 
 
-#add some initial data to the tables (user, players, events, clubs)
+#add some initial data to the tables (user, players, events, clubs, login)
 echo "uploading sample player profiles to PlayerProfile Table..."
 for file in players/*.json; do
   echo "loading player from file: $file"
@@ -137,6 +145,23 @@ aws dynamodb put-item --table-name Event --item "${body}" --endpoint-url http://
 EventTable=$(aws dynamodb scan --table-name Event --endpoint-url http://localhost:8000)
 EventTableCount=$(echo $EventTable | jq -r '.Count')
 echo "Event Table Count check: $EventTableCount"
+
+echo "uploading logging data for TESTUSER to Login Table..."
+body='{
+          "json": {
+              "S": "{  \"user\" : {      \"value\" : \"TESTUSER\"    },    \"hash\" : \"$2a$10$Ben9iomf9RoyxnV8jnDY3ul3z6drUNbusKA5Ykn5vxxBw/XSlFANy\",    \"email\" : \"testuser@gmail.com\",    \"role\" : \"ADMIN\"    }"
+          },
+          "user": {
+              "S": "TESTUSER"
+          }
+        }'
+echo "${body}" | jq
+aws dynamodb put-item --table-name Login --item "${body}" --endpoint-url http://localhost:8000
+
+#check numbers of records in Login Table
+LoginTable=$(aws dynamodb scan --table-name Login --endpoint-url http://localhost:8000)
+LoginTableCount=$(echo $LoginTable | jq -r '.Count')
+echo "Login Table Count check: $LoginTableCount"
 
 #kill container at the end
 #docker ps

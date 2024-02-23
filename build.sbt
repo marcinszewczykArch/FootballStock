@@ -23,5 +23,6 @@ lazy val root = project
         circe ++
         tapir ++
         http4s ++
-        testContainer
+        testContainer ++
+        bcrypt
   )

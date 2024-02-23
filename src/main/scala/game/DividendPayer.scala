@@ -57,7 +57,6 @@ object DividendPayer {
       dividendInfoForUserRef                           <- EitherT.liftF(Ref.of[F, DividendInfoForUser](DividendInfoForUser()))
       newPortfolio                                     <- oldState.portfolio.traverse(updateStockInfo(dividendInfoForUserRef))
       DividendInfoForUser(dividendInfo, totalDividend) <- EitherT.liftF(dividendInfoForUserRef.get)
-      _                                                <- EitherT.liftF(log.info(s"dividendInfo for [$user]" + dividendInfo))
       newMoney = oldState.money + totalDividend
       newState = UserGameState(user, newPortfolio, newMoney, now, oldState.wishlist)
       maybeEvent <- dividendInfo.isEmpty match {

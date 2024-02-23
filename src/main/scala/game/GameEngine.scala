@@ -10,9 +10,11 @@ import game.modules.club.service.domain.{ClubId, ClubPlayers, ClubProfile, ClubS
 import game.modules.event.Event
 import game.modules.event.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
 import game.modules.event.service.EventService
+import game.modules.login.domain.UserForm
+import game.modules.login.service.LoginService
 import game.modules.player.client.memory.PlayerProfileClientMemory
 import game.modules.player.service.PlayerService
-import game.modules.player.service.domain.{MarketValueHistory, PlayerId, PlayerProfile, PlayerSimple, PlayerStats}
+import game.modules.player.service.domain._
 import game.modules.state.domain
 import game.modules.state.domain.{StockInfo, User, UserBalance, UserGameState}
 import game.modules.state.service.UserGameStateService
@@ -31,7 +33,8 @@ trait GameEngine[F[_]] {
   def getAllUsersStates(): F[ErrorOr[Map[User, UserGameState]]]
   def getAllUsersBalances(): F[ErrorOr[List[UserBalance]]]
 
-  def createUser(user: User): F[ErrorOr[InitializeGameEvent]]
+  def createNewUser(userForm: UserForm): F[ErrorOr[InitializeGameEvent]]
+  def login(user: User)(password: String): F[ErrorOr[Boolean]]
 
   def getUserEvents(user: User): F[ErrorOr[List[Event]]]
   def getUserPlayerEvents(user: User)(playerId: PlayerId): F[ErrorOr[List[Event]]]
@@ -57,7 +60,8 @@ object GameEngine {
     stateService: UserGameStateService[F],
     eventService: EventService[F],
     playerService: PlayerService[F],
-    clubService: ClubService[F]
+    clubService: ClubService[F],
+    loginService: LoginService[F]
   )(
     implicit F: Sync[F],
     timeProvider: TimeProvider[F]
@@ -165,9 +169,10 @@ object GameEngine {
         user: User
       ): F[ErrorOr[UserGameState]] = stateService.getStateForUser(user)
 
-      override def createUser(
-        user: User
+      override def createNewUser(
+        userForm: UserForm
       ): F[ErrorOr[InitializeGameEvent]] = (for {
+        user         <- EitherT.pure(User(userForm.user))
         _            <- EitherT.liftF(log.info(s"Start creating new USER $user..."))
         now          <- EitherT.pure(timeProvider.getCurrentTimestamp)
         _            <- EitherT(stateService.validateUserNotExists(user))
@@ -176,9 +181,16 @@ object GameEngine {
         event        <- EitherT.pure(InitializeGameEvent(initialCash, user, now))
         wishlist     <- EitherT.pure(Nil)
         initialState <- EitherT.pure(UserGameState(user, portfolio, initialCash, now, wishlist))
+        _            <- EitherT.liftF(loginService.addUserLogin(userForm))
         _            <- EitherT(stateService.saveGameStateFroUser(user)(initialState))
         _            <- EitherT.liftF[F, GameException, Unit](eventService.sendEvent(event))
       } yield event).value
+
+      override def login(
+        user: User
+      )(
+        password: String
+      ): F[ErrorOr[Boolean]] = loginService.login(user)(password)
 
       override def getUserBalance(
         user: User
