@@ -22,6 +22,8 @@ trait LoginMemory[F[_]] {
 
 object LoginMemory {
 
+  //todo: add cachedInstance
+
   def impl[F[_]: Sync: LoggerFactory](scanamo: Scanamo): LoginMemory[F] =
     new LoginMemory[F] {
 

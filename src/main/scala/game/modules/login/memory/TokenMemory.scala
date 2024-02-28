@@ -23,6 +23,8 @@ trait TokenMemory[F[_]] {
 
 object TokenMemory {
 
+  //todo: add cachedInstance
+
   def impl[F[_]: Sync: LoggerFactory](scanamo: Scanamo): TokenMemory[F] =
     new TokenMemory[F] {
 

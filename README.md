@@ -4,35 +4,39 @@
 
 - readme content list and cleanup
 - ~~add EventService and UserGameStateService~~
+- add diagrams for dividend payer, login, player updater task
+- add cache instances foe LoginModule
+- add roles management for user
 - cleanup with decoders / encoders
 - implement more test cases
 - implement Integration Tests with local DynamoDb container (e.g. check optimistic locking conditions)
 - ~~architectural diagram~~
-- design and add http endpoints
+~~- design and add http endpoints~~
 - add technical endpoints to check player memory and cache
-- stream task to check all players from all user stats and send user event if price has changed
+~~- stream task to check all players from all user stats and send user event if price has changed~~
 - read envs from cloud (aws credentials)
 - create dynamoDb resources in cloud
-- own instance for transfermarkt parser service - separate container
-- authentication mechanism <- sth to study, separate table in dynamo?
+- own instance for transfermarkt parser service - separate container + add logic to use if if main instance is out of service
+~~- authentication mechanism <- sth to study, separate table in dynamo?~~
+- token verification - get rid of DB and use solution without local storage of tokens
 - Future improvement - use MongoDb for json storage
 - add scalaFix
 - add endpoint for see other user portfolio 
-- add logic to earn dividend when player from portfolio is playing (needed client for
+~~- add logic to earn dividend when player from portfolio is playing (needed client for
   ```https://transfermarkt-api.vercel.app/players/{playerId}/stats``` 
- and some logic to compare stats. 1% player shares value profit for each 1h played)
-- fetch market value history form client and display on frontend side
+ and some logic to compare stats. 1% player shares value profit for each 1h played)~~
+~~- fetch market value history form client and display on frontend side~~
 
 ### further improvement frontend:
 
-- table for player search
-- display player profile
-- display user state
-- button to buy/sell player
+~~- table for player search~~
+~~- display player profile~~
+~~- display user state~~
+~~- button to buy/sell player~~
 
 ### API:
 
-- users:
+~~- users:
     - user state by user [GET]
     - buy stock for user [POST]
     - sell stock for user [POST]
@@ -42,7 +46,7 @@
 
 - players:
     - players search by string [GET]
-    - player profile by id [GET]
+    - player profile by id [GET]~~
 
 - technical:
     - get all events [GET]
