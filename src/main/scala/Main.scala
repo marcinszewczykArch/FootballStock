@@ -37,6 +37,7 @@ object Main extends IOApp {
       appConfig      <- Resource.eval(AppConfig.parseAppConfig[IO](rawAppConfig))
       dynamoDbClient <- Resource.eval(buildDynamoDbClient(appConfig.aws))
       (gameEngine, playersUpdater, dividendPayer) = getGameElements(appConfig, dynamoDbClient)
+      implicit0(tokenVerification: TokenVerification[IO]) = TokenVerification.impl(gameEngine)
       _ <- httpServerResource(appConfig, gameEngine)
       _ <- runBackgroundTasks(appConfig, gameEngine, playersUpdater, dividendPayer)
     } yield ()).useForever
@@ -45,7 +46,7 @@ object Main extends IOApp {
 
 object FootballStockApp {
   implicit val timeProvider: TimeProvider[IO]           = TimeProvider.impl[IO]
-  implicit val tokenVerification: TokenVerification[IO] = EloTokenVerification
+//  implicit val tokenVerification: TokenVerification[IO] = EloTokenVerification
   implicit val loggerFactory: LoggerFactory[IO]         = Slf4jFactory.create[IO]
   private val log                                       = LoggerFactory.getLoggerFromClass(classOf[FootballStockApp.type])
 
@@ -104,7 +105,7 @@ object FootballStockApp {
     val clubModule   = ClubModule.impl[IO](scanamo, appConfig)
     val stateModule  = StateModule.impl[IO](scanamo)
     val eventModule  = EventModule.impl[IO](scanamo)
-    val loginModule  = LoginModule.impl[IO](scanamo)
+    val loginModule  = LoginModule.impl[IO](scanamo, appConfig)
 
     val gameEngine: GameEngine[IO] = GameEngine.impl(
       stateModule.service,
@@ -121,7 +122,7 @@ object FootballStockApp {
       appConfig.playersUpdateCriteria
     )
 
-//    val clubsUpdater = ???
+//    val clubsUpdater = ??? //todo: to be implemented like playersUpdater
 //
     val dividendPayer: DividendPayer[IO] = DividendPayer.impl(
       playerModule.service,

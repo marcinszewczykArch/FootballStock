@@ -56,7 +56,7 @@ object ConsolePrinter {
 
         case CreateNewUser(userName)                =>
           for {
-            initializeGameEvent <- gameLogic.createNewUser(UserForm(userName, "password", "email")) //todo: fix me
+            initializeGameEvent <- gameLogic.createNewUser(UserForm(userName, " ", "email")) //todo: fix me
             _                   <- prettyPrintOr[F](initializeGameEvent)(s"${User(userName)} could not be created")
           } yield ()
         case GetUserState(userName)                 =>

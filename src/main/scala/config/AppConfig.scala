@@ -7,7 +7,7 @@ import com.comcast.ip4s.Host
 import com.comcast.ip4s.Port
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import config.AppConfig.{AwsConfig, ClubPlayersClientConfig, ClubProfileClientConfig, ClubSearchClientConfig, HttpConfig, PlayerMarketValueClientConfig, PlayerProfileClientConfig, PlayerSearchClientConfig, PlayerStatsClientConfig, PlayersUpdateCriteriaConfig, UpdaterTaskConfig}
+import config.AppConfig.{AwsConfig, ClubPlayersClientConfig, ClubProfileClientConfig, ClubSearchClientConfig, HttpConfig, LoginConfig, PlayerMarketValueClientConfig, PlayerProfileClientConfig, PlayerSearchClientConfig, PlayerStatsClientConfig, PlayersUpdateCriteriaConfig, UpdaterTaskConfig}
 import pureconfig._
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
@@ -30,7 +30,8 @@ final case class AppConfig(
                             clubProfileClient: ClubProfileClientConfig,
                             clubPlayersClient: ClubPlayersClientConfig,
                             clubSearchClient: ClubSearchClientConfig,
-                            updaterTask: UpdaterTaskConfig
+                            updaterTask: UpdaterTaskConfig,
+                            login: LoginConfig,
 )
 
 object AppConfig {
@@ -120,6 +121,8 @@ object AppConfig {
   )
 
   case class PlayersUpdateCriteriaConfig(notUpdatedFor: FiniteDuration)
+
+  case class LoginConfig(tokenExpiryTime: FiniteDuration)
 
   private object Failure {
     final case class AppConfigParsingFailure(message: String) extends RuntimeException(message) with Failure

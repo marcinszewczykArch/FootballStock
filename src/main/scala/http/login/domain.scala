@@ -17,4 +17,15 @@ object domain {
     implicit val loginRequestEncoder: Encoder[LoginRequest] = deriveEncoder
   }
 
+  final case class CreateUserRequest(
+    user: String,
+    password: String,
+    email: String
+  )
+
+  object CreateUserRequest {
+    implicit val createUserRequestDecoder: Decoder[CreateUserRequest] = deriveDecoder
+    implicit val createUserRequestEncoder: Encoder[CreateUserRequest] = deriveEncoder
+  }
+
 }

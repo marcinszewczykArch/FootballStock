@@ -10,7 +10,7 @@ import game.modules.club.service.domain.{ClubId, ClubPlayers, ClubProfile, ClubS
 import game.modules.event.Event
 import game.modules.event.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
 import game.modules.event.service.EventService
-import game.modules.login.domain.UserForm
+import game.modules.login.domain.{TokenData, UserForm, UserLoginResponse}
 import game.modules.login.service.LoginService
 import game.modules.player.client.memory.PlayerProfileClientMemory
 import game.modules.player.service.PlayerService
@@ -34,7 +34,8 @@ trait GameEngine[F[_]] {
   def getAllUsersBalances(): F[ErrorOr[List[UserBalance]]]
 
   def createNewUser(userForm: UserForm): F[ErrorOr[InitializeGameEvent]]
-  def login(user: User)(password: String): F[ErrorOr[Boolean]]
+  def login(user: User)(password: String): F[ErrorOr[UserLoginResponse]]
+  def validateTokenFor(user: User)(token: String): F[ErrorOr[Boolean]]
 
   def getUserEvents(user: User): F[ErrorOr[List[Event]]]
   def getUserPlayerEvents(user: User)(playerId: PlayerId): F[ErrorOr[List[Event]]]
@@ -190,7 +191,11 @@ object GameEngine {
         user: User
       )(
         password: String
-      ): F[ErrorOr[Boolean]] = loginService.login(user)(password)
+      ): F[ErrorOr[UserLoginResponse]] = loginService.login(user)(password)
+
+      def validateTokenFor(user: User)(token: String): F[ErrorOr[Boolean]] =
+        loginService.validateTokenFor(user)(token)
+
 
       override def getUserBalance(
         user: User

@@ -4,7 +4,7 @@ import cats.effect.{IO, Ref}
 import game.modules.club.service.domain.ClubId
 import game.modules.event.Event
 import game.modules.event.Event.{BuyPlayerEvent, InitializeGameEvent, SellPlayerEvent}
-import game.modules.login.domain.UserForm
+import game.modules.login.domain.{TokenData, UserForm, UserLogin}
 import game.modules.player.service.domain.PlayerId
 import game.modules.state.domain.{Shares, StockInfo, User, UserGameState}
 import io.circe.Json
@@ -25,7 +25,17 @@ class SampleGameSpec extends CatsEffectSuite {
       eventRef                                      <- Ref.of[IO, List[Event]](Nil)
       clubProfileRef                                <- Ref.of[IO, Map[ClubId, Json]](Map.empty[ClubId, Json])
       clubPlayersRef                                <- Ref.of[IO, Map[ClubId, Json]](Map.empty[ClubId, Json])
-      testGameEngine                                <- TestUtils.testGameEngine(playerProfileRef, stateRef, eventRef, clubProfileRef, clubPlayersRef)
+      loginRef                                      <- Ref.of[IO, Map[User, UserLogin]](Map.empty[User, UserLogin])
+      tokenRef                                      <- Ref.of[IO, List[TokenData]](Nil)
+      testGameEngine                                <- TestUtils.testGameEngine(
+                                                         playerProfileRef,
+                                                         stateRef,
+                                                         eventRef,
+                                                         clubProfileRef,
+                                                         clubPlayersRef,
+                                                         loginRef,
+                                                         tokenRef
+                                                       )
       testUser = User("USER1")
 
       _      <- testGameEngine.createNewUser(UserForm(testUser.value, "password", "email"))

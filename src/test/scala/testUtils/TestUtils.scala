@@ -7,6 +7,7 @@ import config.AppConfig.PlayersUpdateCriteriaConfig
 import game.{GameEngine, PlayersUpdater}
 import game.modules.club.service.domain.ClubId
 import game.modules.event.Event
+import game.modules.login.domain.{TokenData, UserLogin}
 import game.modules.player.client.{PlayerProfileClient, PlayerStatsClient}
 import game.modules.player.service.domain.PlayerId
 import game.modules.state.domain.{StockInfo, User, UserGameState}
@@ -37,6 +38,8 @@ object TestUtils {
     eventRef: Ref[IO, List[Event]],
     clubProfileRef: Ref[IO, Map[ClubId, Json]],
     clubPlayersRef: Ref[IO, Map[ClubId, Json]],
+    loginRef: Ref[IO, Map[User, UserLogin]],
+    tokenRef: Ref[IO, List[TokenData]],
     playerProfileClient: PlayerProfileClient[IO] = TestPlayerModule.testPlayerProfileClient()
   )(
     implicit timeProvider: TimeProvider[IO]
@@ -49,12 +52,14 @@ object TestUtils {
     testClubModule   = TestClubModule.impl(appConfig, clubProfileRef, clubPlayersRef)
     testStateModule  = TestStateModule.impl(stateRef)
     testEventModule  = TestEventModule.impl(eventRef)
+    testLoginModule = TestLoginModule.impl(appConfig, loginRef, tokenRef)
+
     gameLogic        = GameEngine.impl(
                          stateService = testStateModule.service,
                          eventService = testEventModule.service,
                          playerService = testPlayerModule.service,
                          clubService = testClubModule.service,
-                         loginService = ??? //todo: add me!
+                         loginService = testLoginModule.service
                        )
   } yield gameLogic
 

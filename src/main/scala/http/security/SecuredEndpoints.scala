@@ -4,6 +4,7 @@ import cats.Monad
 import cats.implicits.toBifunctorOps
 import cats.implicits.toFunctorOps
 import game.GameException
+import game.modules.state.domain.User
 import http.GameExceptionResponse
 import http.security.SecuredEndpoints.BearerToken
 import http.security.SecuredEndpoints.ServerAppEndpoint

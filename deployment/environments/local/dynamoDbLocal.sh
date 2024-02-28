@@ -77,12 +77,20 @@ else
     printf "\033[0;31m$t\033[0m\n"
 fi
 
+echo "creating tokenTable..."
+t=$(aws dynamodb create-table --cli-input-json file://tables/tokenTable.json --endpoint-url http://localhost:8000 2>&1)
+if  [ $? = "0" ]; then
+    printf "\033[0;32mdone!\033[0m\n"
+else
+    printf "\033[0;31m$t\033[0m\n"
+fi
+
 #check created tables
 tables=$(aws dynamodb list-tables --endpoint-url http://localhost:8000)
 echo "Created tables check: $tables"
 
 
-#add some initial data to the tables (user, players, events, clubs, login)
+#add some initial data to the tables (user, players, events, clubs, login, token)
 echo "uploading sample player profiles to PlayerProfile Table..."
 for file in players/*.json; do
   echo "loading player from file: $file"
@@ -149,7 +157,7 @@ echo "Event Table Count check: $EventTableCount"
 echo "uploading logging data for TESTUSER to Login Table..."
 body='{
           "json": {
-              "S": "{  \"user\" : {      \"value\" : \"TESTUSER\"    },    \"hash\" : \"$2a$10$Ben9iomf9RoyxnV8jnDY3ul3z6drUNbusKA5Ykn5vxxBw/XSlFANy\",    \"email\" : \"testuser@gmail.com\",    \"role\" : \"ADMIN\"    }"
+              "S": "{  \"user\" : {      \"value\" : \"TESTUSER\"    },    \"hash\" : \"$2a$10$/aEl5KiiVLLmjEq7fL/wvODk8GInIM.FFe4Ekt3kgzaauSVMfBWqG\",    \"email\" : \"testuser@gmail.com\",    \"role\" : \"ADMIN\"    }"
           },
           "user": {
               "S": "TESTUSER"

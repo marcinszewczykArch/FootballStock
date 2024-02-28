@@ -179,6 +179,13 @@ object GameException extends CirceExtraConfiguration {
 
   implicit val dynamoDbUpdateExceptionCodec: Codec[DynamoDbUpdateException] = deriveConfiguredCodec[DynamoDbUpdateException]
 
+  final case class IncorrectLoginOrPasswordException() extends GameException {
+    override def getMessage = "Incorrect login or password."
+  }
+
+  implicit val incorrectLoginOrPasswordExceptionCodec: Codec[IncorrectLoginOrPasswordException] = deriveConfiguredCodec[IncorrectLoginOrPasswordException]
+
+
   implicit val gameExceptionCodec: Codec[GameException] = deriveConfiguredCodec[GameException]
 
 }

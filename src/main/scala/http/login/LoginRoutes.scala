@@ -21,11 +21,15 @@ class LoginRoutes[F[_]: Async: LoggerFactory]() {
     val loginServerEndpoint = login
       .serverLogic(input => logic.login(input).map(o => o.left.map[Failure[GameExceptionResponse]](BusinessFailure(_))))
 
+    val createUserServerEndpoint = newUser
+      .serverLogic(input => logic.createUser(input).map(o => o.left.map[Failure[GameExceptionResponse]](BusinessFailure(_))))
+
 
     Http4sServerInterpreter[F]()
       .toRoutes(
         List(
-          loginServerEndpoint
+          loginServerEndpoint,
+          createUserServerEndpoint
         )
       )
   }
