@@ -19,9 +19,9 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 21
-      - name: Compile
-        run: |
-          sbt -v compile
+#      - name: Compile
+#        run: |
+#          sbt -v compile
 #      - name: Test
 #        run: |
 #          sbt -v test
@@ -33,15 +33,15 @@ jobs:
 #        run: |
 #          echo "${{ vars.TEST_ACTION_VARIABLE }}"
 
-      - name: Build Fat Jar
-        run: |
-          sbt -v assembly
-      - name: Build Docker image
-        run: |
-          docker build -t footballstock .
-      - name: Push docker image to DockerHub
-        run: |
-          docker login -u ${{ secrets.DOCKERHUB_LOGIN }} -p ${{ secrets.DOCKERHUB_PASSWORD }}; docker tag footballstock ${{ secrets.DOCKERHUB_LOGIN }}/footballstock; docker push ${{ secrets.DOCKERHUB_LOGIN }}/footballstock
+#      - name: Build Fat Jar
+#        run: |
+#          sbt -v assembly
+#      - name: Build Docker image
+#        run: |
+#          docker build -t footballstock .
+#      - name: Push docker image to DockerHub
+#        run: |
+#          docker login -u ${{ secrets.DOCKERHUB_LOGIN }} -p ${{ secrets.DOCKERHUB_PASSWORD }}; docker tag footballstock ${{ secrets.DOCKERHUB_LOGIN }}/footballstock; docker push ${{ secrets.DOCKERHUB_LOGIN }}/footballstock
       - name: Connect to EC2
         run: |
-          echo ${{ secrets.$SSH_PRIVATE_KEY }} > fs.pem; chmod 400 fs.pem; ssh -i fs.pem ec2-user@52.30.23.163; echo $0
+          echo ${{ secrets.SSH_PRIVATE_KEY }} > fs.pem; chmod 400 fs.pem; ssh -i fs.pem ec2-user@52.30.23.163; echo $0
