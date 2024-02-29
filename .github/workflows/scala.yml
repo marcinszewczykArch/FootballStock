@@ -33,4 +33,4 @@ jobs:
 #          echo "${{ env.TEST_ACTIONS }}
       - name: TESTwithACTIONSVARIABLE
         run: |
-          echo "${{ env.TEST_ACTION_VARIABLE }}
+          echo "${{ vars.TEST_ACTION_VARIABLE }}
