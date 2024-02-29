@@ -34,15 +34,15 @@ lazy val dependencies =
     testContainer ++
     bcrypt
 
-lazy val firstMergeStrategy: String => MergeStrategy = {
-  case PathList(ps @ _*) if ps.last endsWith ".properties" => MergeStrategy.concat
-  case PathList(ps @ _*) if ps.last endsWith ".conf" => MergeStrategy.concat
-  case PathList(ps @ _*) if ps.last == "schema" => MergeStrategy.concat
-  case PathList(ps @ _*) if ps.last == "module-info.class" => MergeStrategy.discard
-  case x                                                   =>
-    val oldStrategy = (assembly / assemblyMergeStrategy).value
-    oldStrategy(x)
-}
+//lazy val firstMergeStrategy: String => MergeStrategy = {
+//  case PathList(ps @ _*) if ps.last endsWith ".properties" => MergeStrategy.concat
+//  case PathList(ps @ _*) if ps.last endsWith ".conf" => MergeStrategy.concat
+//  case PathList(ps @ _*) if ps.last == "schema" => MergeStrategy.concat
+//  case PathList(ps @ _*) if ps.last == "module-info.class" => MergeStrategy.discard
+//  case x                                                   =>
+//    val oldStrategy = (assembly / assemblyMergeStrategy).value
+//    oldStrategy(x)
+//}
 lazy val defaultMergeStrategy: String => MergeStrategy = {
   case x if Assembly.isConfigFile(x) =>
     MergeStrategy.concat
