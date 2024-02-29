@@ -33,7 +33,7 @@ jobs:
           echo "${{ vars.TEST_ACTION_VARIABLE }}"
       - name: DockerImage
         run: |
-          sbt clean; sbt assembly; docker build -t footballstock .
+          sbt -v assembly; docker build -t footballstock .
       - name: DockerHubPush
         run: |
           docker login -u ${{ secrets.DOCKERHUB_LOGIN }} -p ${{ secrets.DOCKERHUB_PASSWORD }}; docker tag footballstock ${{ secrets.DOCKERHUB_LOGIN }}/footballstock; docker push {{ secrets.DOCKERHUB_LOGIN }}/footballstock
