@@ -27,10 +27,10 @@ jobs:
 #          sbt -v test
       - name: TESTwithCODESPACE
         run: |
-          echo $TEST_CODESPACE
+          echo "${{ env.TEST_CODESPACE }}
       - name: TESTwithACTIONS
         run: |
-          echo $TEST_ACTIONS
+          echo "${{ env.TEST_ACTIONS }}
       - name: TESTwithACTIONSVARIABLE
         run: |
-          echo $TEST_ACTION_VARIABLE
+          echo "${{ env.TEST_ACTION_VARIABLE }}
