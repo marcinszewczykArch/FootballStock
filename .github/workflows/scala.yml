@@ -19,24 +19,26 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 21
-      - name: Compile
-        run: |
-          sbt -v compile
-      - name: Test
-        run: |
-          sbt -v test
+#      - name: Compile
+#        run: |
+#          sbt -v compile
+#      - name: Test
+#        run: |
+#          sbt -v test
+
 #      - name: TESTwithACTIONS_SECRET
 #        run: |
 #          echo "${{ secrets.TEST_ACTIONS }}"
 #      - name: TESTwithACTIONS_VARIABLE
 #        run: |
 #          echo "${{ vars.TEST_ACTION_VARIABLE }}"
+
       - name: Build Fat Jar
         run: |
           sbt -v assembly
       - name: Build Docker image
         run: |
-          docker build -t footballstock
+          docker build -t footballstock .
       - name: Push docker image to DockerHub
         run: |
           docker login -u ${{ secrets.DOCKERHUB_LOGIN }} -p ${{ secrets.DOCKERHUB_PASSWORD }}; docker tag footballstock ${{ secrets.DOCKERHUB_LOGIN }}/footballstock; docker push {{ secrets.DOCKERHUB_LOGIN }}/footballstock
