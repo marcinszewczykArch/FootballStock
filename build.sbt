@@ -12,11 +12,19 @@ lazy val root = project
     libraryDependencies ++= dependencies,
     assembly / mainClass := Some("Main"),
     assembly / assemblyJarName := name.value + ".jar",
-    assembly / assemblyMergeStrategy := defaultMergeStrategy
+    assemblyMergeStrategy in assembly := {
+      case PathList(ps @ _*) if ps.last endsWith ".properties" => MergeStrategy.concat
+      case PathList(ps @ _*) if ps.last endsWith ".conf"       => MergeStrategy.concat
+      case PathList(ps @ _*) if ps.last == "schema"            => MergeStrategy.concat
+      case PathList(ps @ _*) if ps.last == "module-info.class" => MergeStrategy.discard
+      case x                                                   =>
+        val oldStrategy = (assembly / assemblyMergeStrategy).value
+        oldStrategy(x)
+    }
   )
   .enablePlugins(JavaAppPackaging)
 
-lazy val dependencies =
+val dependencies =
   Seq(compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")) ++
     scalaTest ++
     catsCore ++
@@ -43,24 +51,24 @@ lazy val dependencies =
 //    val oldStrategy = (assembly / assemblyMergeStrategy).value
 //    oldStrategy(x)
 //}
-lazy val defaultMergeStrategy: String => MergeStrategy = {
-  case x if Assembly.isConfigFile(x) =>
-    MergeStrategy.concat
-  case PathList(ps @ _*) if Assembly.isReadme(ps.last) || Assembly.isLicenseFile(ps.last) =>
-    MergeStrategy.rename
-  case PathList("META-INF", xs @ _*) =>
-    (xs map {_.toLowerCase}) match {
-      case ("manifest.mf" :: Nil) | ("index.list" :: Nil) | ("dependencies" :: Nil) =>
-        MergeStrategy.discard
-      case ps @ (x :: xs) if ps.last.endsWith(".sf") || ps.last.endsWith(".dsa") =>
-        MergeStrategy.discard
-      case "plexus" :: xs =>
-        MergeStrategy.discard
-      case "services" :: xs =>
-        MergeStrategy.filterDistinctLines
-      case ("spring.schemas" :: Nil) | ("spring.handlers" :: Nil) =>
-        MergeStrategy.filterDistinctLines
-      case _ => MergeStrategy.deduplicate
-    }
-  case _ => MergeStrategy.deduplicate
-}
+//val defaultMergeStrategy: String => MergeStrategy = {
+//  case x if Assembly.isConfigFile(x) =>
+//    MergeStrategy.concat
+//  case PathList(ps @ _*) if Assembly.isReadme(ps.last) || Assembly.isLicenseFile(ps.last) =>
+//    MergeStrategy.rename
+//  case PathList("META-INF", xs @ _*) =>
+//    (xs map {_.toLowerCase}) match {
+//      case ("manifest.mf" :: Nil) | ("index.list" :: Nil) | ("dependencies" :: Nil) =>
+//        MergeStrategy.discard
+//      case ps @ (x :: xs) if ps.last.endsWith(".sf") || ps.last.endsWith(".dsa") =>
+//        MergeStrategy.discard
+//      case "plexus" :: xs =>
+//        MergeStrategy.discard
+//      case "services" :: xs =>
+//        MergeStrategy.filterDistinctLines
+//      case ("spring.schemas" :: Nil) | ("spring.handlers" :: Nil) =>
+//        MergeStrategy.filterDistinctLines
+//      case _ => MergeStrategy.deduplicate
+//    }
+//  case _ => MergeStrategy.deduplicate
+//}
