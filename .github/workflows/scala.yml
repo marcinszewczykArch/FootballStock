@@ -31,7 +31,11 @@ jobs:
       - name: TESTwithACTIONS_VARIABLE
         run: |
           echo "${{ vars.TEST_ACTION_VARIABLE }}"
-      - name: DockerStart
+      - name: DockerVersion
         run: |
-          sudo yum install -y docker
-          sudo service docker start
+          docker --version
+          
+
+#sbt clean;
+#  sbt assembly; docker build -t <app-name> .; docker tag <app-name> <dockerhub-login>/<app-name>; docker push demo42/<app-name>
+
