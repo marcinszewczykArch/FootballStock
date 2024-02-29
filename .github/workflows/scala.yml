@@ -31,11 +31,9 @@ jobs:
       - name: TESTwithACTIONS_VARIABLE
         run: |
           echo "${{ vars.TEST_ACTION_VARIABLE }}"
-      - name: DockerVersion
+      - name: DockerImage
         run: |
-          docker --version
-          
-
-#sbt clean;
-#  sbt assembly; docker build -t <app-name> .; docker tag <app-name> <dockerhub-login>/<app-name>; docker push demo42/<app-name>
-
+          sbt clean; sbt assembly; docker build -t footballstock .
+      - name: DockerHubPush
+        run: |
+          docker login -u ${{ secrets.DOCKERHUB_LOGIN }} -p ${{ secrets.DOCKERHUB_PASSWORD }}; docker tag footballstock ${{ secrets.DOCKERHUB_LOGIN }}/footballstock; docker push {{ secrets.DOCKERHUB_LOGIN }}/footballstock
