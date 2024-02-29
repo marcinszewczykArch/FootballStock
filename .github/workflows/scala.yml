@@ -19,12 +19,12 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 17
-#      - name: Compile
-#        run: |
-#          sbt -v compile
-#      - name: Test
-#        run: |
-#          sbt -v test
+      - name: Compile
+        run: |
+          sbt -v compile
+      - name: Test
+        run: |
+          sbt -v test
       - name: TESTwithACTIONS_SECRET
         run: |
           echo "${{ secrets.TEST_ACTIONS }}"
