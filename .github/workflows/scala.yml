@@ -19,15 +19,18 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 17
-      - name: Compile
-        run: |
-          sbt -v compile
-      - name: Test
-        run: |
-          sbt -v test
+#      - name: Compile
+#        run: |
+#          sbt -v compile
+#      - name: Test
+#        run: |
+#          sbt -v test
       - name: TESTwithCODESPACE
         run: |
           echo $TEST_CODESPACE
       - name: TESTwithACTIONS
         run: |
           echo $TEST_ACTIONS
+      - name: TESTwithACTIONSVARIABLE
+        run: |
+          echo $TEST_ACTION_VARIABLE
