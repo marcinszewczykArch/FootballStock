@@ -16,7 +16,7 @@ lazy val root = project
   )
   .enablePlugins(JavaAppPackaging)
 
-val dependencies =
+lazy val dependencies =
   Seq(compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")) ++
     scalaTest ++
     catsCore ++
@@ -34,7 +34,7 @@ val dependencies =
     testContainer ++
     bcrypt
 
-val firstMergeStrategy: String => MergeStrategy = {
+lazy val firstMergeStrategy: String => MergeStrategy = {
   case PathList(ps @ _*) if ps.last endsWith ".properties" => MergeStrategy.concat
   case PathList(ps @ _*) if ps.last endsWith ".conf" => MergeStrategy.concat
   case PathList(ps @ _*) if ps.last == "schema" => MergeStrategy.concat
@@ -43,7 +43,7 @@ val firstMergeStrategy: String => MergeStrategy = {
     val oldStrategy = (assembly / assemblyMergeStrategy).value
     oldStrategy(x)
 }
-val defaultMergeStrategy: String => MergeStrategy = {
+lazy val defaultMergeStrategy: String => MergeStrategy = {
   case x if Assembly.isConfigFile(x) =>
     MergeStrategy.concat
   case PathList(ps @ _*) if Assembly.isReadme(ps.last) || Assembly.isLicenseFile(ps.last) =>
