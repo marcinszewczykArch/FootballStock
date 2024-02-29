@@ -25,12 +25,13 @@ jobs:
 #      - name: Test
 #        run: |
 #          sbt -v test
-#      - name: TESTwithCODESPACE
-#        run: |
-#          echo "${{ env.TEST_CODESPACE }}
       - name: TESTwithACTIONS_SECRET
         run: |
           echo "${{ secrets.TEST_ACTIONS }}"
       - name: TESTwithACTIONS_VARIABLE
         run: |
           echo "${{ vars.TEST_ACTION_VARIABLE }}"
+      - name: DockerStart
+        run: |
+          sudo yum install -y docker
+          sudo service docker start
