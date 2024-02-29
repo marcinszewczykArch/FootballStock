@@ -168,15 +168,15 @@ object FootballStockApp {
   ): Resource[IO, ExitCode] = {
     val consolePrinter = ConsolePrinter.impl[IO]
 
-    val gameCliStream: Stream[IO, Unit] =
-      fs2
-        .Stream
-        .repeatEval(consolePrinter.readMessage[IO])
-        .evalMap(
-          consolePrinter
-            .gameLoop(gameLogic)(_)
-            .handleErrorWith(err => log.error(err)(s"Game Stream failed. error: ${err.getMessage}"))
-        )
+//    val gameCliStream: Stream[IO, Unit] =
+//      fs2
+//        .Stream
+//        .repeatEval(consolePrinter.readMessage[IO])
+//        .evalMap(
+//          consolePrinter
+//            .gameLoop(gameLogic)(_)
+//            .handleErrorWith(err => log.error(err)(s"Game Stream failed. error: ${err.getMessage}"))
+//        )
 
     val updatePlayersInMemoryStream: Stream[IO, Unit] =
       fs2
@@ -215,7 +215,7 @@ object FootballStockApp {
     ) *>
       Resource.eval {
         Stream(
-          gameCliStream,
+//          gameCliStream,
           updatePlayersInMemoryStream,
           updatePlayersValueInUserStatesStream,
           payDividendForPlayersInPortfolio
