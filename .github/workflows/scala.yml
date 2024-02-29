@@ -9,31 +9,34 @@ jobs:
     # Run on external PRs, but not on internal PRs since those will be run by push to branch
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     timeout-minutes: 10
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     env:
       JAVA_OPTS: -Xmx4G
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Set up JDK 17
+      - name: Set up JDK 19
         uses: actions/setup-java@v1
         with:
-          java-version: 17
+          java-version: 19
       - name: Compile
         run: |
           sbt -v compile
       - name: Test
         run: |
           sbt -v test
-      - name: TESTwithACTIONS_SECRET
+#      - name: TESTwithACTIONS_SECRET
+#        run: |
+#          echo "${{ secrets.TEST_ACTIONS }}"
+#      - name: TESTwithACTIONS_VARIABLE
+#        run: |
+#          echo "${{ vars.TEST_ACTION_VARIABLE }}"
+      - name: Build Fat Jar
         run: |
-          echo "${{ secrets.TEST_ACTIONS }}"
-      - name: TESTwithACTIONS_VARIABLE
+          sbt -v assembl
+      - name: Build Docker image
         run: |
-          echo "${{ vars.TEST_ACTION_VARIABLE }}"
-      - name: DockerImage
-        run: |
-          sbt -v assembly; docker build -t footballstock .
-      - name: DockerHubPush
+          docker build -t footballstock
+      - name: Push docker image to DockerHub
         run: |
           docker login -u ${{ secrets.DOCKERHUB_LOGIN }} -p ${{ secrets.DOCKERHUB_PASSWORD }}; docker tag footballstock ${{ secrets.DOCKERHUB_LOGIN }}/footballstock; docker push {{ secrets.DOCKERHUB_LOGIN }}/footballstock
