@@ -25,9 +25,9 @@ jobs:
 #      - name: Test
 #        run: |
 #          sbt -v test
-      - name: TESTwithCODESPACE
-        run: |
-          echo "${{ env.TEST_CODESPACE }}
+#      - name: TESTwithCODESPACE
+#        run: |
+#          echo "${{ env.TEST_CODESPACE }}
       - name: TESTwithACTIONS
         run: |
           echo "${{ env.TEST_ACTIONS }}
