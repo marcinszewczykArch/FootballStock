@@ -28,9 +28,9 @@ jobs:
 #      - name: TESTwithCODESPACE
 #        run: |
 #          echo "${{ env.TEST_CODESPACE }}
-      - name: TESTwithACTIONS
+      - name: TESTwithACTIONS_SECRET
         run: |
-          echo "${{ vars.TEST_ACTIONS }}"
-      - name: TESTwithACTIONSVARIABLE
+          echo "${{ secrets.TEST_ACTIONS }}"
+      - name: TESTwithACTIONS_VARIABLE
         run: |
           echo "${{ vars.TEST_ACTION_VARIABLE }}"
