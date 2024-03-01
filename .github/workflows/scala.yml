@@ -72,4 +72,5 @@ jobs:
           host: "52.209.45.197"
           username: "ubuntu"
           key: ${{ vars.SSH_PRIVATE_KEY }}
-          script: whoami
+          script: sudo docker login -u ${{ secrets.DOCKERHUB_LOGIN }} -p ${{ secrets.DOCKERHUB_PASSWORD }}; sudo docker pull ${{ secrets.DOCKERHUB_LOGIN }}/footballstock
+
