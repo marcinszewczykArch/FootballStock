@@ -42,13 +42,30 @@ jobs:
 #      - name: Push docker image to DockerHub
 #        run: |
 #          docker login -u ${{ secrets.DOCKERHUB_LOGIN }} -p ${{ secrets.DOCKERHUB_PASSWORD }}; docker tag footballstock ${{ secrets.DOCKERHUB_LOGIN }}/footballstock; docker push ${{ secrets.DOCKERHUB_LOGIN }}/footballstock
-      - name: Connect to EC2
-        uses: actions/checkout@v2
-        env:
-          PRIVATE_KEY: ${{ vars.SSH_PRIVATE_KEY }}
-          HOST: "52.209.45.197"
-          USER: "ubuntu"
-        run: |
-          echo $PRIVATE_KEY > private_key.pem && chmod 600 private_key.pem
-          ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@52.209.45.197
-          echo $0
+#      - name: Connect to EC2
+#        uses: actions/checkout@v2
+#        env:
+#          PRIVATE_KEY: ${{ vars.SSH_PRIVATE_KEY }}
+#          HOST: "52.209.45.197"
+#          USER: "ubuntu"
+#        run: |
+#          echo $PRIVATE_KEY > private_key.pem && chmod 600 private_key.pem
+#          ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@52.209.45.197
+#          echo $0
+
+Deploy:
+  name: Deploy to EC2
+  runs-on: ubuntu-latest
+
+  steps:
+    - uses: actions/checkout@v2
+    - name: Build & Deploy
+      env:
+        PRIVATE_KEY: ${{ vars.SSH_PRIVATE_KEY }}
+        HOSTNAME: "52.209.45.197"
+        USER_NAME: "ubuntu"
+
+      run: |
+        echo $PRIVATE_KEY > private_key.pem && chmod 600 private_key.pem
+        ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@52.209.45.197
+        echo $0
