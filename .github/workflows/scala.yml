@@ -63,6 +63,6 @@ jobs:
           USER_NAME: "ubuntu"
 
         run: |
-          echo $PRIVATE_KEY > private_key.pem && chmod 600 private_key.pem
+          echo $PRIVATE_KEY > private_key.pem && chmod 400 private_key.pem
           ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@52.209.45.197
           echo $0
