@@ -16,35 +16,35 @@ jobs:
       DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
     steps:
 
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v1
-        with:
-          java-version: 21
-
-      - name: Compile
-        run: |
-          sbt -v compile
-
-      - name: Test
-        run: |
-          sbt -v test
-
-      - name: Build Fat Jar
-        run: |
-          sbt -v assembly
-
-      - name: Build Docker image
-        run: |
-          docker build -t footballstock .
-
-      - name: Push docker image to DockerHub
-        run: |
-          docker login -u ${DOCKERHUB_LOGIN} -p ${DOCKERHUB_PASSWORD}; 
-          docker tag footballstock ${DOCKERHUB_LOGIN}/footballstock; 
-          docker push ${DOCKERHUB_LOGIN}/footballstock;
+#      - name: Checkout
+#        uses: actions/checkout@v2
+#
+#      - name: Set up JDK 21
+#        uses: actions/setup-java@v1
+#        with:
+#          java-version: 21
+#
+#      - name: Compile
+#        run: |
+#          sbt -v compile
+#
+#      - name: Test
+#        run: |
+#          sbt -v test
+#
+#      - name: Build Fat Jar
+#        run: |
+#          sbt -v assembly
+#
+#      - name: Build Docker image
+#        run: |
+#          docker build -t footballstock .
+#
+#      - name: Push docker image to DockerHub
+#        run: |
+#          docker login -u ${DOCKERHUB_LOGIN} -p ${DOCKERHUB_PASSWORD};
+#          docker tag footballstock ${DOCKERHUB_LOGIN}/footballstock;
+#          docker push ${DOCKERHUB_LOGIN}/footballstock;
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
