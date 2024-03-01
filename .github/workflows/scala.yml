@@ -44,11 +44,11 @@ jobs:
 #          docker login -u ${{ secrets.DOCKERHUB_LOGIN }} -p ${{ secrets.DOCKERHUB_PASSWORD }}; docker tag footballstock ${{ secrets.DOCKERHUB_LOGIN }}/footballstock; docker push ${{ secrets.DOCKERHUB_LOGIN }}/footballstock
       - name: Connect to EC2 1
         env:
-          PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          PRIVATE_KEY: ${{ vars.SSH_PRIVATE_KEY }}
           HOST: "52.209.45.197"
           USER: "ubuntu"
         run: |
           echo $PRIVATE_KEY > private_key.pem && chmod 600 private_key.pem
           cat private_key.pem
-#          ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@52.209.45.197
-#          echo $0
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@52.209.45.197
+          echo $0
