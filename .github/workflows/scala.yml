@@ -44,37 +44,10 @@ jobs:
 #          docker login -u ${{ secrets.DOCKERHUB_LOGIN }} -p ${{ secrets.DOCKERHUB_PASSWORD }}; docker tag footballstock ${{ secrets.DOCKERHUB_LOGIN }}/footballstock; docker push ${{ secrets.DOCKERHUB_LOGIN }}/footballstock
       - name: Connect to EC2 1
         env:
-#          PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          PRIVATE_KEY: "-----BEGIN RSA PRIVATE KEY-----
-MIIEowIBAAKCAQEAgZ9780KE0PLtxxDH95irCQQYB51gz8TVKijuHD/77c5Jm0/k
-A+eQUnsPq7+4FhcWS9CwZr3o2UX7UErA+wsxD5/UMldsptyJ6QgEutQTaaBWFQ6i
-HiSE0rgScA/Hy64/zjJf1nDYJ2nSVLLFGUbyWzKba1pbn8Dc9xDoWTq2G3vP/SXI
-SQo1ZLUFRBirhd9WdzqKGgCCatewwANT1VgxFFsR48XvYU9+fTf1rNqyELLmu/Ju
-3A8IRxzPZ8dbvoAX+9t0lezggrxPptgPpbiOAHMJhoF14UUlxz99HV90SsvUt+B8
-l12AqmEVYifz4dDRi9UiOleK7jfulSXyuJOUlwIDAQABAoIBAAakQ1ediuyh5ekT
-RQu8uNbHbOvG9pTuwvVcD4dHCAORVFgu6cIBdXWkdJMaSbZoDG5qDP/Wrz2ixlPA
-4M58LlFcoSTLMfgCyNY14Pgpsazx2DdP/qKIwH2DjP5M8LHRBdfs4Ng+A/VRCMPq
-PQskhXqCx0/i21r+KNRH+3/G8FnMFZsnWrUiLRDB/3cd2mYVNYg9+LCn6BUpMoc/
-UKyciikiI17vP7LjitlbxHNzRmt/BMYA0GaTxyDN3/tEwpD7RG065GdHwm5VBpCi
-5R94SS9ErI1IPEUnAlhSfx8OmAEwWxcnfdW1eDwe5gumPX597dr4t9wGy/CYH9FC
-Fy9l+zECgYEAtv3zDyidSPolegclcti0X3sTofuZqRPkYTygsJyQJNO7NKhkL81c
-UwI8pZnHsW+oCaWXiijfNDByBrRhoEoTZ1elr4SsF607zqCSf4qYpa35qIz1Wc1x
-Wdu0pP3wrz/q8vdGOGG+susy0vx0jWJIxuLLBP8XgTDymAYAoog/SmUCgYEAtVak
-yFYuPhHkwjIGKjJONxCe+71iXvnYWMe0Xk9oPJxjwHxJnAqhdwml8XL/9BFN7j0d
-Q5Vw9NNZwvjeMo4NcLfHQXid0HNaA0LYG0jpRdJBln7maDUfAOD1KNB5XJ2uZHU8
-udN7SDZ6yZkP3RC6e7nEhhNApobVZHst0V8MlUsCgYEAkmLmrOq1oCqUDmFnIM+g
-w30GwJ8wVmSWXv8MIRyt5vgGG2LV+rOStsjkUSmK6TPEPitc5eY6YFqc7SYhrwNz
-MEmaPqWosawgWvRzHVp3MJrTTHWu1G8XzWWHxjFq+Bbu0fzkDLiMwD6MwuG4L14/
-j/LfrBiQ6gWJG/o5ScwqrU0CgYBzKqHgsgsQVKDqTIbpyaUvB5lQ3AhbtWWXjM2a
-j+ftho07tDOzrHS7ex8u5xBzW4IY6itpvsFMW+ZIE3JavSkAC1e61vWza28hXxSM
-z5OHSm9pOxLt377e+f/5ed152pLlLifxBMTpKeB1pIYUqgklhuevFw8aM8vW0vxY
-WntNXQKBgEVFYqPtIgCd2TF/Cy6vkNA5Mb3tt/5dUpHRC2asHagHj7JzmFnxcYv/
-epSRD0mJulrUwbDZR8lwNl63PaqWE0aC0AbyjLJmw9TW+4tjK9rdQZZ9BAgiLhpD
-Sju2IOrgFgNMx5nfsMW/Nt+l6JzdE9/HVmDWHmiZw5T/MXSSYhe4
------END RSA PRIVATE KEY-----"
+          PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           HOST: "52.209.45.197"
           USER: "ubuntu"
         run: |
-          echo $PRIVATE_KEY > private_key.pem && chmod 400 private_key.pem
-          ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@52.209.45.197
+          echo $PRIVATE_KEY > private_key && chmod 600 private_key
+          ssh -o StrictHostKeyChecking=no -i private_key ubuntu@52.209.45.197
           echo $0
