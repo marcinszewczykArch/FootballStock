@@ -52,9 +52,9 @@ jobs:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${secrets.EC2_HOST}
+          host: ${EC2_HOST}
           username: ${EC2_USERNAME}
-          key: ${secrets.SSH_PRIVATE_KEY}
+          key: ${SSH_PRIVATE_KEY}
           script:
             sudo snap install docker;
             sudo docker login -u ${DOCKERHUB_LOGIN} -p ${DOCKERHUB_PASSWORD};
