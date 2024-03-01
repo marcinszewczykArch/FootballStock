@@ -43,14 +43,15 @@ jobs:
 #        run: |
 #          docker login -u ${{ secrets.DOCKERHUB_LOGIN }} -p ${{ secrets.DOCKERHUB_PASSWORD }}; docker tag footballstock ${{ secrets.DOCKERHUB_LOGIN }}/footballstock; docker push ${{ secrets.DOCKERHUB_LOGIN }}/footballstock
       - name: Connect to EC2 1
+        env:
+          PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          HOST: "52.209.45.197"
+          USER: "ubuntu"
         run: |
-          echo ${{ secrets.SSH_PRIVATE_KEY }} > fs.pem
-      - name: Connect to EC2 2
-        run: |
-          chmod 400 fs.pem
+          echo $PRIVATE_KEY > private_key.pem && chmod 600 private_key.pem
       - name: Connect to EC2 3
         run: |
-          ec2-user@52.30.23.163
+          ubuntu@52.209.45.197
       - name: Connect to EC2 4
         run: |
           echo $0
