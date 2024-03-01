@@ -55,14 +55,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Build & Deploy
-        env:
-          PRIVATE_KEY: ${{ vars.SSH_PRIVATE_KEY }}
-          HOSTNAME: "52.209.45.197"
-          USER_NAME: "ubuntu"
-
-        run: |
-          echo $PRIVATE_KEY > private_key.pem && chmod 400 private_key.pem
-          ssh -vvv -o StrictHostKeyChecking=no -i private_key.pem ubuntu@52.209.45.197
-          echo $0
+#      - uses: actions/checkout@v2
+#      - name: Build & Deploy
+#        env:
+#          PRIVATE_KEY: ${{ vars.SSH_PRIVATE_KEY }}
+#          HOSTNAME: "52.209.45.197"
+#          USER_NAME: "ubuntu"
+#
+#        run: |
+#          echo $PRIVATE_KEY > private_key.pem && chmod 400 private_key.pem
+#          ssh -vvv -o StrictHostKeyChecking=no -i private_key.pem ubuntu@52.209.45.197
+#          echo $0
+      - name: executing remote ssh commands using ssh key
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: "52.209.45.197"
+          username: "ubuntu"
+          key: ${{ vars.SSH_PRIVATE_KEY }}
+          script: whoami
