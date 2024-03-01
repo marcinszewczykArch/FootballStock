@@ -12,62 +12,51 @@ jobs:
     runs-on: ubuntu-latest
     env:
       JAVA_OPTS: -Xmx4G
+      DOCKERHUB_LOGIN: ${{ secrets.DOCKERHUB_LOGIN }}
+      DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
     steps:
+
       - name: Checkout
         uses: actions/checkout@v2
-#      - name: Set up JDK 21
-#        uses: actions/setup-java@v1
-#        with:
-#          java-version: 21
-#      - name: Compile
-#        run: |
-#          sbt -v compile
-#      - name: Test
-#        run: |
-#          sbt -v test
-#      - name: TESTwithACTIONS_SECRET
-#        run: |
-#          echo "${{ secrets.TEST_ACTIONS }}"
-#      - name: TESTwithACTIONS_VARIABLE
-#        run: |
-#          echo "${{ vars.TEST_ACTION_VARIABLE }}"
 
-#      - name: Build Fat Jar
-#        run: |
-#          sbt -v assembly
-#      - name: Build Docker image
-#        run: |
-#          docker build -t footballstock .
-#      - name: Push docker image to DockerHub
-#        run: |
-#          docker login -u ${{ secrets.DOCKERHUB_LOGIN }} -p ${{ secrets.DOCKERHUB_PASSWORD }}; docker tag footballstock ${{ secrets.DOCKERHUB_LOGIN }}/footballstock; docker push ${{ secrets.DOCKERHUB_LOGIN }}/footballstock
+      - name: Set up JDK 21
+        uses: actions/setup-java@v1
+        with:
+          java-version: 21
 
-      - name: executing remote ssh commands using ssh key
+      - name: Compile
+        run: |
+          sbt -v compile
+
+      - name: Test
+        run: |
+          sbt -v test
+
+      - name: Build Fat Jar
+        run: |
+          sbt -v assembly
+
+      - name: Build Docker image
+        run: |
+          docker build -t footballstock .
+
+      - name: Push docker image to DockerHub
+        run: |
+          docker login -u ${DOCKERHUB_LOGIN} -p ${DOCKERHUB_PASSWORD}; 
+          docker tag footballstock ${DOCKERHUB_LOGIN}/footballstock; 
+          docker push ${DOCKERHUB_LOGIN}/footballstock;
+
+      - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: "52.209.45.197"
-          username: "ubuntu"
-          key: ${{ vars.SSH_PRIVATE_KEY }}
+          host: ${secrets.EC2_HOST}
+          username: ${EC2_USERNAME}
+          key: ${secrets.SSH_PRIVATE_KEY}
           script:
             sudo snap install docker;
-            sudo docker ps;
-            sudo docker login -u ${{ secrets.DOCKERHUB_LOGIN }} -p ${{ secrets.DOCKERHUB_PASSWORD }};
-            sudo docker pull ${{ secrets.DOCKERHUB_LOGIN }}/footballstock;
-
-#  deploy:
-#    name: Deploy to EC2
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - name: executing remote ssh commands using ssh key
-#        uses: appleboy/ssh-action@v1.0.3
-#        with:
-#          host: "52.209.45.197"
-#          username: "ubuntu"
-#          key: ${{ vars.SSH_PRIVATE_KEY }}
-#          script:
-#            sudo snap install docker;
-#            sudo docker ps;
-#            sudo docker login -u ${{ secrets.DOCKERHUB_LOGIN }} -p ${{ secrets.DOCKERHUB_PASSWORD }};
-#            sudo docker pull ${{ secrets.DOCKERHUB_LOGIN }}/footballstock;
-
+            sudo docker login -u ${DOCKERHUB_LOGIN} -p ${DOCKERHUB_PASSWORD};
+            sudo docker pull ${DOCKERHUB_LOGIN}/footballstock;
+            sudo docker run -p 80:8080 ${DOCKERHUB_LOGIN}/footballstock;
