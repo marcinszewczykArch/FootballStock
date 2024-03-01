@@ -55,5 +55,5 @@ jobs:
           script:
             sudo snap install docker;
             sudo docker login -u ${{ secrets.DOCKERHUB_LOGIN }} -p ${{ secrets.DOCKERHUB_PASSWORD }};
-            sudo docker pull ${DOCKERHUB_LOGIN}/footballstock;
-            sudo docker run -p 80:8080 ${DOCKERHUB_LOGIN}/footballstock;
+            sudo docker pull ${{ secrets.DOCKERHUB_LOGIN }}/footballstock;
+            sudo docker run -p 80:8080 ${{ secrets.DOCKERHUB_LOGIN }}/footballstock;
