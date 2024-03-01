@@ -14,9 +14,6 @@ jobs:
       JAVA_OPTS: -Xmx4G
       DOCKERHUB_LOGIN: ${{ secrets.DOCKERHUB_LOGIN }}
       DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
-      EC2_HOST: ${{ secrets.EC2_HOST }}
-      EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
-      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
     steps:
 
       - name: Checkout
@@ -52,9 +49,9 @@ jobs:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${EC2_HOST}
-          username: ${EC2_USERNAME}
-          key: ${SSH_PRIVATE_KEY}
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script:
             sudo snap install docker;
             sudo docker login -u ${DOCKERHUB_LOGIN} -p ${DOCKERHUB_PASSWORD};
