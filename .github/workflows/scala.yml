@@ -49,9 +49,5 @@ jobs:
           USER: "ubuntu"
         run: |
           echo $PRIVATE_KEY > private_key.pem && chmod 600 private_key.pem
-      - name: Connect to EC2 3
-        run: |
-          ubuntu@52.209.45.197
-      - name: Connect to EC2 4
-        run: |
+          ssh -i private_key.pem ubuntu@52.209.45.197
           echo $0
