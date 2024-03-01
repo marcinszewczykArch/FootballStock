@@ -64,5 +64,5 @@ jobs:
 
         run: |
           echo $PRIVATE_KEY > private_key.pem && chmod 400 private_key.pem
-          ssh -v -o StrictHostKeyChecking=no -i private_key.pem ubuntu@52.209.45.197
+          ssh -vvv -o StrictHostKeyChecking=no -i private_key.pem ubuntu@52.209.45.197
           echo $0
