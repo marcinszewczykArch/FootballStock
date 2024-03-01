@@ -75,6 +75,6 @@ jobs:
           script:
             sudo snap install docker
             sudo docker ps
-            sudo docker login -u ${{ secrets.DOCKERHUB_LOGIN }} -p ${{ secrets.DOCKERHUB_PASSWORD }} 
-            sudo docker pull ${{ secrets.DOCKERHUB_LOGIN }}/footballstock
+#            sudo docker login -u ${{ secrets.DOCKERHUB_LOGIN }} -p ${{ secrets.DOCKERHUB_PASSWORD }}
+#            sudo docker pull ${{ secrets.DOCKERHUB_LOGIN }}/footballstock
 
