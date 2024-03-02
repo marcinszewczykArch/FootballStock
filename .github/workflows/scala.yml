@@ -14,8 +14,6 @@ jobs:
       JAVA_OPTS: -Xmx4G
       DOCKERHUB_LOGIN: ${{ secrets.DOCKERHUB_LOGIN }}
       DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
-      RED: '\033[0;31m'
-      GREEN: '\033[0;32m'
     steps:
 
       - name: Checkout
@@ -55,13 +53,14 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script:
-            printf "${RED}install docker if needed{GREEN} Green\n";
+            RED='\033[0;31m';
+            printf "${RED}install docker if needed\n";
             sudo snap install docker;
             printf "${RED}dockerHub login\n";
             sudo docker login -u ${{ secrets.DOCKERHUB_LOGIN }} -p ${{ secrets.DOCKERHUB_PASSWORD }};
             printf "${RED}remove all container and delete unused images\n";
             sudo docker rm $(sudo docker stop $(sudo docker ps -a -q --filter ancestor=${{ secrets.DOCKERHUB_LOGIN }}/footballstock --format="{{.ID}}"));
-            sudo docker system prune -a; y;
+            sudo docker system prune -a;
             printf "${RED}pull new image from dockerHub\n";
             sudo docker pull ${{ secrets.DOCKERHUB_LOGIN }}/footballstock;
             printf "${RED}run image with port mapping 80:8080\n"
