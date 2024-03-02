@@ -55,5 +55,7 @@ jobs:
           script:
             sudo snap install docker;
             sudo docker login -u ${{ secrets.DOCKERHUB_LOGIN }} -p ${{ secrets.DOCKERHUB_PASSWORD }};
+#            take id of old image and remove it after new one is pulled
             sudo docker pull ${{ secrets.DOCKERHUB_LOGIN }}/footballstock;
-            sudo docker run -p 80:8080 ${{ secrets.DOCKERHUB_LOGIN }}/footballstock;
+            sudo docker run -d -p 80:8080 ${{ secrets.DOCKERHUB_LOGIN }}/footballstock;
+            sudo docker ps;
