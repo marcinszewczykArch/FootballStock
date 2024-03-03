@@ -64,6 +64,10 @@
 
   `docker run -p 8000:8000 amazon/dynamodb-local -jar DynamoDBLocal.jar -inMemory -sharedDb`
 
+- install aws cli
+- 
+  `sudo apt install awscli`
+
 - to create all tables locally from .json file definition run:
 
   ```aws dynamodb create-table --cli-input-json file://src/main/resources/playerProfileTable.json --endpoint-url http://localhost:8000```
