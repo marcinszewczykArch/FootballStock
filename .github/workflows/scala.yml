@@ -21,57 +21,57 @@ jobs:
       AWS_REGION: ${{ secrets.AWS_REGION }}
     steps:
 
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v1
-        with:
-          java-version: 21
-
-      - name: Compile
-        run: |
-          sbt -v compile
-
-      - name: Test
-        run: |
-          sbt -v test
-
-      - name: Build Fat Jar
-        run: |
-          sbt -v assembly
-
-      - name: Build Docker image
-        run: |
-          docker build -t ${APP_NAME} .
-
-      - name: Push docker image to DockerHub
-        run: |
-          docker login -u ${DOCKERHUB_LOGIN} -p ${DOCKERHUB_PASSWORD};
-          docker tag ${APP_NAME} ${DOCKERHUB_LOGIN}/${APP_NAME};
-          docker push ${DOCKERHUB_LOGIN}/${APP_NAME};
-
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: DOCKERHUB_LOGIN,DOCKERHUB_PASSWORD,APP_NAME,RED
-          script:
-            printf "${RED}install docker if needed\n";
-            sudo snap install docker;
-            printf "${RED}dockerHub login\n";
-            sudo docker login -u ${DOCKERHUB_LOGIN} -p ${DOCKERHUB_PASSWORD};
-            printf "${RED}remove all container and delete unused images\n";
-            sudo docker rm $(sudo docker stop $(sudo docker ps -a -q --filter ancestor=${DOCKERHUB_LOGIN}/${APP_NAME} --format="{{.ID}}"));
-            sudo docker system prune -a -f;
-            printf "${RED}pull new image from dockerHub\n";
-            sudo docker pull ${DOCKERHUB_LOGIN}/${APP_NAME};
-            printf "${RED}run image with port mapping 80:8080\n";
-            sudo docker run -d -p 80:8080 ${DOCKERHUB_LOGIN}/${APP_NAME};
-            printf "${RED}check active containers\n";
-            sudo docker ps;
+#      - name: Checkout
+#        uses: actions/checkout@v2
+#
+#      - name: Set up JDK 21
+#        uses: actions/setup-java@v1
+#        with:
+#          java-version: 21
+#
+#      - name: Compile
+#        run: |
+#          sbt -v compile
+#
+#      - name: Test
+#        run: |
+#          sbt -v test
+#
+#      - name: Build Fat Jar
+#        run: |
+#          sbt -v assembly
+#
+#      - name: Build Docker image
+#        run: |
+#          docker build -t ${APP_NAME} .
+#
+#      - name: Push docker image to DockerHub
+#        run: |
+#          docker login -u ${DOCKERHUB_LOGIN} -p ${DOCKERHUB_PASSWORD};
+#          docker tag ${APP_NAME} ${DOCKERHUB_LOGIN}/${APP_NAME};
+#          docker push ${DOCKERHUB_LOGIN}/${APP_NAME};
+#
+#      - name: Deploy to EC2
+#        uses: appleboy/ssh-action@v1.0.3
+#        with:
+#          host: ${{ secrets.EC2_HOST }}
+#          username: ${{ secrets.EC2_USERNAME }}
+#          key: ${{ secrets.SSH_PRIVATE_KEY }}
+#          envs: DOCKERHUB_LOGIN,DOCKERHUB_PASSWORD,APP_NAME,RED
+#          script:
+#            printf "${RED}install docker if needed\n";
+#            sudo snap install docker;
+#            printf "${RED}dockerHub login\n";
+#            sudo docker login -u ${DOCKERHUB_LOGIN} -p ${DOCKERHUB_PASSWORD};
+#            printf "${RED}remove all container and delete unused images\n";
+#            sudo docker rm $(sudo docker stop $(sudo docker ps -a -q --filter ancestor=${DOCKERHUB_LOGIN}/${APP_NAME} --format="{{.ID}}"));
+#            sudo docker system prune -a -f;
+#            printf "${RED}pull new image from dockerHub\n";
+#            sudo docker pull ${DOCKERHUB_LOGIN}/${APP_NAME};
+#            printf "${RED}run image with port mapping 80:8080\n";
+#            sudo docker run -d -p 80:8080 ${DOCKERHUB_LOGIN}/${APP_NAME};
+#            printf "${RED}check active containers\n";
+#            sudo docker ps;
 
       - name: Prepare DynamoDB resources
         run: |
@@ -79,10 +79,4 @@ jobs:
           aws configure set aws_access_key_id ${AWS_ACCESS_KEY};
           aws configure set aws_secret_access_key ${AWS_SECRET_KEY};
           aws configure set region ${AWS_REGION};
-          aws dynamodb create-table --cli-input-json file://deployment/environments/local/tables/playerProfileTable.json;
-          aws dynamodb create-table --cli-input-json file://deployment/environments/local/tables/userGameStateTable.json;
-          aws dynamodb create-table --cli-input-json file://deployment/environments/local/tables/eventTable.json;
-          aws dynamodb create-table --cli-input-json file://deployment/environments/local/tables/clubProfileTable.json;
-          aws dynamodb create-table --cli-input-json file://deployment/environments/local/tables/clubPlayersTable.json;
-          aws dynamodb create-table --cli-input-json file://deployment/environments/local/tables/loginTable.json;
-          aws dynamodb create-table --cli-input-json file://deployment/environments/local/tables/tokenTable.json;
+          ./sh deployment/environments/prod/dynamoDb.sh;
