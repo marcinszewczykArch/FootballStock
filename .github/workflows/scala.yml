@@ -14,6 +14,8 @@ jobs:
       JAVA_OPTS: -Xmx4G
       DOCKERHUB_LOGIN: ${{ secrets.DOCKERHUB_LOGIN }}
       DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+      APP_NAME: 'footballstock'
+      RED: '\033[0;31m'
     steps:
 
       - name: Checkout
@@ -38,13 +40,13 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t footballstock .
+          docker build -t ${APP_NAME} .
 
       - name: Push docker image to DockerHub
         run: |
           docker login -u ${DOCKERHUB_LOGIN} -p ${DOCKERHUB_PASSWORD};
-          docker tag footballstock ${DOCKERHUB_LOGIN}/footballstock;
-          docker push ${DOCKERHUB_LOGIN}/footballstock;
+          docker tag ${APP_NAME} ${DOCKERHUB_LOGIN}/${APP_NAME};
+          docker push ${DOCKERHUB_LOGIN}/${APP_NAME};
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
@@ -52,18 +54,18 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: DOCKERHUB_LOGIN,DOCKERHUB_PASSWORD,APP_NAME,RED
           script:
-            RED='\033[0;31m';
             printf "${RED}install docker if needed\n";
             sudo snap install docker;
             printf "${RED}dockerHub login\n";
-            sudo docker login -u ${{ secrets.DOCKERHUB_LOGIN }} -p ${{ secrets.DOCKERHUB_PASSWORD }};
+            sudo docker login -u ${DOCKERHUB_LOGIN} -p ${DOCKERHUB_PASSWORD};
             printf "${RED}remove all container and delete unused images\n";
-            sudo docker rm $(sudo docker stop $(sudo docker ps -a -q --filter ancestor=${{ secrets.DOCKERHUB_LOGIN }}/footballstock --format="{{.ID}}"));
+            sudo docker rm $(sudo docker stop $(sudo docker ps -a -q --filter ancestor=${DOCKERHUB_LOGIN}/${APP_NAME} --format="{{.ID}}"));
             sudo docker system prune -a -f;
             printf "${RED}pull new image from dockerHub\n";
-            sudo docker pull ${{ secrets.DOCKERHUB_LOGIN }}/footballstock;
+            sudo docker pull ${DOCKERHUB_LOGIN}/${APP_NAME};
             printf "${RED}run image with port mapping 80:8080\n";
-            sudo docker run -d -p 80:8080 ${{ secrets.DOCKERHUB_LOGIN }}/footballstock;
+            sudo docker run -d -p 80:8080 ${DOCKERHUB_LOGIN}/${APP_NAME};
             printf "${RED}check active containers\n";
             sudo docker ps;
