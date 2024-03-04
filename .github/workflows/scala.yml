@@ -10,6 +10,9 @@ jobs:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     timeout-minutes: 10
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./deployment/environments/prod
     env:
       JAVA_OPTS: -Xmx4G
       DOCKERHUB_LOGIN: ${{ secrets.DOCKERHUB_LOGIN }}
@@ -79,4 +82,4 @@ jobs:
           aws configure set aws_access_key_id ${AWS_ACCESS_KEY};
           aws configure set aws_secret_access_key ${AWS_SECRET_KEY};
           aws configure set region ${AWS_REGION};
-          ./deployment/environments/prod/dynamoDb.sh;
+          .dynamoDb.sh;

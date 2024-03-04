@@ -1,0 +1,15 @@
+{
+  "TableName": "Token",
+  "KeySchema": [
+    { "AttributeName": "token", "KeyType": "HASH" },
+    { "AttributeName": "user", "KeyType": "RANGE" }
+  ],
+  "AttributeDefinitions": [
+    { "AttributeName": "token", "AttributeType": "S" },
+    { "AttributeName": "user", "AttributeType": "S" }
+  ],
+  "ProvisionedThroughput": {
+    "ReadCapacityUnits": 5,
+    "WriteCapacityUnits": 5
+  }
+}
