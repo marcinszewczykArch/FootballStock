@@ -21,7 +21,7 @@ jobs:
       AWS_REGION: ${{ secrets.AWS_REGION }}
     steps:
 
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v2
 #
 #      - name: Set up JDK 21
@@ -79,4 +79,6 @@ jobs:
           aws configure set aws_access_key_id ${AWS_ACCESS_KEY};
           aws configure set aws_secret_access_key ${AWS_SECRET_KEY};
           aws configure set region ${AWS_REGION};
-          ./deployment/prod/dynamoDb.sh;
+          cd deployment/prod;
+          ls -la;
+          .dynamoDb.sh;
