@@ -75,10 +75,11 @@ jobs:
 
       - name: Prepare DynamoDB resources
         run: |
-          sudo apt install awscli;
-          aws configure set aws_access_key_id ${AWS_ACCESS_KEY};
-          aws configure set aws_secret_access_key ${AWS_SECRET_KEY};
-          aws configure set region ${AWS_REGION};
+#          sudo apt install awscli;
+#          aws configure set aws_access_key_id ${AWS_ACCESS_KEY};
+#          aws configure set aws_secret_access_key ${AWS_SECRET_KEY};
+#          aws configure set region ${AWS_REGION};
+          ls -la;
           cd deployment/prod;
           ls -la;
           .dynamoDb.sh;
