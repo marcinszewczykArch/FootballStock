@@ -57,7 +57,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: DOCKERHUB_LOGIN,DOCKERHUB_PASSWORD,APP_NAME,RED
+          envs: DOCKERHUB_LOGIN,DOCKERHUB_PASSWORD,APP_NAME,RED,AWS_ACCESS_KEY,AWS_SECRET_KEY,AWS_REGION
           script:
             printf "${RED}install docker if needed\n";
             sudo snap install docker;
@@ -69,7 +69,7 @@ jobs:
             printf "${RED}pull new image from dockerHub\n";
             sudo docker pull ${DOCKERHUB_LOGIN}/${APP_NAME};
             printf "${RED}run image with port mapping 80:8080\n";
-            sudo docker run -d -p 80:8080 ${DOCKERHUB_LOGIN}/${APP_NAME};
+            sudo docker run --env AWS_ACCESS_KEY=$AWS_ACCESS_KEY --env AWS_SECRET_KEY=$AWS_SECRET_KEY --env AWS_REGION=$AWS_REGION -d -p 80:8080 ${DOCKERHUB_LOGIN}/${APP_NAME};
             printf "${RED}check active containers\n";
             sudo docker ps;
 
