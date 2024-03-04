@@ -63,6 +63,9 @@ tables=$(aws dynamodb list-tables)
 echo "Created tables check: $tables"
 
 #add some initial data to the tables (user, players, events, clubs, login, token)
+echo "sleep 5 seconds to wait for all tables creation"
+sleep 5s
+
 echo "uploading TESTUSER to UserGameState Table..."
 body='{
         "json": {

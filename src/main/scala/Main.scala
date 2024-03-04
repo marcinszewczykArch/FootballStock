@@ -238,7 +238,7 @@ object FootballStockApp {
                   DynamoDbClient
                     .builder()
                     .region(aws.region)
-                    .endpointOverride(java.net.URI.create(endpointOverride))
+                    .endpointOverride(if(aws.isLocal) java.net.URI.create(endpointOverride) else null)
                     .credentialsProvider(awsCredentials)
                     .build()
                 )
