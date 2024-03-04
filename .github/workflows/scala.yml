@@ -76,7 +76,11 @@ jobs:
       - name: Prepare DynamoDB resources
         run: |
           ls -la;
-          cd ./deployment/prod;
+          cd deployment
+          ls -la;
+          cd environments;
+          ls -la;
+          cd prod;
           ls -la;
           .dynamoDb.sh;
 #          sudo apt install awscli;
