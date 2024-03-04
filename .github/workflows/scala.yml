@@ -75,10 +75,9 @@ jobs:
 
       - name: Prepare DynamoDB resources
         run: |
-          ls;
           pwd;
-          sudo ls;
-          sudo pwd;
+          cd deployment;
+          pwd;
 #          sudo apt install awscli;
 #          aws configure set aws_access_key_id ${AWS_ACCESS_KEY};
 #          aws configure set aws_secret_access_key ${AWS_SECRET_KEY};
